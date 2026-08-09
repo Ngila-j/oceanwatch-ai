@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: ocean_raw
+    database: oceanwatch_db
+    schema: public
+    tables:
+      - name: raw_tides

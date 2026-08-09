@@ -1,0 +1,856 @@
+[0m11:43:57.859309 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000173DDFBD400>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000173DB87CE10>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000173E08AB890>]}
+
+
+============================== 11:43:57.890166 | 6220f425-8dd0-4cc3-83a8-4af2bf8a11b6 ==============================
+[0m11:43:57.890166 [info ] [MainThread]: Running with dbt=1.12.0
+[0m11:43:57.891301 [debug] [MainThread]: running dbt with arguments {'version_check': 'True', 'no_print': 'None', 'maximum_seed_size_mib': '1', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'target_path': 'None', 'static_parser': 'True', 'printer_width': '80', 'write_json': 'True', 'introspect': 'True', 'log_cache_events': 'False', 'empty': 'None', 'cache_selected_only': 'False', 'fail_fast': 'False', 'debug': 'False', 'log_format': 'default', 'profiles_dir': 'C:\\Users\\Josphat\\.dbt', 'send_anonymous_usage_stats': 'True', 'quiet': 'False', 'warn_error': 'None', 'partial_parse': 'True', 'use_colors': 'True', 'hints_enabled': 'True', 'invocation_command': 'dbt debug', 'use_experimental_parser': 'False', 'indirect_selection': 'eager', 'log_path': 'D:\\oceanwatch-ai\\oceanwatch_transformations\\logs'}
+[0m11:43:58.018071 [info ] [MainThread]: dbt version: 1.12.0
+[0m11:43:58.018969 [info ] [MainThread]: python version: 3.14.5
+[0m11:43:58.020055 [info ] [MainThread]: python path: C:\Python314\python.exe
+[0m11:43:58.021144 [info ] [MainThread]: os info: Windows-11-10.0.22631-SP0
+[0m11:43:58.282812 [info ] [MainThread]: Using profiles dir at C:\Users\Josphat\.dbt
+[0m11:43:58.283702 [info ] [MainThread]: Using profiles.yml file at C:\Users\Josphat\.dbt\profiles.yml
+[0m11:43:58.284659 [info ] [MainThread]: Using dbt_project.yml file at D:\oceanwatch-ai\oceanwatch_transformations\dbt_project.yml
+[0m11:43:58.286935 [info ] [MainThread]: adapter type: postgres
+[0m11:43:58.287851 [info ] [MainThread]: adapter version: 1.11.0
+[0m11:43:58.487694 [info ] [MainThread]: Configuration:
+[0m11:43:58.488637 [info ] [MainThread]:   profiles.yml file [[32mOK found and valid[0m]
+[0m11:43:58.489520 [info ] [MainThread]:   dbt_project.yml file [[32mOK found and valid[0m]
+[0m11:43:58.490310 [info ] [MainThread]: Required dependencies:
+[0m11:43:58.491106 [debug] [MainThread]: Executing "git --help"
+[0m11:43:58.554039 [debug] [MainThread]: STDOUT: "b"usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]\n           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]\n           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--no-lazy-fetch]\n           [--no-optional-locks] [--no-advice] [--bare] [--git-dir=<path>]\n           [--work-tree=<path>] [--namespace=<name>] [--config-env=<name>=<envvar>]\n           <command> [<args>]\n\nThese are common Git commands used in various situations:\n\nstart a working area (see also: git help tutorial)\n   clone      Clone a repository into a new directory\n   init       Create an empty Git repository or reinitialize an existing one\n\nwork on the current change (see also: git help everyday)\n   add        Add file contents to the index\n   mv         Move or rename a file, a directory, or a symlink\n   restore    Restore working tree files\n   rm         Remove files from the working tree and from the index\n\nexamine the history and state (see also: git help revisions)\n   bisect     Use binary search to find the commit that introduced a bug\n   diff       Show changes between commits, commit and working tree, etc\n   grep       Print lines matching a pattern\n   log        Show commit logs\n   show       Show various types of objects\n   status     Show the working tree status\n\ngrow, mark and tweak your common history\n   backfill   Download missing objects in a partial clone\n   branch     List, create, or delete branches\n   commit     Record changes to the repository\n   history    EXPERIMENTAL: Rewrite history\n   merge      Join two or more development histories together\n   rebase     Reapply commits on top of another base tip\n   reset      Set `HEAD` or the index to a known state\n   switch     Switch branches\n   tag        Create, list, delete or verify tags\n\ncollaborate (see also: git help workflows)\n   fetch      Download objects and refs from another repository\n   pull       Fetch from and integrate with another repository or a local branch\n   push       Update remote refs along with associated objects\n\n'git help -a' and 'git help -g' list available subcommands and some\nconcept guides. See 'git help <command>' or 'git help <concept>'\nto read about a specific subcommand or concept.\nSee 'git help git' for an overview of the system.\n""
+[0m11:43:58.554728 [debug] [MainThread]: STDERR: "b''"
+[0m11:43:58.555276 [info ] [MainThread]:  - git [[32mOK found[0m]
+
+[0m11:43:58.556055 [info ] [MainThread]: Connection:
+[0m11:43:58.556851 [info ] [MainThread]:   host: localhost
+[0m11:43:58.557657 [info ] [MainThread]:   port: 5433
+[0m11:43:58.558430 [info ] [MainThread]:   user: postgres
+[0m11:43:58.559245 [info ] [MainThread]:   database: oceanwatch_db
+[0m11:43:58.560006 [info ] [MainThread]:   schema: public
+[0m11:43:58.560802 [info ] [MainThread]:   connect_timeout: 10
+[0m11:43:58.562172 [info ] [MainThread]:   role: None
+[0m11:43:58.562956 [info ] [MainThread]:   search_path: None
+[0m11:43:58.563664 [info ] [MainThread]:   keepalives_idle: 0
+[0m11:43:58.564372 [info ] [MainThread]:   sslmode: None
+[0m11:43:58.565046 [info ] [MainThread]:   sslcert: None
+[0m11:43:58.565735 [info ] [MainThread]:   sslkey: None
+[0m11:43:58.566694 [info ] [MainThread]:   sslrootcert: None
+[0m11:43:58.568863 [info ] [MainThread]:   application_name: dbt
+[0m11:43:58.570644 [info ] [MainThread]:   autocommit: False
+[0m11:43:58.571679 [info ] [MainThread]:   retries: 1
+[0m11:43:58.572769 [info ] [MainThread]: Registered adapter: postgres=1.11.0
+[0m11:43:59.174818 [debug] [MainThread]: Acquiring new postgres connection 'debug'
+[0m11:44:03.896591 [debug] [MainThread]: Using postgres connection "debug"
+[0m11:44:03.897078 [debug] [MainThread]: On debug: select 1 as id
+[0m11:44:03.897448 [debug] [MainThread]: Opening a new connection, currently in state init
+[0m11:44:07.952455 [debug] [MainThread]: Postgres adapter: Got a retryable error when attempting to open a postgres connection.
+1 attempts remaining. Retrying in 0 seconds.
+Error:
+connection to server at "localhost" (::1), port 5433 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5433 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+[0m11:44:12.039592 [debug] [MainThread]: Postgres adapter: Error running SQL: select 1 as id
+[0m11:44:12.042163 [debug] [MainThread]: Postgres adapter: Rolling back transaction.
+[0m11:44:12.044244 [debug] [MainThread]: On debug: No close available on handle
+[0m11:44:12.046142 [info ] [MainThread]:   Connection test: [[31mERROR[0m]
+
+[0m11:44:12.049940 [info ] [MainThread]: [31m1 check failed:[0m
+[0m11:44:12.053705 [info ] [MainThread]: dbt was unable to connect to the specified database.
+The database returned the following error:
+
+  >Database Error
+  connection to server at "localhost" (::1), port 5433 failed: Connection refused (0x0000274D/10061)
+  	Is the server running on that host and accepting TCP/IP connections?
+  connection to server at "localhost" (127.0.0.1), port 5433 failed: Connection refused (0x0000274D/10061)
+  	Is the server running on that host and accepting TCP/IP connections?
+  
+
+Check your database credentials and try again. For more information, visit:
+https://docs.getdbt.com/docs/configure-your-profile
+
+
+[0m11:44:12.062497 [debug] [MainThread]: Command `dbt debug` failed at 11:44:12.061588 after 14.79 seconds
+[0m11:44:12.064782 [debug] [MainThread]: Connection 'debug' was properly closed.
+[0m11:44:12.066211 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000173E091FA80>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000173E0B43E30>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000173DEACB020>]}
+[0m11:44:12.067312 [debug] [MainThread]: Flushing usage events
+[0m11:44:14.222994 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m11:44:19.454470 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000226128BD400>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000002261017CE10>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000226151E79D0>]}
+
+
+============================== 11:44:19.539732 | bc59d9d9-a709-4bb9-9f09-8a2c88a0ba07 ==============================
+[0m11:44:19.539732 [info ] [MainThread]: Running with dbt=1.12.0
+[0m11:44:19.540921 [debug] [MainThread]: running dbt with arguments {'static_parser': 'True', 'no_print': 'None', 'maximum_seed_size_mib': '1', 'target_path': 'None', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'version_check': 'True', 'printer_width': '80', 'write_json': 'True', 'introspect': 'True', 'log_cache_events': 'False', 'empty': 'False', 'cache_selected_only': 'False', 'log_format': 'default', 'debug': 'False', 'fail_fast': 'False', 'partial_parse': 'True', 'send_anonymous_usage_stats': 'True', 'quiet': 'False', 'warn_error': 'None', 'profiles_dir': 'C:\\Users\\Josphat\\.dbt', 'indirect_selection': 'eager', 'hints_enabled': 'True', 'use_colors': 'True', 'use_experimental_parser': 'False', 'invocation_command': 'dbt run', 'log_path': 'D:\\oceanwatch-ai\\oceanwatch_transformations\\logs'}
+[0m11:44:19.940316 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'project_id', 'label': 'bc59d9d9-a709-4bb9-9f09-8a2c88a0ba07', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000226151A2780>]}
+[0m11:44:20.037591 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'adapter_info', 'label': 'bc59d9d9-a709-4bb9-9f09-8a2c88a0ba07', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000226100DBDF0>]}
+[0m11:44:20.039651 [info ] [MainThread]: Registered adapter: postgres=1.11.0
+[0m11:44:20.507637 [debug] [MainThread]: checksum: d838552da3c4fb83de3a177715b55e727b6430cdbf760b02e22145e5cf1c667e, vars: {}, profile: oceanwatch_transformations, target: dev, version: 1.12.0
+[0m11:44:20.509110 [info ] [MainThread]: Unable to do partial parsing because saved manifest not found. Starting full parse.
+[0m11:44:20.510110 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'partial_parser', 'label': 'bc59d9d9-a709-4bb9-9f09-8a2c88a0ba07', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000226151BFB50>]}
+[0m11:44:24.262482 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'load_project', 'label': 'bc59d9d9-a709-4bb9-9f09-8a2c88a0ba07', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000226158B8230>]}
+[0m11:44:24.400043 [debug] [MainThread]: Wrote artifact WritableManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\manifest.json
+[0m11:44:24.438557 [debug] [MainThread]: Wrote artifact SemanticManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\semantic_manifest.json
+[0m11:44:24.523718 [debug] [MainThread]: Wrote artifact OsiDocument to D:\oceanwatch-ai\oceanwatch_transformations\target\osi_document.json
+[0m11:44:24.576397 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'resource_counts', 'label': 'bc59d9d9-a709-4bb9-9f09-8a2c88a0ba07', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000022615D0DEF0>]}
+[0m11:44:24.577432 [info ] [MainThread]: Found 1 model, 1 source, 477 macros
+[0m11:44:24.578484 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'runnable_timing', 'label': 'bc59d9d9-a709-4bb9-9f09-8a2c88a0ba07', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000226158C8D50>]}
+[0m11:44:24.581130 [info ] [MainThread]: 
+[0m11:44:24.582095 [info ] [MainThread]: Concurrency: 4 threads (target='dev')
+[0m11:44:24.582997 [info ] [MainThread]: 
+[0m11:44:24.584212 [debug] [MainThread]: Acquiring new postgres connection 'master'
+[0m11:44:24.586373 [debug] [ThreadPool]: Acquiring new postgres connection 'list_oceanwatch_db'
+[0m11:44:24.695750 [debug] [ThreadPool]: Using postgres connection "list_oceanwatch_db"
+[0m11:44:24.696277 [debug] [ThreadPool]: On list_oceanwatch_db: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "list_oceanwatch_db"} */
+
+    select distinct nspname from pg_namespace
+  
+[0m11:44:24.696702 [debug] [ThreadPool]: Opening a new connection, currently in state init
+[0m11:44:28.741839 [debug] [ThreadPool]: Postgres adapter: Got a retryable error when attempting to open a postgres connection.
+1 attempts remaining. Retrying in 0 seconds.
+Error:
+connection to server at "localhost" (::1), port 5433 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5433 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+[0m11:44:32.843114 [debug] [ThreadPool]: Postgres adapter: Error running SQL: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "list_oceanwatch_db"} */
+
+    select distinct nspname from pg_namespace
+  
+[0m11:44:32.845851 [debug] [ThreadPool]: Postgres adapter: Rolling back transaction.
+[0m11:44:32.846922 [debug] [ThreadPool]: Postgres adapter: Error running SQL: macro list_schemas
+[0m11:44:32.847348 [debug] [ThreadPool]: Postgres adapter: Rolling back transaction.
+[0m11:44:32.847822 [debug] [ThreadPool]: On list_oceanwatch_db: No close available on handle
+[0m11:44:32.848990 [debug] [MainThread]: Connection 'master' was properly closed.
+[0m11:44:32.849465 [debug] [MainThread]: Connection 'list_oceanwatch_db' was properly closed.
+[0m11:44:32.849890 [info ] [MainThread]: 
+[0m11:44:32.850781 [info ] [MainThread]: Finished running  in 0 hours 0 minutes and 8.27 seconds (8.27s).
+[0m11:44:32.852005 [error] [MainThread]: [[31mERROR[0m]: Encountered an error:
+Database Error
+  connection to server at "localhost" (::1), port 5433 failed: Connection refused (0x0000274D/10061)
+  	Is the server running on that host and accepting TCP/IP connections?
+  connection to server at "localhost" (127.0.0.1), port 5433 failed: Connection refused (0x0000274D/10061)
+  	Is the server running on that host and accepting TCP/IP connections?
+  
+[0m11:44:32.853733 [debug] [MainThread]: Command `dbt run` failed at 11:44:32.853550 after 13.66 seconds
+[0m11:44:32.854241 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000022615BEAE10>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000022616018EC0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000022616018F70>]}
+[0m11:44:32.854725 [debug] [MainThread]: Flushing usage events
+[0m11:44:34.645690 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m11:47:57.441872 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000244C622D400>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000244C3AECE10>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000244C8B1F890>]}
+
+
+============================== 11:47:57.473395 | 3128e69f-0e54-424b-a44a-977bcae41ff0 ==============================
+[0m11:47:57.473395 [info ] [MainThread]: Running with dbt=1.12.0
+[0m11:47:57.475534 [debug] [MainThread]: running dbt with arguments {'maximum_seed_size_mib': '1', 'no_print': 'None', 'version_check': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'target_path': 'None', 'static_parser': 'True', 'printer_width': '80', 'write_json': 'True', 'empty': 'None', 'log_cache_events': 'False', 'introspect': 'True', 'cache_selected_only': 'False', 'fail_fast': 'False', 'debug': 'False', 'log_format': 'default', 'partial_parse': 'True', 'send_anonymous_usage_stats': 'True', 'quiet': 'False', 'warn_error': 'None', 'profiles_dir': 'C:\\Users\\Josphat\\.dbt', 'use_colors': 'True', 'hints_enabled': 'True', 'indirect_selection': 'eager', 'use_experimental_parser': 'False', 'invocation_command': 'dbt debug', 'log_path': 'D:\\oceanwatch-ai\\oceanwatch_transformations\\logs'}
+[0m11:47:57.627352 [info ] [MainThread]: dbt version: 1.12.0
+[0m11:47:57.628802 [info ] [MainThread]: python version: 3.14.5
+[0m11:47:57.630023 [info ] [MainThread]: python path: C:\Python314\python.exe
+[0m11:47:57.631095 [info ] [MainThread]: os info: Windows-11-10.0.22631-SP0
+[0m11:47:57.795699 [info ] [MainThread]: Using profiles dir at C:\Users\Josphat\.dbt
+[0m11:47:57.796696 [info ] [MainThread]: Using profiles.yml file at C:\Users\Josphat\.dbt\profiles.yml
+[0m11:47:57.797534 [info ] [MainThread]: Using dbt_project.yml file at D:\oceanwatch-ai\oceanwatch_transformations\dbt_project.yml
+[0m11:47:57.799766 [info ] [MainThread]: adapter type: postgres
+[0m11:47:57.800628 [info ] [MainThread]: adapter version: 1.11.0
+[0m11:47:58.068768 [info ] [MainThread]: Configuration:
+[0m11:47:58.070226 [info ] [MainThread]:   profiles.yml file [[32mOK found and valid[0m]
+[0m11:47:58.071587 [info ] [MainThread]:   dbt_project.yml file [[32mOK found and valid[0m]
+[0m11:47:58.072976 [info ] [MainThread]: Required dependencies:
+[0m11:47:58.074470 [debug] [MainThread]: Executing "git --help"
+[0m11:47:58.184220 [debug] [MainThread]: STDOUT: "b"usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]\n           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]\n           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--no-lazy-fetch]\n           [--no-optional-locks] [--no-advice] [--bare] [--git-dir=<path>]\n           [--work-tree=<path>] [--namespace=<name>] [--config-env=<name>=<envvar>]\n           <command> [<args>]\n\nThese are common Git commands used in various situations:\n\nstart a working area (see also: git help tutorial)\n   clone      Clone a repository into a new directory\n   init       Create an empty Git repository or reinitialize an existing one\n\nwork on the current change (see also: git help everyday)\n   add        Add file contents to the index\n   mv         Move or rename a file, a directory, or a symlink\n   restore    Restore working tree files\n   rm         Remove files from the working tree and from the index\n\nexamine the history and state (see also: git help revisions)\n   bisect     Use binary search to find the commit that introduced a bug\n   diff       Show changes between commits, commit and working tree, etc\n   grep       Print lines matching a pattern\n   log        Show commit logs\n   show       Show various types of objects\n   status     Show the working tree status\n\ngrow, mark and tweak your common history\n   backfill   Download missing objects in a partial clone\n   branch     List, create, or delete branches\n   commit     Record changes to the repository\n   history    EXPERIMENTAL: Rewrite history\n   merge      Join two or more development histories together\n   rebase     Reapply commits on top of another base tip\n   reset      Set `HEAD` or the index to a known state\n   switch     Switch branches\n   tag        Create, list, delete or verify tags\n\ncollaborate (see also: git help workflows)\n   fetch      Download objects and refs from another repository\n   pull       Fetch from and integrate with another repository or a local branch\n   push       Update remote refs along with associated objects\n\n'git help -a' and 'git help -g' list available subcommands and some\nconcept guides. See 'git help <command>' or 'git help <concept>'\nto read about a specific subcommand or concept.\nSee 'git help git' for an overview of the system.\n""
+[0m11:47:58.185619 [debug] [MainThread]: STDERR: "b''"
+[0m11:47:58.186625 [info ] [MainThread]:  - git [[32mOK found[0m]
+
+[0m11:47:58.187766 [info ] [MainThread]: Connection:
+[0m11:47:58.188985 [info ] [MainThread]:   host: localhost
+[0m11:47:58.190099 [info ] [MainThread]:   port: 5433
+[0m11:47:58.191220 [info ] [MainThread]:   user: postgres
+[0m11:47:58.193885 [info ] [MainThread]:   database: oceanwatch_db
+[0m11:47:58.195032 [info ] [MainThread]:   schema: public
+[0m11:47:58.196350 [info ] [MainThread]:   connect_timeout: 10
+[0m11:47:58.198464 [info ] [MainThread]:   role: None
+[0m11:47:58.199620 [info ] [MainThread]:   search_path: None
+[0m11:47:58.200882 [info ] [MainThread]:   keepalives_idle: 0
+[0m11:47:58.202330 [info ] [MainThread]:   sslmode: None
+[0m11:47:58.203999 [info ] [MainThread]:   sslcert: None
+[0m11:47:58.205662 [info ] [MainThread]:   sslkey: None
+[0m11:47:58.208207 [info ] [MainThread]:   sslrootcert: None
+[0m11:47:58.209499 [info ] [MainThread]:   application_name: dbt
+[0m11:47:58.210832 [info ] [MainThread]:   autocommit: False
+[0m11:47:58.212148 [info ] [MainThread]:   retries: 1
+[0m11:47:58.214204 [info ] [MainThread]: Registered adapter: postgres=1.11.0
+[0m11:47:58.716887 [debug] [MainThread]: Acquiring new postgres connection 'debug'
+[0m11:47:58.873494 [debug] [MainThread]: Using postgres connection "debug"
+[0m11:47:58.873993 [debug] [MainThread]: On debug: select 1 as id
+[0m11:47:58.874374 [debug] [MainThread]: Opening a new connection, currently in state init
+[0m11:47:58.885900 [debug] [MainThread]: Postgres adapter: Got a retryable error when attempting to open a postgres connection.
+1 attempts remaining. Retrying in 0 seconds.
+Error:
+connection to server at "localhost" (::1), port 5433 failed: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+
+[0m11:47:58.890706 [debug] [MainThread]: Postgres adapter: Error running SQL: select 1 as id
+[0m11:47:58.891617 [debug] [MainThread]: Postgres adapter: Rolling back transaction.
+[0m11:47:58.892178 [debug] [MainThread]: On debug: No close available on handle
+[0m11:47:58.892599 [info ] [MainThread]:   Connection test: [[31mERROR[0m]
+
+[0m11:47:58.893357 [info ] [MainThread]: [31m1 check failed:[0m
+[0m11:47:58.894333 [info ] [MainThread]: dbt was unable to connect to the specified database.
+The database returned the following error:
+
+  >Database Error
+  connection to server at "localhost" (::1), port 5433 failed: server closed the connection unexpectedly
+  	This probably means the server terminated abnormally
+  	before or while processing the request.
+  
+
+Check your database credentials and try again. For more information, visit:
+https://docs.getdbt.com/docs/configure-your-profile
+
+
+[0m11:47:58.896506 [debug] [MainThread]: Command `dbt debug` failed at 11:47:58.896209 after 1.74 seconds
+[0m11:47:58.897446 [debug] [MainThread]: Connection 'debug' was properly closed.
+[0m11:47:58.898424 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000244C8B93A80>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000244C8E43E30>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000244C6D37020>]}
+[0m11:47:58.899496 [debug] [MainThread]: Flushing usage events
+[0m11:48:00.841248 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m11:48:08.936777 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000190B601D400>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000190B38ECE10>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000190B89479D0>]}
+
+
+============================== 11:48:09.005174 | 798eb1f6-ca79-4c37-b950-bb62b2dcdf17 ==============================
+[0m11:48:09.005174 [info ] [MainThread]: Running with dbt=1.12.0
+[0m11:48:09.006247 [debug] [MainThread]: running dbt with arguments {'static_parser': 'True', 'no_print': 'None', 'version_check': 'True', 'target_path': 'None', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'maximum_seed_size_mib': '1', 'printer_width': '80', 'write_json': 'True', 'empty': 'False', 'log_cache_events': 'False', 'introspect': 'True', 'cache_selected_only': 'False', 'fail_fast': 'False', 'debug': 'False', 'log_format': 'default', 'partial_parse': 'True', 'send_anonymous_usage_stats': 'True', 'quiet': 'False', 'warn_error': 'None', 'profiles_dir': 'C:\\Users\\Josphat\\.dbt', 'invocation_command': 'dbt run', 'hints_enabled': 'True', 'use_colors': 'True', 'use_experimental_parser': 'False', 'indirect_selection': 'eager', 'log_path': 'D:\\oceanwatch-ai\\oceanwatch_transformations\\logs'}
+[0m11:48:09.339404 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'project_id', 'label': '798eb1f6-ca79-4c37-b950-bb62b2dcdf17', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000190B8902780>]}
+[0m11:48:09.437709 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'adapter_info', 'label': '798eb1f6-ca79-4c37-b950-bb62b2dcdf17', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000190B384BDF0>]}
+[0m11:48:09.440111 [info ] [MainThread]: Registered adapter: postgres=1.11.0
+[0m11:48:09.870462 [debug] [MainThread]: checksum: d838552da3c4fb83de3a177715b55e727b6430cdbf760b02e22145e5cf1c667e, vars: {}, profile: oceanwatch_transformations, target: dev, version: 1.12.0
+[0m11:48:10.230345 [debug] [MainThread]: Partial parsing enabled: 0 files deleted, 0 files added, 0 files changed.
+[0m11:48:10.230954 [debug] [MainThread]: Nothing changed, skipping partial parsing.
+[0m11:48:10.231441 [debug] [MainThread]: Partial parsing enabled, no changes found, skipping parsing
+[0m11:48:10.243722 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'load_project', 'label': '798eb1f6-ca79-4c37-b950-bb62b2dcdf17', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000190B8E5BA50>]}
+[0m11:48:10.414953 [debug] [MainThread]: Wrote artifact WritableManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\manifest.json
+[0m11:48:10.426162 [debug] [MainThread]: Wrote artifact SemanticManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\semantic_manifest.json
+[0m11:48:10.500216 [debug] [MainThread]: Wrote artifact OsiDocument to D:\oceanwatch-ai\oceanwatch_transformations\target\osi_document.json
+[0m11:48:10.536331 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'resource_counts', 'label': '798eb1f6-ca79-4c37-b950-bb62b2dcdf17', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000190B90D2300>]}
+[0m11:48:10.537326 [info ] [MainThread]: Found 1 model, 1 source, 477 macros
+[0m11:48:10.538306 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'runnable_timing', 'label': '798eb1f6-ca79-4c37-b950-bb62b2dcdf17', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000190B9101EF0>]}
+[0m11:48:10.542591 [info ] [MainThread]: 
+[0m11:48:10.543454 [info ] [MainThread]: Concurrency: 4 threads (target='dev')
+[0m11:48:10.544520 [info ] [MainThread]: 
+[0m11:48:10.546024 [debug] [MainThread]: Acquiring new postgres connection 'master'
+[0m11:48:10.547714 [debug] [ThreadPool]: Acquiring new postgres connection 'list_oceanwatch_db'
+[0m11:48:10.701080 [debug] [ThreadPool]: Using postgres connection "list_oceanwatch_db"
+[0m11:48:10.701623 [debug] [ThreadPool]: On list_oceanwatch_db: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "list_oceanwatch_db"} */
+
+    select distinct nspname from pg_namespace
+  
+[0m11:48:10.702138 [debug] [ThreadPool]: Opening a new connection, currently in state init
+[0m11:48:10.931277 [debug] [ThreadPool]: SQL status: SELECT 7 in 0.229 seconds
+[0m11:48:10.933023 [debug] [ThreadPool]: On list_oceanwatch_db: Close
+[0m11:48:10.936432 [debug] [ThreadPool]: Acquiring new postgres connection 'list_oceanwatch_db_public'
+[0m11:48:10.955238 [debug] [ThreadPool]: Using postgres connection "list_oceanwatch_db_public"
+[0m11:48:10.956414 [debug] [ThreadPool]: On list_oceanwatch_db_public: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "list_oceanwatch_db_public"} */
+select
+      'oceanwatch_db' as database,
+      tablename as name,
+      schemaname as schema,
+      'table' as type
+    from pg_tables
+    where schemaname ilike 'public'
+    union all
+    select
+      'oceanwatch_db' as database,
+      viewname as name,
+      schemaname as schema,
+      'view' as type
+    from pg_views
+    where schemaname ilike 'public'
+    union all
+    select
+      'oceanwatch_db' as database,
+      matviewname as name,
+      schemaname as schema,
+      'materialized_view' as type
+    from pg_matviews
+    where schemaname ilike 'public'
+    union all
+    select distinct
+     'oceanwatch_db' as database,
+     proname as name,
+     ns.nspname as schema,
+     'function' as type
+    from pg_proc
+     join pg_namespace as ns on pronamespace = ns.oid
+    where ns.nspname ilike 'public'
+  
+[0m11:48:10.957457 [debug] [ThreadPool]: Opening a new connection, currently in state init
+[0m11:48:11.133499 [debug] [ThreadPool]: SQL status: SELECT 555 in 0.176 seconds
+[0m11:48:11.155836 [debug] [ThreadPool]: On list_oceanwatch_db_public: ROLLBACK
+[0m11:48:11.157659 [debug] [ThreadPool]: On list_oceanwatch_db_public: Close
+[0m11:48:11.339675 [debug] [MainThread]: Using postgres connection "master"
+[0m11:48:11.340979 [debug] [MainThread]: On master: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "master"} */
+select distinct
+        dependent_namespace.nspname as dependent_schema,
+        dependent_class.relname as dependent_name,
+        referenced_namespace.nspname as referenced_schema,
+        referenced_class.relname as referenced_name
+
+    -- Query for views: views are entries in pg_class with an entry in pg_rewrite, but we avoid
+    -- a seq scan on pg_rewrite by leveraging the fact there is an "internal" row in pg_depend for
+    -- the view...
+    from pg_class as dependent_class
+    join pg_namespace as dependent_namespace on dependent_namespace.oid = dependent_class.relnamespace
+    join pg_depend as dependent_depend on dependent_depend.refobjid = dependent_class.oid
+        and dependent_depend.classid = 'pg_rewrite'::regclass
+        and dependent_depend.refclassid = 'pg_class'::regclass
+        and dependent_depend.deptype = 'i'
+
+    -- ... and via pg_depend (that has a row per column, hence the need for "distinct" above, and
+    -- making sure to exclude the internal row to avoid a view appearing to depend on itself)...
+    join pg_depend as joining_depend on joining_depend.objid = dependent_depend.objid
+        and joining_depend.classid = 'pg_rewrite'::regclass
+        and joining_depend.refclassid = 'pg_class'::regclass
+        and joining_depend.refobjid != dependent_depend.refobjid
+
+    -- ... we can find the tables they query from in pg_class, but excluding system tables. Note we
+    -- don't need need to exclude _dependent_ system tables, because they only query from other
+    -- system tables, and so are automatically excluded by excluding _referenced_ system tables
+    join pg_class as referenced_class on referenced_class.oid = joining_depend.refobjid
+    join pg_namespace as referenced_namespace on referenced_namespace.oid = referenced_class.relnamespace
+        and referenced_namespace.nspname != 'information_schema'
+        and referenced_namespace.nspname not like 'pg\_%'
+
+    order by
+        dependent_schema, dependent_name, referenced_schema, referenced_name;
+[0m11:48:11.342297 [debug] [MainThread]: Opening a new connection, currently in state init
+[0m11:48:11.487334 [debug] [MainThread]: SQL status: SELECT 0 in 0.145 seconds
+[0m11:48:11.490622 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'runnable_timing', 'label': '798eb1f6-ca79-4c37-b950-bb62b2dcdf17', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000190B9292B60>]}
+[0m11:48:11.491986 [debug] [MainThread]: On master: ROLLBACK
+[0m11:48:11.494121 [debug] [MainThread]: On master: COMMIT
+[0m11:48:11.495355 [debug] [MainThread]: Using postgres connection "master"
+[0m11:48:11.496240 [debug] [MainThread]: On master: COMMIT
+[0m11:48:11.499572 [debug] [MainThread]: SQL status: COMMIT in 0.002 seconds
+[0m11:48:11.500645 [debug] [MainThread]: On master: Close
+[0m11:48:11.572725 [debug] [Thread-1 (]: Began running node model.oceanwatch_transformations.stg_tides
+[0m11:48:11.573901 [info ] [Thread-1 (]: 1 of 1 START sql table model public.stg_tides .................................. [RUN]
+[0m11:48:11.575911 [debug] [Thread-1 (]: Acquiring new postgres connection 'model.oceanwatch_transformations.stg_tides'
+[0m11:48:11.576941 [debug] [Thread-1 (]: Began compiling node model.oceanwatch_transformations.stg_tides
+[0m11:48:11.594004 [debug] [Thread-1 (]: Writing injected SQL for node "model.oceanwatch_transformations.stg_tides"
+[0m11:48:11.596482 [debug] [Thread-1 (]: Began executing node model.oceanwatch_transformations.stg_tides
+[0m11:48:11.750817 [debug] [Thread-1 (]: Writing runtime sql for node "model.oceanwatch_transformations.stg_tides"
+[0m11:48:11.754386 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.stg_tides"
+[0m11:48:11.755362 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.stg_tides"} */
+
+  
+    
+
+  create  table "oceanwatch_db"."public"."stg_tides__dbt_tmp"
+  
+  
+    as
+  
+  (
+    select
+    t::timestamp as observation_time,
+    v::float as tide_height_meters,
+    s::float as residual,
+    current_timestamp as loaded_at
+from "oceanwatch_db"."public"."raw_tides"
+  );
+  
+[0m11:48:11.756161 [debug] [Thread-1 (]: Opening a new connection, currently in state init
+[0m11:48:11.823464 [debug] [Thread-1 (]: Postgres adapter: Postgres error: relation "public.raw_tides" does not exist
+LINE 17: from "oceanwatch_db"."public"."raw_tides"
+              ^
+
+[0m11:48:11.824426 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: ROLLBACK
+[0m11:48:11.828357 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: Close
+[0m11:48:12.080359 [debug] [Thread-1 (]: Database Error in model stg_tides (models\stg_tides.sql)
+  relation "public.raw_tides" does not exist
+  LINE 17: from "oceanwatch_db"."public"."raw_tides"
+                ^
+  compiled code at target\run\oceanwatch_transformations\models\stg_tides.sql
+[0m11:48:12.083819 [debug] [Thread-1 (]: Sending event: {'category': 'dbt', 'action': 'run_model', 'label': '798eb1f6-ca79-4c37-b950-bb62b2dcdf17', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000190B9113290>]}
+[0m11:48:12.085078 [error] [Thread-1 (]: 1 of 1 ERROR creating sql table model public.stg_tides ......................... [[31mERROR[0m in 0.51s]
+[0m11:48:12.086733 [debug] [Thread-1 (]: Finished running node model.oceanwatch_transformations.stg_tides
+[0m11:48:12.087625 [debug] [Thread-7 (]: Marking all children of 'model.oceanwatch_transformations.stg_tides' to be skipped because of status 'error'.  Reason: Database Error in model stg_tides (models\stg_tides.sql)
+  relation "public.raw_tides" does not exist
+  LINE 17: from "oceanwatch_db"."public"."raw_tides"
+                ^
+  compiled code at target\run\oceanwatch_transformations\models\stg_tides.sql.
+[0m11:48:12.091138 [debug] [MainThread]: On master: COMMIT
+[0m11:48:12.092042 [debug] [MainThread]: Using postgres connection "master"
+[0m11:48:12.092918 [debug] [MainThread]: On master: COMMIT
+[0m11:48:12.093771 [debug] [MainThread]: Opening a new connection, currently in state closed
+[0m11:48:12.294389 [debug] [MainThread]: SQL status: COMMIT in 0.200 seconds
+[0m11:48:12.296167 [debug] [MainThread]: On master: Close
+[0m11:48:12.297934 [debug] [MainThread]: Connection 'master' was properly closed.
+[0m11:48:12.298969 [debug] [MainThread]: Connection 'list_oceanwatch_db' was properly closed.
+[0m11:48:12.299892 [debug] [MainThread]: Connection 'list_oceanwatch_db_public' was properly closed.
+[0m11:48:12.300755 [debug] [MainThread]: Connection 'model.oceanwatch_transformations.stg_tides' was properly closed.
+[0m11:48:12.302156 [info ] [MainThread]: 
+[0m11:48:12.303501 [info ] [MainThread]: Finished running 1 table model in 0 hours 0 minutes and 1.76 seconds (1.76s).
+[0m11:48:12.305510 [debug] [MainThread]: Command end result
+[0m11:48:12.471349 [debug] [MainThread]: Wrote artifact WritableManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\manifest.json
+[0m11:48:12.483392 [debug] [MainThread]: Wrote artifact SemanticManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\semantic_manifest.json
+[0m11:48:12.495846 [debug] [MainThread]: Wrote artifact OsiDocument to D:\oceanwatch-ai\oceanwatch_transformations\target\osi_document.json
+[0m11:48:12.524728 [debug] [MainThread]: Wrote artifact RunExecutionResult to D:\oceanwatch-ai\oceanwatch_transformations\target\run_results.json
+[0m11:48:12.525645 [info ] [MainThread]: 
+[0m11:48:12.534790 [info ] [MainThread]: [31mCompleted with 1 error, 0 partial successes, and 0 warnings:[0m
+[0m11:48:12.536758 [info ] [MainThread]: 
+[0m11:48:12.539873 [error] [MainThread]: [[31mERROR[0m]: in model stg_tides (models\stg_tides.sql)
+[0m11:48:12.553215 [error] [MainThread]:   Database Error in model stg_tides (models\stg_tides.sql)
+  relation "public.raw_tides" does not exist
+  LINE 17: from "oceanwatch_db"."public"."raw_tides"
+                ^
+  compiled code at target\run\oceanwatch_transformations\models\stg_tides.sql
+[0m11:48:12.566221 [info ] [MainThread]: 
+[0m11:48:12.579498 [info ] [MainThread]:   compiled code at target\compiled\oceanwatch_transformations\models\stg_tides.sql
+[0m11:48:12.581714 [info ] [MainThread]: 
+[0m11:48:12.583228 [info ] [MainThread]: Done. PASS=0 WARN=0 ERROR=1 SKIP=0 NO-OP=0 REUSED=0 TOTAL=1
+[0m11:48:12.586297 [debug] [MainThread]: Command `dbt run` failed at 11:48:12.585868 after 3.86 seconds
+[0m11:48:12.589169 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000190B9536780>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000190B20B5770>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000190B85E74D0>]}
+[0m11:48:12.590959 [debug] [MainThread]: Flushing usage events
+[0m11:48:14.380857 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m11:51:22.754424 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001882565D400>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000018822F2CE10>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000018827F4B890>]}
+
+
+============================== 11:51:22.778203 | 127550bc-f558-4842-b34e-6f0cd3754f6a ==============================
+[0m11:51:22.778203 [info ] [MainThread]: Running with dbt=1.12.0
+[0m11:51:22.780372 [debug] [MainThread]: running dbt with arguments {'version_check': 'True', 'no_print': 'None', 'static_parser': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'target_path': 'None', 'maximum_seed_size_mib': '1', 'printer_width': '80', 'write_json': 'True', 'empty': 'None', 'log_cache_events': 'False', 'introspect': 'True', 'cache_selected_only': 'False', 'log_format': 'default', 'debug': 'False', 'fail_fast': 'False', 'partial_parse': 'True', 'send_anonymous_usage_stats': 'True', 'quiet': 'False', 'warn_error': 'None', 'profiles_dir': 'C:\\Users\\Josphat\\.dbt', 'invocation_command': 'dbt debug', 'hints_enabled': 'True', 'use_colors': 'True', 'use_experimental_parser': 'False', 'indirect_selection': 'eager', 'log_path': 'D:\\oceanwatch-ai\\oceanwatch_transformations\\logs'}
+[0m11:51:22.948583 [info ] [MainThread]: dbt version: 1.12.0
+[0m11:51:22.949847 [info ] [MainThread]: python version: 3.14.5
+[0m11:51:22.950813 [info ] [MainThread]: python path: C:\Python314\python.exe
+[0m11:51:22.951715 [info ] [MainThread]: os info: Windows-11-10.0.22631-SP0
+[0m11:51:23.053868 [info ] [MainThread]: Using profiles dir at C:\Users\Josphat\.dbt
+[0m11:51:23.054596 [info ] [MainThread]: Using profiles.yml file at C:\Users\Josphat\.dbt\profiles.yml
+[0m11:51:23.055403 [info ] [MainThread]: Using dbt_project.yml file at D:\oceanwatch-ai\oceanwatch_transformations\dbt_project.yml
+[0m11:51:23.057174 [info ] [MainThread]: adapter type: postgres
+[0m11:51:23.058035 [info ] [MainThread]: adapter version: 1.11.0
+[0m11:51:23.251176 [info ] [MainThread]: Configuration:
+[0m11:51:23.252029 [info ] [MainThread]:   profiles.yml file [[32mOK found and valid[0m]
+[0m11:51:23.252847 [info ] [MainThread]:   dbt_project.yml file [[32mOK found and valid[0m]
+[0m11:51:23.253653 [info ] [MainThread]: Required dependencies:
+[0m11:51:23.254579 [debug] [MainThread]: Executing "git --help"
+[0m11:51:23.341632 [debug] [MainThread]: STDOUT: "b"usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]\n           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]\n           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--no-lazy-fetch]\n           [--no-optional-locks] [--no-advice] [--bare] [--git-dir=<path>]\n           [--work-tree=<path>] [--namespace=<name>] [--config-env=<name>=<envvar>]\n           <command> [<args>]\n\nThese are common Git commands used in various situations:\n\nstart a working area (see also: git help tutorial)\n   clone      Clone a repository into a new directory\n   init       Create an empty Git repository or reinitialize an existing one\n\nwork on the current change (see also: git help everyday)\n   add        Add file contents to the index\n   mv         Move or rename a file, a directory, or a symlink\n   restore    Restore working tree files\n   rm         Remove files from the working tree and from the index\n\nexamine the history and state (see also: git help revisions)\n   bisect     Use binary search to find the commit that introduced a bug\n   diff       Show changes between commits, commit and working tree, etc\n   grep       Print lines matching a pattern\n   log        Show commit logs\n   show       Show various types of objects\n   status     Show the working tree status\n\ngrow, mark and tweak your common history\n   backfill   Download missing objects in a partial clone\n   branch     List, create, or delete branches\n   commit     Record changes to the repository\n   history    EXPERIMENTAL: Rewrite history\n   merge      Join two or more development histories together\n   rebase     Reapply commits on top of another base tip\n   reset      Set `HEAD` or the index to a known state\n   switch     Switch branches\n   tag        Create, list, delete or verify tags\n\ncollaborate (see also: git help workflows)\n   fetch      Download objects and refs from another repository\n   pull       Fetch from and integrate with another repository or a local branch\n   push       Update remote refs along with associated objects\n\n'git help -a' and 'git help -g' list available subcommands and some\nconcept guides. See 'git help <command>' or 'git help <concept>'\nto read about a specific subcommand or concept.\nSee 'git help git' for an overview of the system.\n""
+[0m11:51:23.342607 [debug] [MainThread]: STDERR: "b''"
+[0m11:51:23.343142 [info ] [MainThread]:  - git [[32mOK found[0m]
+
+[0m11:51:23.343934 [info ] [MainThread]: Connection:
+[0m11:51:23.344951 [info ] [MainThread]:   host: 127.0.0.1
+[0m11:51:23.345885 [info ] [MainThread]:   port: 5433
+[0m11:51:23.346793 [info ] [MainThread]:   user: postgres
+[0m11:51:23.347699 [info ] [MainThread]:   database: oceanwatch_db
+[0m11:51:23.348674 [info ] [MainThread]:   schema: public
+[0m11:51:23.350016 [info ] [MainThread]:   connect_timeout: 10
+[0m11:51:23.351196 [info ] [MainThread]:   role: None
+[0m11:51:23.352241 [info ] [MainThread]:   search_path: None
+[0m11:51:23.353291 [info ] [MainThread]:   keepalives_idle: 0
+[0m11:51:23.354385 [info ] [MainThread]:   sslmode: None
+[0m11:51:23.355793 [info ] [MainThread]:   sslcert: None
+[0m11:51:23.356886 [info ] [MainThread]:   sslkey: None
+[0m11:51:23.357879 [info ] [MainThread]:   sslrootcert: None
+[0m11:51:23.358877 [info ] [MainThread]:   application_name: dbt
+[0m11:51:23.359913 [info ] [MainThread]:   autocommit: False
+[0m11:51:23.361005 [info ] [MainThread]:   retries: 1
+[0m11:51:23.362840 [info ] [MainThread]: Registered adapter: postgres=1.11.0
+[0m11:51:23.772289 [debug] [MainThread]: Acquiring new postgres connection 'debug'
+[0m11:51:23.880174 [debug] [MainThread]: Using postgres connection "debug"
+[0m11:51:23.880672 [debug] [MainThread]: On debug: select 1 as id
+[0m11:51:23.881054 [debug] [MainThread]: Opening a new connection, currently in state init
+[0m11:51:23.950480 [debug] [MainThread]: SQL status: SELECT 1 in 0.069 seconds
+[0m11:51:23.952055 [debug] [MainThread]: On debug: Close
+[0m11:51:23.952757 [info ] [MainThread]:   Connection test: [[32mOK connection ok[0m]
+
+[0m11:51:23.953983 [info ] [MainThread]: [32mAll checks passed![0m
+[0m11:51:23.956312 [debug] [MainThread]: Command `dbt debug` succeeded at 11:51:23.955857 after 1.56 seconds
+[0m11:51:23.957665 [debug] [MainThread]: Connection 'debug' was properly closed.
+[0m11:51:23.958356 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000018827FC35C0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000188282A3E30>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x0000018826167020>]}
+[0m11:51:23.958961 [debug] [MainThread]: Flushing usage events
+[0m11:51:25.848987 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m11:51:30.653928 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202CF8FD400>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202CD1BCE10>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202D22279D0>]}
+
+
+============================== 11:51:30.744573 | ad623746-7e4a-47cd-8343-5c58d58e1581 ==============================
+[0m11:51:30.744573 [info ] [MainThread]: Running with dbt=1.12.0
+[0m11:51:30.745972 [debug] [MainThread]: running dbt with arguments {'version_check': 'True', 'no_print': 'None', 'static_parser': 'True', 'target_path': 'None', 'maximum_seed_size_mib': '1', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'printer_width': '80', 'write_json': 'True', 'empty': 'False', 'log_cache_events': 'False', 'introspect': 'True', 'cache_selected_only': 'False', 'fail_fast': 'False', 'debug': 'False', 'log_format': 'default', 'partial_parse': 'True', 'send_anonymous_usage_stats': 'True', 'quiet': 'False', 'warn_error': 'None', 'profiles_dir': 'C:\\Users\\Josphat\\.dbt', 'indirect_selection': 'eager', 'hints_enabled': 'True', 'invocation_command': 'dbt run', 'use_experimental_parser': 'False', 'use_colors': 'True', 'log_path': 'D:\\oceanwatch-ai\\oceanwatch_transformations\\logs'}
+[0m11:51:31.169784 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'project_id', 'label': 'ad623746-7e4a-47cd-8343-5c58d58e1581', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202D21E2780>]}
+[0m11:51:31.310875 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'adapter_info', 'label': 'ad623746-7e4a-47cd-8343-5c58d58e1581', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202CD11BDF0>]}
+[0m11:51:31.313054 [info ] [MainThread]: Registered adapter: postgres=1.11.0
+[0m11:51:31.888132 [debug] [MainThread]: checksum: d838552da3c4fb83de3a177715b55e727b6430cdbf760b02e22145e5cf1c667e, vars: {}, profile: oceanwatch_transformations, target: dev, version: 1.12.0
+[0m11:51:32.168983 [info ] [MainThread]: Unable to do partial parsing because profile has changed
+[0m11:51:32.170014 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'partial_parser', 'label': 'ad623746-7e4a-47cd-8343-5c58d58e1581', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202D270F550>]}
+[0m11:51:34.844831 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'load_project', 'label': 'ad623746-7e4a-47cd-8343-5c58d58e1581', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202D22B54F0>]}
+[0m11:51:35.165828 [debug] [MainThread]: Wrote artifact WritableManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\manifest.json
+[0m11:51:35.178737 [debug] [MainThread]: Wrote artifact SemanticManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\semantic_manifest.json
+[0m11:51:35.302225 [debug] [MainThread]: Wrote artifact OsiDocument to D:\oceanwatch-ai\oceanwatch_transformations\target\osi_document.json
+[0m11:51:35.369005 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'resource_counts', 'label': 'ad623746-7e4a-47cd-8343-5c58d58e1581', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202D2CD1A90>]}
+[0m11:51:35.370335 [info ] [MainThread]: Found 1 model, 1 source, 477 macros
+[0m11:51:35.371672 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'runnable_timing', 'label': 'ad623746-7e4a-47cd-8343-5c58d58e1581', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202D275A000>]}
+[0m11:51:35.376782 [info ] [MainThread]: 
+[0m11:51:35.379525 [info ] [MainThread]: Concurrency: 4 threads (target='dev')
+[0m11:51:35.381300 [info ] [MainThread]: 
+[0m11:51:35.384003 [debug] [MainThread]: Acquiring new postgres connection 'master'
+[0m11:51:35.387902 [debug] [ThreadPool]: Acquiring new postgres connection 'list_oceanwatch_db'
+[0m11:51:35.641978 [debug] [ThreadPool]: Using postgres connection "list_oceanwatch_db"
+[0m11:51:35.643091 [debug] [ThreadPool]: On list_oceanwatch_db: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "list_oceanwatch_db"} */
+
+    select distinct nspname from pg_namespace
+  
+[0m11:51:35.644293 [debug] [ThreadPool]: Opening a new connection, currently in state init
+[0m11:51:35.739618 [debug] [ThreadPool]: SQL status: SELECT 7 in 0.095 seconds
+[0m11:51:35.743112 [debug] [ThreadPool]: On list_oceanwatch_db: Close
+[0m11:51:35.748344 [debug] [ThreadPool]: Acquiring new postgres connection 'list_oceanwatch_db_public'
+[0m11:51:35.763392 [debug] [ThreadPool]: Using postgres connection "list_oceanwatch_db_public"
+[0m11:51:35.764437 [debug] [ThreadPool]: On list_oceanwatch_db_public: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "list_oceanwatch_db_public"} */
+select
+      'oceanwatch_db' as database,
+      tablename as name,
+      schemaname as schema,
+      'table' as type
+    from pg_tables
+    where schemaname ilike 'public'
+    union all
+    select
+      'oceanwatch_db' as database,
+      viewname as name,
+      schemaname as schema,
+      'view' as type
+    from pg_views
+    where schemaname ilike 'public'
+    union all
+    select
+      'oceanwatch_db' as database,
+      matviewname as name,
+      schemaname as schema,
+      'materialized_view' as type
+    from pg_matviews
+    where schemaname ilike 'public'
+    union all
+    select distinct
+     'oceanwatch_db' as database,
+     proname as name,
+     ns.nspname as schema,
+     'function' as type
+    from pg_proc
+     join pg_namespace as ns on pronamespace = ns.oid
+    where ns.nspname ilike 'public'
+  
+[0m11:51:35.765047 [debug] [ThreadPool]: Opening a new connection, currently in state init
+[0m11:51:35.867937 [debug] [ThreadPool]: SQL status: SELECT 555 in 0.103 seconds
+[0m11:51:35.901923 [debug] [ThreadPool]: On list_oceanwatch_db_public: ROLLBACK
+[0m11:51:35.904488 [debug] [ThreadPool]: On list_oceanwatch_db_public: Close
+[0m11:51:36.091378 [debug] [MainThread]: Using postgres connection "master"
+[0m11:51:36.092051 [debug] [MainThread]: On master: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "master"} */
+select distinct
+        dependent_namespace.nspname as dependent_schema,
+        dependent_class.relname as dependent_name,
+        referenced_namespace.nspname as referenced_schema,
+        referenced_class.relname as referenced_name
+
+    -- Query for views: views are entries in pg_class with an entry in pg_rewrite, but we avoid
+    -- a seq scan on pg_rewrite by leveraging the fact there is an "internal" row in pg_depend for
+    -- the view...
+    from pg_class as dependent_class
+    join pg_namespace as dependent_namespace on dependent_namespace.oid = dependent_class.relnamespace
+    join pg_depend as dependent_depend on dependent_depend.refobjid = dependent_class.oid
+        and dependent_depend.classid = 'pg_rewrite'::regclass
+        and dependent_depend.refclassid = 'pg_class'::regclass
+        and dependent_depend.deptype = 'i'
+
+    -- ... and via pg_depend (that has a row per column, hence the need for "distinct" above, and
+    -- making sure to exclude the internal row to avoid a view appearing to depend on itself)...
+    join pg_depend as joining_depend on joining_depend.objid = dependent_depend.objid
+        and joining_depend.classid = 'pg_rewrite'::regclass
+        and joining_depend.refclassid = 'pg_class'::regclass
+        and joining_depend.refobjid != dependent_depend.refobjid
+
+    -- ... we can find the tables they query from in pg_class, but excluding system tables. Note we
+    -- don't need need to exclude _dependent_ system tables, because they only query from other
+    -- system tables, and so are automatically excluded by excluding _referenced_ system tables
+    join pg_class as referenced_class on referenced_class.oid = joining_depend.refobjid
+    join pg_namespace as referenced_namespace on referenced_namespace.oid = referenced_class.relnamespace
+        and referenced_namespace.nspname != 'information_schema'
+        and referenced_namespace.nspname not like 'pg\_%'
+
+    order by
+        dependent_schema, dependent_name, referenced_schema, referenced_name;
+[0m11:51:36.092619 [debug] [MainThread]: Opening a new connection, currently in state init
+[0m11:51:36.177946 [debug] [MainThread]: SQL status: SELECT 0 in 0.085 seconds
+[0m11:51:36.181061 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'runnable_timing', 'label': 'ad623746-7e4a-47cd-8343-5c58d58e1581', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202D2C199D0>]}
+[0m11:51:36.181909 [debug] [MainThread]: On master: ROLLBACK
+[0m11:51:36.184093 [debug] [MainThread]: On master: COMMIT
+[0m11:51:36.185281 [debug] [MainThread]: Using postgres connection "master"
+[0m11:51:36.186371 [debug] [MainThread]: On master: COMMIT
+[0m11:51:36.190048 [debug] [MainThread]: SQL status: COMMIT in 0.003 seconds
+[0m11:51:36.191067 [debug] [MainThread]: On master: Close
+[0m11:51:36.205043 [debug] [Thread-1 (]: Began running node model.oceanwatch_transformations.stg_tides
+[0m11:51:36.206599 [info ] [Thread-1 (]: 1 of 1 START sql table model public.stg_tides .................................. [RUN]
+[0m11:51:36.208458 [debug] [Thread-1 (]: Acquiring new postgres connection 'model.oceanwatch_transformations.stg_tides'
+[0m11:51:36.209695 [debug] [Thread-1 (]: Began compiling node model.oceanwatch_transformations.stg_tides
+[0m11:51:36.227827 [debug] [Thread-1 (]: Writing injected SQL for node "model.oceanwatch_transformations.stg_tides"
+[0m11:51:36.230129 [debug] [Thread-1 (]: Began executing node model.oceanwatch_transformations.stg_tides
+[0m11:51:36.390853 [debug] [Thread-1 (]: Writing runtime sql for node "model.oceanwatch_transformations.stg_tides"
+[0m11:51:36.392775 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.stg_tides"
+[0m11:51:36.394116 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.stg_tides"} */
+
+  
+    
+
+  create  table "oceanwatch_db"."public"."stg_tides__dbt_tmp"
+  
+  
+    as
+  
+  (
+    select
+    t::timestamp as observation_time,
+    v::float as tide_height_meters,
+    s::float as residual,
+    current_timestamp as loaded_at
+from "oceanwatch_db"."public"."raw_tides"
+  );
+  
+[0m11:51:36.395404 [debug] [Thread-1 (]: Opening a new connection, currently in state init
+[0m11:51:36.466313 [debug] [Thread-1 (]: Postgres adapter: Postgres error: relation "public.raw_tides" does not exist
+LINE 17: from "oceanwatch_db"."public"."raw_tides"
+              ^
+
+[0m11:51:36.467095 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: ROLLBACK
+[0m11:51:36.469732 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: Close
+[0m11:51:36.483558 [debug] [Thread-1 (]: Database Error in model stg_tides (models\stg_tides.sql)
+  relation "public.raw_tides" does not exist
+  LINE 17: from "oceanwatch_db"."public"."raw_tides"
+                ^
+  compiled code at target\run\oceanwatch_transformations\models\stg_tides.sql
+[0m11:51:36.486727 [debug] [Thread-1 (]: Sending event: {'category': 'dbt', 'action': 'run_model', 'label': 'ad623746-7e4a-47cd-8343-5c58d58e1581', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202CFDD6BA0>]}
+[0m11:51:36.487764 [error] [Thread-1 (]: 1 of 1 ERROR creating sql table model public.stg_tides ......................... [[31mERROR[0m in 0.28s]
+[0m11:51:36.489335 [debug] [Thread-1 (]: Finished running node model.oceanwatch_transformations.stg_tides
+[0m11:51:36.490198 [debug] [Thread-7 (]: Marking all children of 'model.oceanwatch_transformations.stg_tides' to be skipped because of status 'error'.  Reason: Database Error in model stg_tides (models\stg_tides.sql)
+  relation "public.raw_tides" does not exist
+  LINE 17: from "oceanwatch_db"."public"."raw_tides"
+                ^
+  compiled code at target\run\oceanwatch_transformations\models\stg_tides.sql.
+[0m11:51:36.493077 [debug] [MainThread]: On master: COMMIT
+[0m11:51:36.493590 [debug] [MainThread]: Using postgres connection "master"
+[0m11:51:36.494017 [debug] [MainThread]: On master: COMMIT
+[0m11:51:36.494407 [debug] [MainThread]: Opening a new connection, currently in state closed
+[0m11:51:36.566337 [debug] [MainThread]: SQL status: COMMIT in 0.072 seconds
+[0m11:51:36.567283 [debug] [MainThread]: On master: Close
+[0m11:51:36.568592 [debug] [MainThread]: Connection 'master' was properly closed.
+[0m11:51:36.569567 [debug] [MainThread]: Connection 'list_oceanwatch_db' was properly closed.
+[0m11:51:36.570470 [debug] [MainThread]: Connection 'list_oceanwatch_db_public' was properly closed.
+[0m11:51:36.571400 [debug] [MainThread]: Connection 'model.oceanwatch_transformations.stg_tides' was properly closed.
+[0m11:51:36.572613 [info ] [MainThread]: 
+[0m11:51:36.573791 [info ] [MainThread]: Finished running 1 table model in 0 hours 0 minutes and 1.19 seconds (1.19s).
+[0m11:51:36.575121 [debug] [MainThread]: Command end result
+[0m11:51:36.651834 [debug] [MainThread]: Wrote artifact WritableManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\manifest.json
+[0m11:51:36.657882 [debug] [MainThread]: Wrote artifact SemanticManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\semantic_manifest.json
+[0m11:51:36.666393 [debug] [MainThread]: Wrote artifact OsiDocument to D:\oceanwatch-ai\oceanwatch_transformations\target\osi_document.json
+[0m11:51:36.686001 [debug] [MainThread]: Wrote artifact RunExecutionResult to D:\oceanwatch-ai\oceanwatch_transformations\target\run_results.json
+[0m11:51:36.687242 [info ] [MainThread]: 
+[0m11:51:36.688682 [info ] [MainThread]: [31mCompleted with 1 error, 0 partial successes, and 0 warnings:[0m
+[0m11:51:36.690036 [info ] [MainThread]: 
+[0m11:51:36.691476 [error] [MainThread]: [[31mERROR[0m]: in model stg_tides (models\stg_tides.sql)
+[0m11:51:36.693212 [error] [MainThread]:   Database Error in model stg_tides (models\stg_tides.sql)
+  relation "public.raw_tides" does not exist
+  LINE 17: from "oceanwatch_db"."public"."raw_tides"
+                ^
+  compiled code at target\run\oceanwatch_transformations\models\stg_tides.sql
+[0m11:51:36.694539 [info ] [MainThread]: 
+[0m11:51:36.698019 [info ] [MainThread]:   compiled code at target\compiled\oceanwatch_transformations\models\stg_tides.sql
+[0m11:51:36.699558 [info ] [MainThread]: 
+[0m11:51:36.701410 [info ] [MainThread]: Done. PASS=0 WARN=0 ERROR=1 SKIP=0 NO-OP=0 REUSED=0 TOTAL=1
+[0m11:51:36.704983 [debug] [MainThread]: Command `dbt run` failed at 11:51:36.704581 after 6.35 seconds
+[0m11:51:36.706064 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202CB9A5770>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202D2BB6BA0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x00000202D2C29E50>]}
+[0m11:51:36.707126 [debug] [MainThread]: Flushing usage events
+[0m11:51:38.546345 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m12:11:52.161485 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001D82DA2D400>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001D82B2ECE10>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001D8303579D0>]}
+
+
+============================== 12:11:52.246570 | d2468dea-63d1-4d9f-952b-e36300e8d0e6 ==============================
+[0m12:11:52.246570 [info ] [MainThread]: Running with dbt=1.12.0
+[0m12:11:52.247635 [debug] [MainThread]: running dbt with arguments {'maximum_seed_size_mib': '1', 'no_print': 'None', 'version_check': 'True', 'target_path': 'None', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'static_parser': 'True', 'printer_width': '80', 'write_json': 'True', 'empty': 'False', 'log_cache_events': 'False', 'introspect': 'True', 'cache_selected_only': 'False', 'fail_fast': 'False', 'debug': 'False', 'log_format': 'default', 'partial_parse': 'True', 'send_anonymous_usage_stats': 'True', 'quiet': 'False', 'warn_error': 'None', 'profiles_dir': 'C:\\Users\\Josphat\\.dbt', 'invocation_command': 'dbt run', 'hints_enabled': 'True', 'indirect_selection': 'eager', 'use_experimental_parser': 'False', 'use_colors': 'True', 'log_path': 'D:\\oceanwatch-ai\\oceanwatch_transformations\\logs'}
+[0m12:11:52.564638 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'project_id', 'label': 'd2468dea-63d1-4d9f-952b-e36300e8d0e6', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001D830312780>]}
+[0m12:11:52.711414 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'adapter_info', 'label': 'd2468dea-63d1-4d9f-952b-e36300e8d0e6', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001D82B24BDF0>]}
+[0m12:11:52.713582 [info ] [MainThread]: Registered adapter: postgres=1.11.0
+[0m12:11:53.166611 [debug] [MainThread]: checksum: d838552da3c4fb83de3a177715b55e727b6430cdbf760b02e22145e5cf1c667e, vars: {}, profile: oceanwatch_transformations, target: dev, version: 1.12.0
+[0m12:11:53.462027 [debug] [MainThread]: Partial parsing enabled: 0 files deleted, 0 files added, 0 files changed.
+[0m12:11:53.463118 [debug] [MainThread]: Nothing changed, skipping partial parsing.
+[0m12:11:53.464117 [debug] [MainThread]: Partial parsing enabled, no changes found, skipping parsing
+[0m12:11:53.491519 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'load_project', 'label': 'd2468dea-63d1-4d9f-952b-e36300e8d0e6', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001D83081FA50>]}
+[0m12:11:54.025469 [debug] [MainThread]: Wrote artifact WritableManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\manifest.json
+[0m12:11:54.034877 [debug] [MainThread]: Wrote artifact SemanticManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\semantic_manifest.json
+[0m12:11:54.119422 [debug] [MainThread]: Wrote artifact OsiDocument to D:\oceanwatch-ai\oceanwatch_transformations\target\osi_document.json
+[0m12:11:54.176328 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'resource_counts', 'label': 'd2468dea-63d1-4d9f-952b-e36300e8d0e6', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001D830A92300>]}
+[0m12:11:54.179375 [info ] [MainThread]: Found 1 model, 1 source, 477 macros
+[0m12:11:54.181561 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'runnable_timing', 'label': 'd2468dea-63d1-4d9f-952b-e36300e8d0e6', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001D830AC1EF0>]}
+[0m12:11:54.187780 [info ] [MainThread]: 
+[0m12:11:54.190726 [info ] [MainThread]: Concurrency: 4 threads (target='dev')
+[0m12:11:54.197212 [info ] [MainThread]: 
+[0m12:11:54.203805 [debug] [MainThread]: Acquiring new postgres connection 'master'
+[0m12:11:54.207866 [debug] [ThreadPool]: Acquiring new postgres connection 'list_oceanwatch_db'
+[0m12:11:54.473364 [debug] [ThreadPool]: Using postgres connection "list_oceanwatch_db"
+[0m12:11:54.474425 [debug] [ThreadPool]: On list_oceanwatch_db: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "list_oceanwatch_db"} */
+
+    select distinct nspname from pg_namespace
+  
+[0m12:11:54.475420 [debug] [ThreadPool]: Opening a new connection, currently in state init
+[0m12:11:54.554185 [debug] [ThreadPool]: SQL status: SELECT 7 in 0.079 seconds
+[0m12:11:54.556337 [debug] [ThreadPool]: On list_oceanwatch_db: Close
+[0m12:11:54.561419 [debug] [ThreadPool]: Acquiring new postgres connection 'list_oceanwatch_db_public'
+[0m12:11:54.577356 [debug] [ThreadPool]: Using postgres connection "list_oceanwatch_db_public"
+[0m12:11:54.578568 [debug] [ThreadPool]: On list_oceanwatch_db_public: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "list_oceanwatch_db_public"} */
+select
+      'oceanwatch_db' as database,
+      tablename as name,
+      schemaname as schema,
+      'table' as type
+    from pg_tables
+    where schemaname ilike 'public'
+    union all
+    select
+      'oceanwatch_db' as database,
+      viewname as name,
+      schemaname as schema,
+      'view' as type
+    from pg_views
+    where schemaname ilike 'public'
+    union all
+    select
+      'oceanwatch_db' as database,
+      matviewname as name,
+      schemaname as schema,
+      'materialized_view' as type
+    from pg_matviews
+    where schemaname ilike 'public'
+    union all
+    select distinct
+     'oceanwatch_db' as database,
+     proname as name,
+     ns.nspname as schema,
+     'function' as type
+    from pg_proc
+     join pg_namespace as ns on pronamespace = ns.oid
+    where ns.nspname ilike 'public'
+  
+[0m12:11:54.579756 [debug] [ThreadPool]: Opening a new connection, currently in state init
+[0m12:11:54.676848 [debug] [ThreadPool]: SQL status: SELECT 556 in 0.097 seconds
+[0m12:11:54.703313 [debug] [ThreadPool]: On list_oceanwatch_db_public: ROLLBACK
+[0m12:11:54.705975 [debug] [ThreadPool]: On list_oceanwatch_db_public: Close
+[0m12:11:54.886173 [debug] [MainThread]: Using postgres connection "master"
+[0m12:11:54.887465 [debug] [MainThread]: On master: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "master"} */
+select distinct
+        dependent_namespace.nspname as dependent_schema,
+        dependent_class.relname as dependent_name,
+        referenced_namespace.nspname as referenced_schema,
+        referenced_class.relname as referenced_name
+
+    -- Query for views: views are entries in pg_class with an entry in pg_rewrite, but we avoid
+    -- a seq scan on pg_rewrite by leveraging the fact there is an "internal" row in pg_depend for
+    -- the view...
+    from pg_class as dependent_class
+    join pg_namespace as dependent_namespace on dependent_namespace.oid = dependent_class.relnamespace
+    join pg_depend as dependent_depend on dependent_depend.refobjid = dependent_class.oid
+        and dependent_depend.classid = 'pg_rewrite'::regclass
+        and dependent_depend.refclassid = 'pg_class'::regclass
+        and dependent_depend.deptype = 'i'
+
+    -- ... and via pg_depend (that has a row per column, hence the need for "distinct" above, and
+    -- making sure to exclude the internal row to avoid a view appearing to depend on itself)...
+    join pg_depend as joining_depend on joining_depend.objid = dependent_depend.objid
+        and joining_depend.classid = 'pg_rewrite'::regclass
+        and joining_depend.refclassid = 'pg_class'::regclass
+        and joining_depend.refobjid != dependent_depend.refobjid
+
+    -- ... we can find the tables they query from in pg_class, but excluding system tables. Note we
+    -- don't need need to exclude _dependent_ system tables, because they only query from other
+    -- system tables, and so are automatically excluded by excluding _referenced_ system tables
+    join pg_class as referenced_class on referenced_class.oid = joining_depend.refobjid
+    join pg_namespace as referenced_namespace on referenced_namespace.oid = referenced_class.relnamespace
+        and referenced_namespace.nspname != 'information_schema'
+        and referenced_namespace.nspname not like 'pg\_%'
+
+    order by
+        dependent_schema, dependent_name, referenced_schema, referenced_name;
+[0m12:11:54.888719 [debug] [MainThread]: Opening a new connection, currently in state init
+[0m12:11:54.990828 [debug] [MainThread]: SQL status: SELECT 0 in 0.102 seconds
+[0m12:11:54.993313 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'runnable_timing', 'label': 'd2468dea-63d1-4d9f-952b-e36300e8d0e6', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001D830C6AB60>]}
+[0m12:11:54.994088 [debug] [MainThread]: On master: ROLLBACK
+[0m12:11:54.996564 [debug] [MainThread]: On master: COMMIT
+[0m12:11:54.997789 [debug] [MainThread]: Using postgres connection "master"
+[0m12:11:54.998934 [debug] [MainThread]: On master: COMMIT
+[0m12:11:55.002796 [debug] [MainThread]: SQL status: COMMIT in 0.003 seconds
+[0m12:11:55.003527 [debug] [MainThread]: On master: Close
+[0m12:11:55.017001 [debug] [Thread-1 (]: Began running node model.oceanwatch_transformations.stg_tides
+[0m12:11:55.018645 [info ] [Thread-1 (]: 1 of 1 START sql table model public.stg_tides .................................. [RUN]
+[0m12:11:55.020662 [debug] [Thread-1 (]: Acquiring new postgres connection 'model.oceanwatch_transformations.stg_tides'
+[0m12:11:55.022008 [debug] [Thread-1 (]: Began compiling node model.oceanwatch_transformations.stg_tides
+[0m12:11:55.042399 [debug] [Thread-1 (]: Writing injected SQL for node "model.oceanwatch_transformations.stg_tides"
+[0m12:11:55.044132 [debug] [Thread-1 (]: Began executing node model.oceanwatch_transformations.stg_tides
+[0m12:11:55.191046 [debug] [Thread-1 (]: Writing runtime sql for node "model.oceanwatch_transformations.stg_tides"
+[0m12:11:55.192851 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.stg_tides"
+[0m12:11:55.194198 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.stg_tides"} */
+
+  
+    
+
+  create  table "oceanwatch_db"."public"."stg_tides__dbt_tmp"
+  
+  
+    as
+  
+  (
+    select
+    t::timestamp as observation_time,
+    v::float as tide_height_meters,
+    s::float as residual,
+    current_timestamp as loaded_at
+from "oceanwatch_db"."public"."raw_tides"
+  );
+  
+[0m12:11:55.195457 [debug] [Thread-1 (]: Opening a new connection, currently in state init
+[0m12:11:55.297365 [debug] [Thread-1 (]: SQL status: SELECT 480 in 0.102 seconds
+[0m12:11:55.320098 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.stg_tides"
+[0m12:11:55.320882 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.stg_tides"} */
+alter table "oceanwatch_db"."public"."stg_tides__dbt_tmp" rename to "stg_tides"
+[0m12:11:55.325879 [debug] [Thread-1 (]: SQL status: ALTER TABLE in 0.004 seconds
+[0m12:11:55.375969 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: COMMIT
+[0m12:11:55.377026 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.stg_tides"
+[0m12:11:55.378070 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: COMMIT
+[0m12:11:55.420057 [debug] [Thread-1 (]: SQL status: COMMIT in 0.041 seconds
+[0m12:11:55.433223 [debug] [Thread-1 (]: Applying DROP to: "oceanwatch_db"."public"."stg_tides__dbt_backup"
+[0m12:11:55.443282 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.stg_tides"
+[0m12:11:55.444118 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: /* {"app": "dbt", "dbt_version": "1.12.0", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.stg_tides"} */
+drop table if exists "oceanwatch_db"."public"."stg_tides__dbt_backup" cascade
+[0m12:11:55.446744 [debug] [Thread-1 (]: SQL status: DROP TABLE in 0.002 seconds
+[0m12:11:55.453606 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: Close
+[0m12:11:55.459024 [debug] [Thread-1 (]: Sending event: {'category': 'dbt', 'action': 'run_model', 'label': 'd2468dea-63d1-4d9f-952b-e36300e8d0e6', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001D830AD2D50>]}
+[0m12:11:55.461467 [info ] [Thread-1 (]: 1 of 1 OK created sql table model public.stg_tides ............................. [[32mSELECT 480[0m in 0.43s]
+[0m12:11:55.464520 [debug] [Thread-1 (]: Finished running node model.oceanwatch_transformations.stg_tides
+[0m12:11:55.484913 [debug] [MainThread]: On master: COMMIT
+[0m12:11:55.486030 [debug] [MainThread]: Using postgres connection "master"
+[0m12:11:55.486955 [debug] [MainThread]: On master: COMMIT
+[0m12:11:55.487872 [debug] [MainThread]: Opening a new connection, currently in state closed
+[0m12:11:55.572933 [debug] [MainThread]: SQL status: COMMIT in 0.085 seconds
+[0m12:11:55.574002 [debug] [MainThread]: On master: Close
+[0m12:11:55.575319 [debug] [MainThread]: Connection 'master' was properly closed.
+[0m12:11:55.576286 [debug] [MainThread]: Connection 'list_oceanwatch_db' was properly closed.
+[0m12:11:55.577184 [debug] [MainThread]: Connection 'list_oceanwatch_db_public' was properly closed.
+[0m12:11:55.578001 [debug] [MainThread]: Connection 'model.oceanwatch_transformations.stg_tides' was properly closed.
+[0m12:11:55.578964 [info ] [MainThread]: 
+[0m12:11:55.580520 [info ] [MainThread]: Finished running 1 table model in 0 hours 0 minutes and 1.38 seconds (1.38s).
+[0m12:11:55.583485 [debug] [MainThread]: Command end result
+[0m12:11:55.717667 [debug] [MainThread]: Wrote artifact WritableManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\manifest.json
+[0m12:11:55.725718 [debug] [MainThread]: Wrote artifact SemanticManifest to D:\oceanwatch-ai\oceanwatch_transformations\target\semantic_manifest.json
+[0m12:11:55.735433 [debug] [MainThread]: Wrote artifact OsiDocument to D:\oceanwatch-ai\oceanwatch_transformations\target\osi_document.json
+[0m12:11:55.753645 [debug] [MainThread]: Wrote artifact RunExecutionResult to D:\oceanwatch-ai\oceanwatch_transformations\target\run_results.json
+[0m12:11:55.754599 [info ] [MainThread]: 
+[0m12:11:55.755875 [info ] [MainThread]: [32mCompleted successfully[0m
+[0m12:11:55.757349 [info ] [MainThread]: 
+[0m12:11:55.758396 [info ] [MainThread]: Done. PASS=1 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=1
+[0m12:11:55.760099 [debug] [MainThread]: Command `dbt run` succeeded at 12:11:55.759855 after 3.81 seconds
+[0m12:11:55.761124 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001D8312CF280>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001D829E65770>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001D8303FB070>]}
+[0m12:11:55.762078 [debug] [MainThread]: Flushing usage events
+[0m12:11:57.768007 [debug] [MainThread]: An error was encountered while trying to flush usage events
