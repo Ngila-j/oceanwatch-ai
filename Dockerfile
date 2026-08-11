@@ -13,9 +13,10 @@ RUN apt-get update && \
 USER airflow
 
 RUN pip install --no-cache-dir \
-    pandas \
+    "numpy>=2.1" \
+    "pandas>=2.2" \
+    "sqlalchemy>=1.4,<2.0" \
     requests \
-    sqlalchemy \
     psycopg2-binary \
     duckdb \
     dbt-core \
@@ -24,4 +25,5 @@ RUN pip install --no-cache-dir \
     copernicusmarine \
     xarray \
     netCDF4 \
-    h5netcdf
+    h5netcdf \
+    python-dotenv

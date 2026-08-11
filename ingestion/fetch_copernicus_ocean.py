@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 import pandas as pd
-from sqlalchemy import create_engine
+import duckdb
 from dotenv import load_dotenv
 import copernicusmarine
 import xarray as xr
@@ -11,30 +11,21 @@ import xarray as xr
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Try multiple possible locations for the .env file
 possible_env_paths = [
     Path(__file__).parent / ".env",
     Path("/opt/airflow/ingestion/.env"),
-    Path("/opt/airflow/data/.env"),
 ]
 
-env_loaded = False
 for env_path in possible_env_paths:
     if env_path.exists():
         load_dotenv(env_path)
         logger.info(f"Loaded credentials from {env_path}")
-        env_loaded = True
         break
-
-if not env_loaded:
-    logger.warning("No .env file found in expected locations")
 
 USERNAME = os.getenv("COPERNICUS_USERNAME")
 PASSWORD = os.getenv("COPERNICUS_PASSWORD")
-
 logger.info(f"USERNAME set: {bool(USERNAME)}, PASSWORD set: {bool(PASSWORD)}")
 
-# Western Indian Ocean / Kenya EEZ bounding box (Mombasa focused)
 MIN_LON, MAX_LON = 39.0, 45.0
 MIN_LAT, MAX_LAT = -5.0, 2.0
 
@@ -51,7 +42,6 @@ def get_db_uri() -> str:
 
 
 def fetch_sst(start_date: str, end_date: str) -> Path:
-    """Fetch Sea Surface Temperature (thetao) for the region."""
     logger.info("Fetching SST (thetao) from Copernicus Marine...")
     output_file = OUTPUT_DIR / f"sst_{start_date}_{end_date}.nc"
 
@@ -70,14 +60,12 @@ def fetch_sst(start_date: str, end_date: str) -> Path:
         output_directory=str(OUTPUT_DIR),
         username=USERNAME,
         password=PASSWORD,
-        force_download=True,
     )
     logger.info(f"SST saved to {output_file}")
     return output_file
 
 
 def fetch_chlorophyll(start_date: str, end_date: str) -> Path:
-    """Fetch Chlorophyll-a for the region."""
     logger.info("Fetching Chlorophyll-a from Copernicus Marine...")
     output_file = OUTPUT_DIR / f"chl_{start_date}_{end_date}.nc"
 
@@ -94,14 +82,12 @@ def fetch_chlorophyll(start_date: str, end_date: str) -> Path:
         output_directory=str(OUTPUT_DIR),
         username=USERNAME,
         password=PASSWORD,
-        force_download=True,
     )
     logger.info(f"Chlorophyll saved to {output_file}")
     return output_file
 
 
 def load_summary_to_postgres(nc_path: Path, variable: str, table_name: str):
-    """Create a simple tabular summary and load into Postgres."""
     logger.info(f"Creating summary for {variable} -> {table_name}")
     ds = xr.open_dataset(nc_path)
 
@@ -109,14 +95,18 @@ def load_summary_to_postgres(nc_path: Path, variable: str, table_name: str):
         ds = ds.isel(depth=0)
 
     da = ds[variable]
-
     df = da.mean(dim=["latitude", "longitude"]).to_dataframe().reset_index()
     df = df.rename(columns={variable: f"{variable}_mean"})
     df["source_file"] = nc_path.name
     df["loaded_at"] = datetime.utcnow()
 
-    engine = create_engine(get_db_uri())
-    df.to_sql(table_name, engine, if_exists="append", index=False)
+    db_uri = get_db_uri()
+    con = duckdb.connect()
+    con.execute("INSTALL postgres; LOAD postgres;")
+    con.execute(f"ATTACH '{db_uri}' AS pg (TYPE POSTGRES);")
+    con.register("temp_df", df)
+    con.execute(f"CREATE OR REPLACE TABLE pg.public.{table_name} AS SELECT * FROM temp_df;")
+    con.close()
     logger.info(f"Loaded {len(df)} summary rows into {table_name}")
 
 
@@ -133,11 +123,9 @@ def main():
     logger.info(f"Date range: {start_date} -> {end_date}")
     logger.info(f"Bounding box: lon [{MIN_LON}, {MAX_LON}], lat [{MIN_LAT}, {MAX_LAT}]")
 
-    # 1. SST
     sst_file = fetch_sst(start_date, end_date)
     load_summary_to_postgres(sst_file, "thetao", "raw_sst_daily")
 
-    # 2. Chlorophyll
     chl_file = fetch_chlorophyll(start_date, end_date)
     load_summary_to_postgres(chl_file, "CHL", "raw_chl_daily")
 
