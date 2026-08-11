@@ -1,8 +1,8 @@
-name: oceanwatch_transformations
-version: '1.0.0'
+﻿name: "oceanwatch_transformations"
+version: "1.0.0"
 config-version: 2
 
-profile: oceanwatch_transformations
+profile: "oceanwatch_transformations"
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]

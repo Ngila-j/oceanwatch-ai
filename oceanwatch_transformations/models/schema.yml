@@ -1,0 +1,42 @@
+version: 2
+
+sources:
+  - name: ocean_raw
+    schema: public
+    tables:
+      - name: raw_tides
+        description: "Raw tide data ingested from NOAA"
+        columns:
+          - name: t
+            description: "Observation timestamp"
+            tests:
+              - not_null
+          - name: v
+            description: "Water level in meters"
+            tests:
+              - not_null
+
+models:
+  - name: stg_tides
+    description: "Cleaned and typed tide observations"
+    columns:
+      - name: observation_time
+        description: "Timestamp of the tide observation"
+        tests:
+          - not_null
+          - unique
+      - name: tide_height_meters
+        description: "Water level in meters"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: -5
+                max_value: 10
+                inclusive: true
+      - name: residual
+        description: "Sigma / residual value"
+      - name: loaded_at
+        description: "When the record was loaded by dbt"
+        tests:
+          - not_null

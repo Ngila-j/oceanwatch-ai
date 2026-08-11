@@ -20,4 +20,8 @@ RUN pip install --no-cache-dir \
     duckdb \
     dbt-core \
     dbt-postgres \
-    dbt-duckdb
+    dbt-duckdb \
+    copernicusmarine \
+    xarray \
+    netCDF4 \
+    h5netcdf
