@@ -1,46 +1,58 @@
-import os
-from datetime import datetime
-import pandas as pd
-from sqlalchemy import create_engine, text
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.bash import BashOperator
 
-def run_oceanwatch_etl():
-    # Database connection string from your docker-compose environment
-    db_conn_str = "postgresql+psycopg2://postgres:password@postgres:5432/oceanwatch_db"
-    engine = create_engine(db_conn_str)
+default_args = {
+    "owner": "oceanwatch",
+    "depends_on_past": False,
+    "email_on_failure": False,
+    "retries": 1,
+    "retry_delay": timedelta(minutes=5),
+}
 
-    print("Extracting environmental/marine data...")
-    # Example dataset or API extraction logic for Oceanwatch AI
-    data = {
-        'station_id': ['STN_001', 'STN_002', 'STN_003'],
-        'latitude': [-3.386, -4.043, -3.550],
-        'longitude': [39.983, 39.668, 39.800],
-        'water_temperature_c': [26.5, 28.1, 27.4],
-        'salinity_psu': [35.2, 34.8, 35.0],
-        'timestamp': [datetime.utcnow(), datetime.utcnow(), datetime.utcnow()]
-    }
-    
-    df = pd.DataFrame(data)
+with DAG(
+    dag_id="oceanwatch_full_pipeline",
+    default_args=default_args,
+    description="Oceanwatch pipeline: Ingest → Transform → Alerts",
+    schedule_interval="@daily",
+    start_date=datetime(2026, 1, 1),
+    catchup=False,
+    tags=["oceanwatch", "ingestion", "dbt", "alerts"],
+) as dag:
 
-    print("Transforming data...")
-    # Clean or format data if needed
-    df['status'] = 'processed'
+    fetch_noaa = BashOperator(
+        task_id="fetch_ocean_data",
+        bash_command="python /opt/airflow/ingestion/fetch_ocean_data.py",
+    )
 
-    print("Loading data into PostgreSQL/PostGIS...")
-    # Write dataframe to database table
-    with engine.begin() as connection:
-        df.to_sql('marine_observations', con=connection, if_exists='append', index=False)
-        
-        # Optional: Convert lat/long into PostGIS spatial geometry points
-        connection.execute(text("""
-            ALTER TABLE marine_observations 
-            ADD COLUMN IF NOT EXISTS geom geometry(Point, 4326);
-            
-            UPDATE marine_observations 
-            SET geom = ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)
-            WHERE geom IS NULL;
-        >"))
+    fetch_copernicus = BashOperator(
+        task_id="fetch_copernicus_data",
+        bash_command="python /opt/airflow/ingestion/fetch_copernicus_ocean.py",
+    )
 
-    print("Oceanwatch ETL pipeline completed successfully!")
+    stage_with_duckdb = BashOperator(
+        task_id="stage_with_duckdb",
+        bash_command="python /opt/airflow/ingestion/stage_tides_duckdb.py",
+    )
 
-if __name__ == "__main__":
-    run_oceanwatch_etl()
+    dbt_deps = BashOperator(
+        task_id="dbt_deps",
+        bash_command="cd /opt/airflow/oceanwatch_transformations && dbt deps --profiles-dir /opt/airflow/oceanwatch_transformations",
+    )
+
+    run_dbt = BashOperator(
+        task_id="run_dbt_models",
+        bash_command="cd /opt/airflow/oceanwatch_transformations && dbt run --profiles-dir /opt/airflow/oceanwatch_transformations",
+    )
+
+    test_dbt = BashOperator(
+        task_id="test_dbt_models",
+        bash_command="cd /opt/airflow/oceanwatch_transformations && dbt test --profiles-dir /opt/airflow/oceanwatch_transformations",
+    )
+
+    generate_alerts = BashOperator(
+        task_id="generate_operational_alerts",
+        bash_command="python /opt/airflow/ingestion/generate_alerts.py",
+    )
+
+    [fetch_noaa, fetch_copernicus] >> stage_with_duckdb >> dbt_deps >> run_dbt >> test_dbt >> generate_alerts

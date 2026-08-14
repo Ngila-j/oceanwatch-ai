@@ -26,6 +26,7 @@ sources:
           - name: time
             tests: [not_null]
           - name: CHL_mean
+            quote: true          # important – keeps the original case
             tests: [not_null]
 
 models:
@@ -52,13 +53,9 @@ models:
         tests: [not_null, unique]
 
   - name: fact_ocean_conditions
-    description: "Daily ocean conditions (SST + Chlorophyll) for the region"
+    description: "Daily ocean conditions (SST + Chlorophyll + Tides)"
     columns:
       - name: date_key
         tests: [not_null]
       - name: location_key
         tests: [not_null]
-      - name: sst_celsius
-        description: "Sea Surface Temperature in Celsius"
-      - name: chlorophyll_mg_m3
-        description: "Chlorophyll-a concentration"
