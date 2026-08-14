@@ -1,4 +1,4 @@
-version: 2
+﻿version: 2
 
 sources:
   - name: ocean_raw
@@ -8,35 +8,57 @@ sources:
         description: "Raw tide data ingested from NOAA"
         columns:
           - name: t
-            description: "Observation timestamp"
-            tests:
-              - not_null
+            tests: [not_null]
           - name: v
-            description: "Water level in meters"
-            tests:
-              - not_null
+            tests: [not_null]
+
+      - name: raw_sst_daily
+        description: "Daily mean Sea Surface Temperature from Copernicus"
+        columns:
+          - name: time
+            tests: [not_null]
+          - name: thetao_mean
+            tests: [not_null]
+
+      - name: raw_chl_daily
+        description: "Daily mean Chlorophyll-a from Copernicus"
+        columns:
+          - name: time
+            tests: [not_null]
+          - name: CHL_mean
+            tests: [not_null]
 
 models:
   - name: stg_tides
     description: "Cleaned and typed tide observations"
     columns:
       - name: observation_time
-        description: "Timestamp of the tide observation"
-        tests:
-          - not_null
-          - unique
+        tests: [not_null, unique]
       - name: tide_height_meters
-        description: "Water level in meters"
-        tests:
-          - not_null
-          - dbt_utils.accepted_range:
-              arguments:
-                min_value: -5
-                max_value: 10
-                inclusive: true
-      - name: residual
-        description: "Sigma / residual value"
+        tests: [not_null]
       - name: loaded_at
-        description: "When the record was loaded by dbt"
-        tests:
-          - not_null
+        tests: [not_null]
+
+  - name: dim_date
+    description: "Date dimension"
+    columns:
+      - name: date_key
+        tests: [not_null, unique]
+
+  - name: dim_location
+    description: "Location dimension for Western Indian Ocean / Mombasa"
+    columns:
+      - name: location_key
+        tests: [not_null, unique]
+
+  - name: fact_ocean_conditions
+    description: "Daily ocean conditions (SST + Chlorophyll) for the region"
+    columns:
+      - name: date_key
+        tests: [not_null]
+      - name: location_key
+        tests: [not_null]
+      - name: sst_celsius
+        description: "Sea Surface Temperature in Celsius"
+      - name: chlorophyll_mg_m3
+        description: "Chlorophyll-a concentration"

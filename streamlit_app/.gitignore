@@ -1,19 +1,33 @@
-﻿.env
+# Secrets
+.env
 *.env
 ingestion/.env
+
+# Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
 venv/
+
+# Airflow / dbt
 logs/
+airflow/logs/
 oceanwatch_transformations/target/
 oceanwatch_transformations/dbt_packages/
 oceanwatch_transformations/logs/
+
+# Data (large / generated)
 data/raw/
 *.nc
 *.parquet
 *.duckdb
+
+# IDE / OS
 .vscode/
 .idea/
 .DS_Store
+Thumbs.db
+
+# Streamlit
 .streamlit/secrets.toml
