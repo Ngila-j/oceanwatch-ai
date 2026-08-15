@@ -13,11 +13,11 @@ default_args = {
 with DAG(
     dag_id="oceanwatch_full_pipeline",
     default_args=default_args,
-    description="Oceanwatch daily pipeline: NOAA + Copernicus -> DuckDB -> dbt",
+    description="OceanWatch full pipeline: Ingest → Transform → Operational Intelligence",
     schedule_interval="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=["oceanwatch", "ingestion", "dbt", "copernicus"],
+    tags=["oceanwatch", "ingestion", "dbt", "alerts", "port", "fishing"],
 ) as dag:
 
     fetch_noaa = BashOperator(
@@ -50,4 +50,26 @@ with DAG(
         bash_command="cd /opt/airflow/oceanwatch_transformations && dbt test --profiles-dir /opt/airflow/oceanwatch_transformations",
     )
 
+    init_schema = BashOperator(
+        task_id="init_operational_schema",
+        bash_command="python /opt/airflow/ingestion/init_operational_schema.py",
+    )
+
+    seed_port = BashOperator(
+        task_id="seed_port_activity",
+        bash_command="python /opt/airflow/ingestion/seed_port_activity.py",
+    )
+
+    seed_fishing = BashOperator(
+        task_id="seed_fishing_activity",
+        bash_command="python /opt/airflow/ingestion/seed_fishing_activity.py",
+    )
+
+    run_intelligence = BashOperator(
+        task_id="run_operational_intelligence",
+        bash_command="python /opt/airflow/ingestion/run_operational_intelligence.py",
+    )
+
+    # Flow
     [fetch_noaa, fetch_copernicus] >> stage_with_duckdb >> dbt_deps >> run_dbt >> test_dbt
+    run_dbt >> init_schema >> [seed_port, seed_fishing] >> run_intelligence
