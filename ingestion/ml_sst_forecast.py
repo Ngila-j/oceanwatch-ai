@@ -1,11 +1,6 @@
 """
 OceanWatch AI — Production SST Forecasting Pipeline
-- Feature engineering (lags, rolling, calendar)
-- Models: Naive baseline + Ridge (sklearn)
-- Temporal train/test split
-- MAE / RMSE evaluation
-- Writes forecasts + metrics to Postgres
-- Saves metrics JSON for the dashboard
+Features → Naive vs Ridge → MAE/RMSE → artifacts → Postgres
 """
 
 import os
@@ -21,9 +16,14 @@ import duckdb
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Paths (work both in container and on host)
 ARTIFACT_DIR = Path("/opt/airflow/models/sst") if Path("/opt/airflow").exists() else Path("models/sst")
 ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
+
+FEATURE_COLS = [
+    "sst_lag_1", "sst_lag_2", "sst_lag_3", "sst_lag_7",
+    "sst_roll_mean_3", "sst_roll_mean_7", "sst_roll_std_3", "sst_roll_std_7",
+    "day_of_year", "month", "sin_doy", "cos_doy",
+]
 
 
 def get_db_uri() -> str:
@@ -44,50 +44,40 @@ def load_sst_series(con) -> pd.DataFrame:
     if df.empty:
         return df
     df["date"] = pd.to_datetime(df["date"])
-    df = df.drop_duplicates("date").sort_values("date").reset_index(drop=True)
-    return df
+    return df.drop_duplicates("date").sort_values("date").reset_index(drop=True)
 
 
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Lags, rolling stats, calendar features."""
     df = df.copy()
     df["mean_sst"] = df["mean_sst"].astype(float)
-
     for lag in [1, 2, 3, 7]:
         df[f"sst_lag_{lag}"] = df["mean_sst"].shift(lag)
-
     for w in [3, 7]:
         df[f"sst_roll_mean_{w}"] = df["mean_sst"].rolling(w).mean()
         df[f"sst_roll_std_{w}"] = df["mean_sst"].rolling(w).std()
-
     df["day_of_year"] = df["date"].dt.dayofyear
     df["month"] = df["date"].dt.month
     df["sin_doy"] = np.sin(2 * np.pi * df["day_of_year"] / 365.25)
     df["cos_doy"] = np.cos(2 * np.pi * df["day_of_year"] / 365.25)
-
     return df
 
 
 def temporal_split(df: pd.DataFrame, test_days: int = 3):
-    """Last N days = test; rest = train. No shuffle."""
     if len(df) <= test_days + 5:
         test_days = max(1, len(df) // 4)
-    train = df.iloc[:-test_days].copy()
-    test = df.iloc[-test_days:].copy()
-    return train, test
+    return df.iloc[:-test_days].copy(), df.iloc[-test_days:].copy()
 
 
 def mae(y_true, y_pred):
-    return float(np.mean(np.abs(np.array(y_true) - np.array(y_pred))))
+    return float(np.mean(np.abs(np.asarray(y_true) - np.asarray(y_pred))))
 
 
 def rmse(y_true, y_pred):
-    return float(np.sqrt(np.mean((np.array(y_true) - np.array(y_pred)) ** 2)))
+    return float(np.sqrt(np.mean((np.asarray(y_true) - np.asarray(y_pred)) ** 2)))
 
 
 def evaluate_naive(train, test):
-    """Naive: forecast = last observed value (persistence)."""
-    last = train["mean_sst"].iloc[-1]
+    last = float(train["mean_sst"].iloc[-1])
     preds = [last] * len(test)
     return {
         "model": "naive_persistence",
@@ -98,12 +88,11 @@ def evaluate_naive(train, test):
 
 
 def evaluate_ridge(train, test, feature_cols):
-    """Ridge regression on lag/rolling/calendar features."""
     try:
         from sklearn.linear_model import Ridge
         from sklearn.preprocessing import StandardScaler
     except ImportError:
-        logger.warning("sklearn not available — skipping Ridge model")
+        logger.warning("sklearn not available — skipping Ridge")
         return None
 
     train_c = train.dropna(subset=feature_cols + ["mean_sst"])
@@ -132,45 +121,42 @@ def evaluate_ridge(train, test, feature_cols):
     }
 
 
-def recursive_forecast(df, model_result, horizon=7):
-    """Generate horizon-day forecast using the best model."""
+def recursive_forecast(df: pd.DataFrame, best: dict, horizon: int = 7):
     feature_cols = [
         "sst_lag_1", "sst_lag_2", "sst_lag_3", "sst_lag_7",
         "sst_roll_mean_3", "sst_roll_mean_7", "sst_roll_std_3", "sst_roll_std_7",
         "day_of_year", "month", "sin_doy", "cos_doy",
     ]
-
     history = df[["date", "mean_sst"]].copy()
     last_date = history["date"].max()
     forecasts = []
 
-    if model_result["model"] == "naive_persistence":
-        last_val = history["mean_sst"].iloc[-1]
+    if best["model"] == "naive_persistence":
+        last_val = float(history["mean_sst"].iloc[-1])
         for d in range(1, horizon + 1):
             forecasts.append({
                 "forecast_for_date": (last_date + timedelta(days=d)).date(),
-                "predicted_sst": round(float(last_val), 3),
-                "lower_bound": round(float(last_val - 0.2 * d), 3),
-                "upper_bound": round(float(last_val + 0.2 * d), 3),
+                "predicted_sst": round(last_val, 3),
+                "lower_bound": round(last_val - 0.2 * d, 3),
+                "upper_bound": round(last_val + 0.2 * d, 3),
             })
         return forecasts
 
-    # Ridge recursive
-    model = model_result["model_obj"]
-    scaler = model_result["scaler"]
+    model = best["model_obj"]
+    scaler = best["scaler"]
     series = history["mean_sst"].tolist()
     dates = list(history["date"])
 
     for d in range(1, horizon + 1):
         temp = pd.DataFrame({"date": dates, "mean_sst": series})
         temp = engineer_features(temp)
-        row = temp.iloc[[-1]]
-        # fill any remaining NaN from short history
-        row = row.fillna(method="ffill", axis=1).fillna(series[-1])
+        row = temp.iloc[[-1]].copy()
+        for c in feature_cols:
+            if c not in row.columns or pd.isna(row[c].iloc[0]):
+                row[c] = series[-1] if "lag" in c or "roll" in c else 0
         X = scaler.transform(row[feature_cols])
         pred = float(model.predict(X)[0])
         uncertainty = 0.12 * d
-
         next_date = last_date + timedelta(days=d)
         forecasts.append({
             "forecast_for_date": next_date.date(),
@@ -190,7 +176,6 @@ def run_pipeline():
     con.execute("INSTALL postgres; LOAD postgres;")
     con.execute(f"ATTACH '{get_db_uri()}' AS pg (TYPE POSTGRES);")
 
-    # Tables
     con.execute("""
         CREATE TABLE IF NOT EXISTS pg.public.fact_sst_forecast (
             forecast_date DATE,
@@ -246,18 +231,13 @@ def run_pipeline():
         results.append(ridge)
         logger.info(f"Ridge  MAE={ridge['mae']:.4f}  RMSE={ridge['rmse']:.4f}")
 
-    # Select best by MAE
     best = min(results, key=lambda r: r["mae"])
     logger.info(f"Best model: {best['model']} (MAE={best['mae']:.4f})")
 
-    # Save metrics JSON
     metrics_payload = {
         "target": "mean_sst",
         "forecast_horizon_days": 7,
-        "models": [
-            {"model": r["model"], "mae": r["mae"], "rmse": r["rmse"]}
-            for r in results
-        ],
+        "models": [{"model": r["model"], "mae": r["mae"], "rmse": r["rmse"]} for r in results],
         "best_model": best["model"],
         "best_mae": best["mae"],
         "best_rmse": best["rmse"],
@@ -266,22 +246,17 @@ def run_pipeline():
         "training_end": str(train["date"].max().date()) if len(train) else None,
         "generated_at": datetime.utcnow().isoformat(),
     }
-    metrics_path = ARTIFACT_DIR / "model_metrics.json"
-    metrics_path.write_text(json.dumps(metrics_payload, indent=2))
-    logger.info(f"Saved metrics → {metrics_path}")
+    (ARTIFACT_DIR / "model_metrics.json").write_text(json.dumps(metrics_payload, indent=2))
 
-    # Write metrics to DB
     con.execute("DELETE FROM pg.public.ml_model_metrics;")
     for r in results:
+        is_best = "TRUE" if r["model"] == best["model"] else "FALSE"
         con.execute(f"""
             INSERT INTO pg.public.ml_model_metrics
             VALUES ('{r["model"]}', 'mean_sst', {r['mae']}, {r['rmse']},
-                    {len(train)}, {len(test)},
-                    {'TRUE' if r['model'] == best['model'] else 'FALSE'},
-                    current_timestamp)
+                    {len(train)}, {len(test)}, {is_best}, current_timestamp)
         """)
 
-    # Forecast
     forecasts = recursive_forecast(feat.dropna(subset=["mean_sst"]), best, horizon=7)
     now = datetime.utcnow()
     rows = []
@@ -305,7 +280,6 @@ def run_pipeline():
     con.register("fdf", fdf)
     con.execute("INSERT INTO pg.public.fact_sst_forecast SELECT * FROM fdf;")
     logger.info(f"Wrote {len(fdf)} forecast rows")
-
     con.close()
     logger.info("=== SST Forecasting Pipeline completed ===")
     print(json.dumps(metrics_payload, indent=2))

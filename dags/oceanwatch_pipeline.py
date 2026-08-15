@@ -85,12 +85,7 @@ with DAG(
         bash_command="python /opt/airflow/ingestion/ml_vessel_anomaly.py",
     )
 
-    # Ingest → transform
     [fetch_noaa, fetch_copernicus] >> stage_with_duckdb >> dbt_deps >> run_dbt >> test_dbt
-
-    # Operational layer
     run_dbt >> init_schema >> [seed_port, seed_fishing, seed_ais] >> run_intelligence
-
-    # ML layer (after facts + AIS exist)
     run_dbt >> ml_sst_forecast
     seed_ais >> ml_vessel_anomaly
