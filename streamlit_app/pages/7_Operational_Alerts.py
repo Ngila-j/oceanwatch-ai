@@ -1,47 +1,62 @@
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine
+import json
 
 st.set_page_config(page_title="Operational Alerts", page_icon="🚨", layout="wide")
-st.title("🚨 Operational Alerts")
+st.title("🚨 OceanWatch Alert Centre")
+st.caption("Central operational alerts across Port, Fishing and Coastal domains")
 
 @st.cache_data(ttl=120)
 def load_alerts():
     engine = create_engine("postgresql://postgres:password@localhost:5433/oceanwatch_db")
     try:
-        df = pd.read_sql("""
-            SELECT alert_date, alert_type, severity, title, message, value, created_at
-            FROM operational_alerts
+        return pd.read_sql("""
+            SELECT alert_id, category, alert_type, severity, title, description,
+                   risk_score, confidence_score, evidence, status, vessel_name,
+                   location_label, created_at, detected_at
+            FROM fact_alerts
             ORDER BY created_at DESC
-            LIMIT 50
+            LIMIT 100
         """, engine)
-        return df
     except Exception:
         return pd.DataFrame()
 
 df = load_alerts()
 
 if df.empty:
-    st.info("No alerts generated yet. Run the full pipeline to produce alerts.")
+    st.info("No alerts yet. Run the operational intelligence engine.")
 else:
-    # Summary counts
-    col1, col2, col3 = st.columns(3)
-    with col1:
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
         st.metric("Critical", len(df[df["severity"] == "CRITICAL"]))
-    with col2:
-        st.metric("Warnings", len(df[df["severity"] == "WARNING"]))
-    with col3:
-        st.metric("Info", len(df[df["severity"] == "INFO"]))
+    with c2:
+        st.metric("Elevated", len(df[df["severity"] == "ELEVATED"]))
+    with c3:
+        st.metric("Watch", len(df[df["severity"] == "WATCH"]))
+    with c4:
+        st.metric("Open", len(df[df["status"] == "OPEN"]))
 
-    st.subheader("Recent Alerts")
-
+    st.subheader("Active Alerts")
     for _, row in df.iterrows():
         if row["severity"] == "CRITICAL":
-            st.error(f"**{row['title']}** — {row['message']}")
-        elif row["severity"] == "WARNING":
-            st.warning(f"**{row['title']}** — {row['message']}")
+            box = st.error
+        elif row["severity"] == "ELEVATED":
+            box = st.warning
         else:
-            st.info(f"**{row['title']}** — {row['message']}")
+            box = st.info
+
+        header = f"**{row['title']}**  |  {row['category']}  |  Risk: {row['risk_score']}"
+        if pd.notnull(row.get("vessel_name")):
+            header += f"  |  Vessel: {row['vessel_name']}"
+        box(header)
+        st.caption(row["description"])
+        if pd.notnull(row.get("evidence")):
+            with st.expander("Evidence"):
+                st.text(row["evidence"])
 
     st.subheader("Alert Log")
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df[[
+        "created_at", "category", "severity", "title", "risk_score",
+        "confidence_score", "status", "vessel_name", "location_label"
+    ]], use_container_width=True)

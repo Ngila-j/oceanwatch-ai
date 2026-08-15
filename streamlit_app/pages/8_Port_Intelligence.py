@@ -2,86 +2,60 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from sqlalchemy import create_engine
-from datetime import datetime, timedelta
 
 st.set_page_config(page_title="Port Intelligence", page_icon="⚓", layout="wide")
 st.title("⚓ Mombasa Port Intelligence")
-st.caption("Operational overview of vessel activity at Mombasa Port")
 
-@st.cache_data(ttl=300)
-def load_port_data():
+@st.cache_data(ttl=120)
+def load_port_metrics():
     engine = create_engine("postgresql://postgres:password@localhost:5433/oceanwatch_db")
     try:
-        df = pd.read_sql("""
-            SELECT *
-            FROM port_activity
-            ORDER BY event_time DESC
-        """, engine)
-        return df
+        metrics = pd.read_sql("SELECT * FROM fact_port_metrics ORDER BY metric_date DESC LIMIT 1", engine)
+        activity = pd.read_sql("SELECT * FROM port_activity ORDER BY event_time DESC", engine)
+        return metrics, activity
     except Exception as e:
-        st.error(f"Could not load port data: {e}")
-        return pd.DataFrame()
+        st.error(str(e))
+        return pd.DataFrame(), pd.DataFrame()
 
-df = load_port_data()
+metrics, activity = load_port_metrics()
 
-if df.empty:
-    st.warning("No port activity data found. Run the seed script first.")
-    st.code("docker exec -it oceanwatch_airflow_web python /opt/airflow/ingestion/seed_port_activity.py")
+if metrics.empty:
+    st.warning("No port metrics yet. Run the operational intelligence engine.")
 else:
-    # Convert time
-    df["event_time"] = pd.to_datetime(df["event_time"])
-    df["date"] = df["event_time"].dt.date
+    m = metrics.iloc[0]
 
-    # ===== KPI Row =====
-    last_24h = df[df["event_time"] >= datetime.utcnow() - timedelta(hours=24)]
-    last_7d = df[df["event_time"] >= datetime.utcnow() - timedelta(days=7)]
+    st.subheader("MOMBASA PORT INTELLIGENCE")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Active vessels", int(m["active_vessels"]))
+    c2.metric("Arrivals (7d)", int(m["arrivals"]))
+    c3.metric("Departures (7d)", int(m["departures"]))
+    c4.metric("Port congestion", m["congestion_level"])
 
-    col1, col2, col3, col4 = st.columns(4)
+    c5, c6, c7, c8 = st.columns(4)
+    c5.metric("Avg. waiting time", f"{m['avg_waiting_hours']} hrs")
+    c6.metric("Container vessels", int(m["container_vessels"]))
+    c7.metric("Tankers", int(m["tankers"]))
+    c8.metric("Fishing vessels", int(m["fishing_vessels"]))
 
-    with col1:
-        st.metric("Arrivals (7 days)", len(last_7d[last_7d["event_type"] == "ARRIVAL"]))
+    st.metric("vs 30-day baseline", f"{m['vs_30d_baseline_pct']:+.1f}%")
 
-    with col2:
-        st.metric("Departures (7 days)", len(last_7d[last_7d["event_type"] == "DEPARTURE"]))
+    if m["congestion_level"] == "HIGH":
+        st.error(f"⚠ Vessel activity {m['vs_30d_baseline_pct']:+.1f}% above 30-day baseline — congestion HIGH")
+    elif m["congestion_level"] == "MODERATE":
+        st.warning("Port congestion is MODERATE")
+    else:
+        st.success("Port congestion is LOW")
 
-    with col3:
-        st.metric("Events (last 24h)", len(last_24h))
-
-    with col4:
-        in_port = len(df[df["status"] == "IN_PORT"])
-        st.metric("Currently marked In Port", in_port)
-
-    st.divider()
-
-    # ===== Charts =====
-    col_left, col_right = st.columns(2)
-
-    with col_left:
-        st.subheader("Vessel Type Mix (7 days)")
-        type_counts = last_7d["vessel_type"].value_counts().reset_index()
+    if not activity.empty:
+        activity["event_time"] = pd.to_datetime(activity["event_time"])
+        st.subheader("Vessel Type Mix (recent)")
+        type_counts = activity["vessel_type"].value_counts().reset_index()
         type_counts.columns = ["vessel_type", "count"]
-        fig_type = px.pie(type_counts, names="vessel_type", values="count", hole=0.4)
-        st.plotly_chart(fig_type, use_container_width=True)
+        fig = px.pie(type_counts, names="vessel_type", values="count", hole=0.4)
+        st.plotly_chart(fig, use_container_width=True)
 
-    with col_right:
-        st.subheader("Daily Activity Trend")
-        daily = last_7d.groupby(["date", "event_type"]).size().reset_index(name="count")
-        fig_daily = px.bar(daily, x="date", y="count", color="event_type", barmode="group")
-        st.plotly_chart(fig_daily, use_container_width=True)
-
-    # ===== Flag countries =====
-    st.subheader("Top Flag Countries (7 days)")
-    flag_counts = last_7d["flag_country"].value_counts().head(8).reset_index()
-    flag_counts.columns = ["flag_country", "count"]
-    fig_flags = px.bar(flag_counts, x="flag_country", y="count", text="count")
-    st.plotly_chart(fig_flags, use_container_width=True)
-
-    # ===== Recent activity table =====
-    st.subheader("Recent Vessel Events")
-    st.dataframe(
-        df[["event_time", "event_type", "vessel_name", "vessel_type", "flag_country", "draft_m", "status"]]
-        .head(30),
-        use_container_width=True
-    )
-
-    st.info("This is currently driven by realistic sample data. In the next iteration we will replace it with real AIS feeds.")
+        st.subheader("Recent Events")
+        st.dataframe(
+            activity[["event_time", "event_type", "vessel_name", "vessel_type", "flag_country", "status"]].head(25),
+            use_container_width=True
+        )

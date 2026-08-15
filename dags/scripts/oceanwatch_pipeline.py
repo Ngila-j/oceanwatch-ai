@@ -13,7 +13,7 @@ default_args = {
 with DAG(
     dag_id="oceanwatch_full_pipeline",
     default_args=default_args,
-    description="Oceanwatch full pipeline: Ingest → Transform → Alerts → Operational seeds",
+    description="OceanWatch full pipeline: Ingest → Transform → Operational Intelligence",
     schedule_interval="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
@@ -50,9 +50,9 @@ with DAG(
         bash_command="cd /opt/airflow/oceanwatch_transformations && dbt test --profiles-dir /opt/airflow/oceanwatch_transformations",
     )
 
-    generate_alerts = BashOperator(
-        task_id="generate_operational_alerts",
-        bash_command="python /opt/airflow/ingestion/generate_alerts.py",
+    init_schema = BashOperator(
+        task_id="init_operational_schema",
+        bash_command="python /opt/airflow/ingestion/init_operational_schema.py",
     )
 
     seed_port = BashOperator(
@@ -65,8 +65,11 @@ with DAG(
         bash_command="python /opt/airflow/ingestion/seed_fishing_activity.py",
     )
 
-    # Main flow
-    [fetch_noaa, fetch_copernicus] >> stage_with_duckdb >> dbt_deps >> run_dbt >> test_dbt >> generate_alerts
+    run_intelligence = BashOperator(
+        task_id="run_operational_intelligence",
+        bash_command="python /opt/airflow/ingestion/run_operational_intelligence.py",
+    )
 
-    # Operational data can run in parallel after transformations
-    run_dbt >> [seed_port, seed_fishing]
+    # Flow
+    [fetch_noaa, fetch_copernicus] >> stage_with_duckdb >> dbt_deps >> run_dbt >> test_dbt
+    run_dbt >> init_schema >> [seed_port, seed_fishing] >> run_intelligence
