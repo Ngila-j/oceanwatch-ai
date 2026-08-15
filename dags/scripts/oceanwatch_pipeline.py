@@ -13,11 +13,11 @@ default_args = {
 with DAG(
     dag_id="oceanwatch_full_pipeline",
     default_args=default_args,
-    description="Oceanwatch pipeline: Ingest → Transform → Alerts",
+    description="Oceanwatch full pipeline: Ingest → Transform → Alerts → Operational seeds",
     schedule_interval="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=["oceanwatch", "ingestion", "dbt", "alerts"],
+    tags=["oceanwatch", "ingestion", "dbt", "alerts", "port", "fishing"],
 ) as dag:
 
     fetch_noaa = BashOperator(
@@ -55,4 +55,18 @@ with DAG(
         bash_command="python /opt/airflow/ingestion/generate_alerts.py",
     )
 
+    seed_port = BashOperator(
+        task_id="seed_port_activity",
+        bash_command="python /opt/airflow/ingestion/seed_port_activity.py",
+    )
+
+    seed_fishing = BashOperator(
+        task_id="seed_fishing_activity",
+        bash_command="python /opt/airflow/ingestion/seed_fishing_activity.py",
+    )
+
+    # Main flow
     [fetch_noaa, fetch_copernicus] >> stage_with_duckdb >> dbt_deps >> run_dbt >> test_dbt >> generate_alerts
+
+    # Operational data can run in parallel after transformations
+    run_dbt >> [seed_port, seed_fishing]
