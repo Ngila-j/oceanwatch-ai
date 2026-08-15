@@ -2,6 +2,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
+
 import pandas as pd
 import duckdb
 from dotenv import load_dotenv
@@ -11,21 +12,14 @@ import xarray as xr
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-possible_env_paths = [
-    Path(__file__).parent / ".env",
-    Path("/opt/airflow/ingestion/.env"),
-]
-
-for env_path in possible_env_paths:
-    if env_path.exists():
-        load_dotenv(env_path)
-        logger.info(f"Loaded credentials from {env_path}")
-        break
+# Load credentials
+env_path = Path(__file__).parent / ".env"
+load_dotenv(env_path)
 
 USERNAME = os.getenv("COPERNICUS_USERNAME")
 PASSWORD = os.getenv("COPERNICUS_PASSWORD")
-logger.info(f"USERNAME set: {bool(USERNAME)}, PASSWORD set: {bool(PASSWORD)}")
 
+# Western Indian Ocean / Kenya EEZ bounding box (Mombasa focused)
 MIN_LON, MAX_LON = 39.0, 45.0
 MIN_LAT, MAX_LAT = -5.0, 2.0
 
@@ -42,6 +36,7 @@ def get_db_uri() -> str:
 
 
 def fetch_sst(start_date: str, end_date: str) -> Path:
+    """Fetch Sea Surface Temperature (thetao) for the region."""
     logger.info("Fetching SST (thetao) from Copernicus Marine...")
     output_file = OUTPUT_DIR / f"sst_{start_date}_{end_date}.nc"
 
@@ -54,19 +49,19 @@ def fetch_sst(start_date: str, end_date: str) -> Path:
         maximum_latitude=MAX_LAT,
         start_datetime=f"{start_date}T00:00:00",
         end_datetime=f"{end_date}T23:59:59",
-        minimum_depth=0,
-        maximum_depth=1,
         output_filename=str(output_file.name),
         output_directory=str(OUTPUT_DIR),
         username=USERNAME,
         password=PASSWORD,
+        force_download=True,
     )
     logger.info(f"SST saved to {output_file}")
     return output_file
 
 
 def fetch_chlorophyll(start_date: str, end_date: str) -> Path:
-    logger.info("Fetching Chlorophyll-a from Copernicus Marine...")
+    """Fetch Chlorophyll-a for the region."""
+    logger.info("Fetching Chlorophyll (CHL) from Copernicus Marine...")
     output_file = OUTPUT_DIR / f"chl_{start_date}_{end_date}.nc"
 
     copernicusmarine.subset(
@@ -82,30 +77,91 @@ def fetch_chlorophyll(start_date: str, end_date: str) -> Path:
         output_directory=str(OUTPUT_DIR),
         username=USERNAME,
         password=PASSWORD,
+        force_download=True,
     )
     logger.info(f"Chlorophyll saved to {output_file}")
     return output_file
 
 
-def load_summary_to_postgres(nc_path: Path, variable: str, table_name: str):
+def load_summary_to_postgres(nc_path: Path, variable: str, table_name: str) -> None:
+    """Open NetCDF, compute daily mean over the region, load into Postgres via DuckDB."""
     logger.info(f"Creating summary for {variable} -> {table_name}")
+
+    if not nc_path.exists():
+        # Try to find the file that was actually written
+        candidates = list(OUTPUT_DIR.glob(f"*{variable.lower()}*.nc")) + list(OUTPUT_DIR.glob(f"*{nc_path.stem}*.nc"))
+        if candidates:
+            nc_path = candidates[-1]
+        else:
+            logger.error(f"NetCDF file not found: {nc_path}")
+            return
+
     ds = xr.open_dataset(nc_path)
 
-    if "depth" in ds.dims:
-        ds = ds.isel(depth=0)
+    # Handle different coordinate / variable naming
+    data_var = variable
+    if variable not in ds and variable.upper() in ds:
+        data_var = variable.upper()
+    if data_var not in ds:
+        # fallback: first data variable
+        data_vars = [v for v in ds.data_vars]
+        if not data_vars:
+            logger.error("No data variables in NetCDF")
+            return
+        data_var = data_vars[0]
 
-    da = ds[variable]
-    df = da.mean(dim=["latitude", "longitude"]).to_dataframe().reset_index()
-    df = df.rename(columns={variable: f"{variable}_mean"})
+    da = ds[data_var]
+
+    # Reduce depth if present
+    if "depth" in da.dims:
+        da = da.isel(depth=0)
+
+    # Daily spatial mean
+    spatial_dims = [d for d in da.dims if d not in ("time",)]
+    if spatial_dims:
+        daily = da.mean(dim=spatial_dims, skipna=True)
+    else:
+        daily = da
+
+    df = daily.to_dataframe().reset_index()
+    df = df.rename(columns={data_var: f"{variable}_mean" if variable != "CHL" else "CHL_mean"})
+
+    # Standardise column names
+    if "time" not in df.columns:
+        for c in df.columns:
+            if "time" in c.lower() or "date" in c.lower():
+                df = df.rename(columns={c: "time"})
+                break
+
+    if variable == "thetao":
+        value_col = "thetao_mean"
+        if value_col not in df.columns:
+            # rename first numeric non-time column
+            for c in df.columns:
+                if c != "time" and pd.api.types.is_numeric_dtype(df[c]):
+                    df = df.rename(columns={c: value_col})
+                    break
+    else:
+        value_col = "CHL_mean"
+        if value_col not in df.columns:
+            for c in df.columns:
+                if c != "time" and pd.api.types.is_numeric_dtype(df[c]):
+                    df = df.rename(columns={c: value_col})
+                    break
+
     df["source_file"] = nc_path.name
     df["loaded_at"] = datetime.utcnow()
+
+    # Keep only relevant columns
+    keep = [c for c in ["time", value_col, "source_file", "loaded_at"] if c in df.columns]
+    df = df[keep].dropna()
 
     db_uri = get_db_uri()
     con = duckdb.connect()
     con.execute("INSTALL postgres; LOAD postgres;")
     con.execute(f"ATTACH '{db_uri}' AS pg (TYPE POSTGRES);")
-    con.register("temp_df", df)
-    con.execute(f"CREATE OR REPLACE TABLE pg.public.{table_name} AS SELECT * FROM temp_df;")
+    con.register("tmp_df", df)
+    con.execute(f"CREATE OR REPLACE TABLE pg.public.{table_name} AS SELECT * FROM tmp_df;")
     con.close()
     logger.info(f"Loaded {len(df)} summary rows into {table_name}")
 
@@ -117,15 +173,18 @@ def main():
     if not USERNAME or not PASSWORD:
         raise ValueError("COPERNICUS_USERNAME or COPERNICUS_PASSWORD not set in .env")
 
+    # Expanded range for ML training (30 days)
     end_date = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
-    start_date = (datetime.utcnow() - timedelta(days=3)).strftime("%Y-%m-%d")
+    start_date = (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%d")
 
     logger.info(f"Date range: {start_date} -> {end_date}")
     logger.info(f"Bounding box: lon [{MIN_LON}, {MAX_LON}], lat [{MIN_LAT}, {MAX_LAT}]")
 
+    # 1. SST
     sst_file = fetch_sst(start_date, end_date)
     load_summary_to_postgres(sst_file, "thetao", "raw_sst_daily")
 
+    # 2. Chlorophyll
     chl_file = fetch_chlorophyll(start_date, end_date)
     load_summary_to_postgres(chl_file, "CHL", "raw_chl_daily")
 

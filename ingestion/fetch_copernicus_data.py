@@ -4,28 +4,28 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
-from sqlalchemy import create_engine
+import duckdb
+from dotenv import load_dotenv
 import copernicusmarine
+import xarray as xr
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# ------------------------------------------------------------------
-# Configuration – Western Indian Ocean / Kenya EEZ / Mombasa focus
-# ------------------------------------------------------------------
-BBOX = {
-    "minimum_longitude": 39.0,   # west of Mombasa
-    "maximum_longitude": 45.0,   # east into the Indian Ocean
-    "minimum_latitude": -5.5,    # south of Kenya
-    "maximum_latitude": 2.0,     # north of Kenya
-}
+# Load credentials
+env_path = Path(__file__).parent / ".env"
+load_dotenv(env_path)
 
-# Small recent window so the first download stays light
-END_DATE = datetime.utcnow().date()
-START_DATE = END_DATE - timedelta(days=3)
+USERNAME = os.getenv("COPERNICUS_USERNAME")
+PASSWORD = os.getenv("COPERNICUS_PASSWORD")
+
+# Western Indian Ocean / Kenya EEZ bounding box (Mombasa focused)
+MIN_LON, MAX_LON = 39.0, 45.0
+MIN_LAT, MAX_LAT = -5.0, 2.0
 
 OUTPUT_DIR = Path("/opt/airflow/data/raw/copernicus")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def get_db_uri() -> str:
     if os.path.exists("/.dockerenv") or os.getenv("AIRFLOW_HOME"):
@@ -34,119 +34,163 @@ def get_db_uri() -> str:
         host, port = "localhost", 5433
     return f"postgresql://postgres:password@{host}:{port}/oceanwatch_db"
 
-def login_copernicus():
-    """Login using credentials from environment or .env file."""
-    username = os.getenv("COPERNICUS_USERNAME")
-    password = os.getenv("COPERNICUS_PASSWORD")
 
-    if not username or not password:
-        # fallback: try reading the .env file we created
-        env_path = Path(__file__).parent / ".env"
-        if env_path.exists():
-            for line in env_path.read_text().splitlines():
-                if line.startswith("COPERNICUS_USERNAME="):
-                    username = line.split("=", 1)[1].strip()
-                elif line.startswith("COPERNICUS_PASSWORD="):
-                    password = line.split("=", 1)[1].strip()
-
-    if not username or not password:
-        raise ValueError("Copernicus credentials not found. Set COPERNICUS_USERNAME and COPERNICUS_PASSWORD.")
-
-    copernicusmarine.login(username=username, password=password, force_overwrite=True)
-    logger.info("Successfully logged in to Copernicus Marine")
-
-def fetch_sst():
+def fetch_sst(start_date: str, end_date: str) -> Path:
     """Fetch Sea Surface Temperature (thetao) for the region."""
-    logger.info("Fetching SST (thetao) from Copernicus...")
-    output_file = OUTPUT_DIR / f"sst_{START_DATE}_{END_DATE}.nc"
+    logger.info("Fetching SST (thetao) from Copernicus Marine...")
+    output_file = OUTPUT_DIR / f"sst_{start_date}_{end_date}.nc"
 
     copernicusmarine.subset(
         dataset_id="cmems_mod_glo_phy-thetao_anfc_0.083deg_P1D-m",
         variables=["thetao"],
-        minimum_longitude=BBOX["minimum_longitude"],
-        maximum_longitude=BBOX["maximum_longitude"],
-        minimum_latitude=BBOX["minimum_latitude"],
-        maximum_latitude=BBOX["maximum_latitude"],
-        start_datetime=f"{START_DATE}T00:00:00",
-        end_datetime=f"{END_DATE}T23:59:59",
-        minimum_depth=0,
-        maximum_depth=1,          # surface only
+        minimum_longitude=MIN_LON,
+        maximum_longitude=MAX_LON,
+        minimum_latitude=MIN_LAT,
+        maximum_latitude=MAX_LAT,
+        start_datetime=f"{start_date}T00:00:00",
+        end_datetime=f"{end_date}T23:59:59",
         output_filename=str(output_file.name),
         output_directory=str(OUTPUT_DIR),
+        username=USERNAME,
+        password=PASSWORD,
         force_download=True,
     )
     logger.info(f"SST saved to {output_file}")
     return output_file
 
-def fetch_chlorophyll():
-    """Fetch Chlorophyll-a (simplified global product)."""
-    logger.info("Fetching Chlorophyll-a from Copernicus...")
-    output_file = OUTPUT_DIR / f"chl_{START_DATE}_{END_DATE}.nc"
 
-    try:
-        copernicusmarine.subset(
-            dataset_id="cmems_obs-oc_glo_bgc-plankton_nrt_l4-gapfree-multi-4km_P1D",
-            variables=["CHL"],
-            minimum_longitude=BBOX["minimum_longitude"],
-            maximum_longitude=BBOX["maximum_longitude"],
-            minimum_latitude=BBOX["minimum_latitude"],
-            maximum_latitude=BBOX["maximum_latitude"],
-            start_datetime=f"{START_DATE}T00:00:00",
-            end_datetime=f"{END_DATE}T23:59:59",
-            output_filename=str(output_file.name),
-            output_directory=str(OUTPUT_DIR),
-            force_download=True,
-        )
-        logger.info(f"Chlorophyll saved to {output_file}")
-        return output_file
-    except Exception as e:
-        logger.warning(f"Chlorophyll download failed (dataset may have changed): {e}")
-        return None
+def fetch_chlorophyll(start_date: str, end_date: str) -> Path:
+    """Fetch Chlorophyll-a for the region."""
+    logger.info("Fetching Chlorophyll (CHL) from Copernicus Marine...")
+    output_file = OUTPUT_DIR / f"chl_{start_date}_{end_date}.nc"
 
-def netcdf_to_summary_df(nc_path: Path, value_col: str) -> pd.DataFrame:
-    """Convert a NetCDF file to a simple daily summary DataFrame."""
-    import xarray as xr
+    copernicusmarine.subset(
+        dataset_id="cmems_obs-oc_glo_bgc-plankton_nrt_l4-gapfree-multi-4km_P1D",
+        variables=["CHL"],
+        minimum_longitude=MIN_LON,
+        maximum_longitude=MAX_LON,
+        minimum_latitude=MIN_LAT,
+        maximum_latitude=MAX_LAT,
+        start_datetime=f"{start_date}T00:00:00",
+        end_datetime=f"{end_date}T23:59:59",
+        output_filename=str(output_file.name),
+        output_directory=str(OUTPUT_DIR),
+        username=USERNAME,
+        password=PASSWORD,
+        force_download=True,
+    )
+    logger.info(f"Chlorophyll saved to {output_file}")
+    return output_file
+
+
+def load_summary_to_postgres(nc_path: Path, variable: str, table_name: str) -> None:
+    """Open NetCDF, compute daily mean over the region, load into Postgres via DuckDB."""
+    logger.info(f"Creating summary for {variable} -> {table_name}")
+
+    if not nc_path.exists():
+        # Try to find the file that was actually written
+        candidates = list(OUTPUT_DIR.glob(f"*{variable.lower()}*.nc")) + list(OUTPUT_DIR.glob(f"*{nc_path.stem}*.nc"))
+        if candidates:
+            nc_path = candidates[-1]
+        else:
+            logger.error(f"NetCDF file not found: {nc_path}")
+            return
 
     ds = xr.open_dataset(nc_path)
-    # Take the first (and usually only) data variable
-    data_var = list(ds.data_vars)[0]
+
+    # Handle different coordinate / variable naming
+    data_var = variable
+    if variable not in ds and variable.upper() in ds:
+        data_var = variable.upper()
+    if data_var not in ds:
+        # fallback: first data variable
+        data_vars = [v for v in ds.data_vars]
+        if not data_vars:
+            logger.error("No data variables in NetCDF")
+            return
+        data_var = data_vars[0]
+
     da = ds[data_var]
 
-    # Daily mean over the spatial domain
-    daily = da.mean(dim=[d for d in da.dims if d not in ("time",)]).to_dataframe(name=value_col)
-    daily = daily.reset_index()
-    daily["source_file"] = nc_path.name
-    return daily
+    # Reduce depth if present
+    if "depth" in da.dims:
+        da = da.isel(depth=0)
 
-def store_summaries(dfs: list[pd.DataFrame]):
-    if not dfs:
-        logger.warning("No dataframes to store")
-        return
+    # Daily spatial mean
+    spatial_dims = [d for d in da.dims if d not in ("time",)]
+    if spatial_dims:
+        daily = da.mean(dim=spatial_dims, skipna=True)
+    else:
+        daily = da
 
-    df = pd.concat(dfs, ignore_index=True)
-    engine = create_engine(get_db_uri())
-    df.to_sql("raw_ocean_conditions", engine, if_exists="append", index=False)
-    logger.info(f"Stored {len(df)} summary rows into raw_ocean_conditions")
+    df = daily.to_dataframe().reset_index()
+    df = df.rename(columns={data_var: f"{variable}_mean" if variable != "CHL" else "CHL_mean"})
+
+    # Standardise column names
+    if "time" not in df.columns:
+        for c in df.columns:
+            if "time" in c.lower() or "date" in c.lower():
+                df = df.rename(columns={c: "time"})
+                break
+
+    if variable == "thetao":
+        value_col = "thetao_mean"
+        if value_col not in df.columns:
+            # rename first numeric non-time column
+            for c in df.columns:
+                if c != "time" and pd.api.types.is_numeric_dtype(df[c]):
+                    df = df.rename(columns={c: value_col})
+                    break
+    else:
+        value_col = "CHL_mean"
+        if value_col not in df.columns:
+            for c in df.columns:
+                if c != "time" and pd.api.types.is_numeric_dtype(df[c]):
+                    df = df.rename(columns={c: value_col})
+                    break
+
+    df["source_file"] = nc_path.name
+    df["loaded_at"] = datetime.utcnow()
+
+    # Keep only relevant columns
+    keep = [c for c in ["time", value_col, "source_file", "loaded_at"] if c in df.columns]
+    df = df[keep].dropna()
+
+    db_uri = get_db_uri()
+    con = duckdb.connect()
+    con.execute("INSTALL postgres; LOAD postgres;")
+    con.execute(f"ATTACH '{db_uri}' AS pg (TYPE POSTGRES);")
+    con.register("tmp_df", df)
+    con.execute(f"CREATE OR REPLACE TABLE pg.public.{table_name} AS SELECT * FROM tmp_df;")
+    con.close()
+    logger.info(f"Loaded {len(df)} summary rows into {table_name}")
+
 
 def main():
     logger.info("=== Copernicus Marine Ingestion Started ===")
     start = datetime.utcnow()
 
-    login_copernicus()
+    if not USERNAME or not PASSWORD:
+        raise ValueError("COPERNICUS_USERNAME or COPERNICUS_PASSWORD not set in .env")
 
-    sst_file = fetch_sst()
-    chl_file = fetch_chlorophyll()
+    # Expanded range for ML training (30 days)
+    end_date = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
+    start_date = (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%d")
 
-    summaries = []
-    if sst_file and sst_file.exists():
-        summaries.append(netcdf_to_summary_df(sst_file, "sst_celsius"))
-    if chl_file and chl_file.exists():
-        summaries.append(netcdf_to_summary_df(chl_file, "chlorophyll_mg_m3"))
+    logger.info(f"Date range: {start_date} -> {end_date}")
+    logger.info(f"Bounding box: lon [{MIN_LON}, {MAX_LON}], lat [{MIN_LAT}, {MAX_LAT}]")
 
-    store_summaries(summaries)
+    # 1. SST
+    sst_file = fetch_sst(start_date, end_date)
+    load_summary_to_postgres(sst_file, "thetao", "raw_sst_daily")
+
+    # 2. Chlorophyll
+    chl_file = fetch_chlorophyll(start_date, end_date)
+    load_summary_to_postgres(chl_file, "CHL", "raw_chl_daily")
 
     duration = (datetime.utcnow() - start).total_seconds()
-    logger.info(f"=== Copernicus ingestion finished in {duration:.1f}s ===")
+    logger.info(f"=== Copernicus ingestion completed in {duration:.1f}s ===")
+
 
 if __name__ == "__main__":
     main()

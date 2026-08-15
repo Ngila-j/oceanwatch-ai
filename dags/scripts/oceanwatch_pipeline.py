@@ -13,11 +13,11 @@ default_args = {
 with DAG(
     dag_id="oceanwatch_full_pipeline",
     default_args=default_args,
-    description="OceanWatch full pipeline: Ingest → Transform → Operational Intelligence",
+    description="OceanWatch: Ingest → Transform → Operational Intelligence → ML",
     schedule_interval="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=["oceanwatch", "ingestion", "dbt", "alerts", "port", "fishing"],
+    tags=["oceanwatch", "ingestion", "dbt", "ml", "alerts"],
 ) as dag:
 
     fetch_noaa = BashOperator(
@@ -65,11 +65,32 @@ with DAG(
         bash_command="python /opt/airflow/ingestion/seed_fishing_activity.py",
     )
 
+    seed_ais = BashOperator(
+        task_id="seed_ais_sample",
+        bash_command="python /opt/airflow/ingestion/seed_ais_sample.py",
+    )
+
     run_intelligence = BashOperator(
         task_id="run_operational_intelligence",
         bash_command="python /opt/airflow/ingestion/run_operational_intelligence.py",
     )
 
-    # Flow
+    ml_sst_forecast = BashOperator(
+        task_id="ml_sst_forecast",
+        bash_command="python /opt/airflow/ingestion/ml_sst_forecast.py",
+    )
+
+    ml_vessel_anomaly = BashOperator(
+        task_id="ml_vessel_anomaly",
+        bash_command="python /opt/airflow/ingestion/ml_vessel_anomaly.py",
+    )
+
+    # Ingest → transform
     [fetch_noaa, fetch_copernicus] >> stage_with_duckdb >> dbt_deps >> run_dbt >> test_dbt
-    run_dbt >> init_schema >> [seed_port, seed_fishing] >> run_intelligence
+
+    # Operational layer
+    run_dbt >> init_schema >> [seed_port, seed_fishing, seed_ais] >> run_intelligence
+
+    # ML layer (after facts + AIS exist)
+    run_dbt >> ml_sst_forecast
+    seed_ais >> ml_vessel_anomaly
