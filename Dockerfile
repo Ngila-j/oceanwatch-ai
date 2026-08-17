@@ -26,4 +26,7 @@ RUN pip install --no-cache-dir \
     xarray \
     netCDF4 \
     h5netcdf \
-    python-dotenv
+    python-dotenv \
+    scikit-learn \
+    joblib \
+    scipy

@@ -6,62 +6,74 @@ from sqlalchemy import create_engine
 
 st.set_page_config(page_title="AIS Live", page_icon="📡", layout="wide")
 st.title("📡 AIS Vessel Positions")
-st.caption("Sample AIS tracks inside the Kenya EEZ monitoring box (ready for real AIS / GFW feeds)")
+st.caption("Kenya EEZ monitoring box — SAMPLE enrichment + live AISSTREAM when coverage allows")
 
 @st.cache_data(ttl=120)
 def load_ais():
     engine = create_engine("postgresql://postgres:password@localhost:5433/oceanwatch_db")
     try:
-        return pd.read_sql("""
-            SELECT *
+        summary = pd.read_sql("""
+            SELECT source, COUNT(*) AS positions, COUNT(DISTINCT mmsi) AS vessels
             FROM fact_ais_positions
-            ORDER BY event_time DESC
-            LIMIT 2000
+            GROUP BY source
+            ORDER BY source
         """, engine)
+        latest = pd.read_sql("""
+            SELECT DISTINCT ON (mmsi) *
+            FROM fact_ais_positions
+            ORDER BY mmsi, event_time DESC
+        """, engine)
+        return summary, latest
     except Exception as e:
         st.error(str(e))
-        return pd.DataFrame()
+        return pd.DataFrame(), pd.DataFrame()
 
-df = load_ais()
+summary, latest = load_ais()
 
-if df.empty:
-    st.warning("No AIS data. Run the AIS sample seed.")
-    st.code("docker exec -it oceanwatch_airflow_web python /opt/airflow/ingestion/seed_ais_sample.py")
+st.info(
+    """
+**Data sources**
+
+| Source | Meaning |
+|--------|---------|
+| **SAMPLE** | Synthetic enrichment for continuous demos, maps, and ML when live coverage is sparse |
+| **AISSTREAM** | Real live AIS via AISStream.io (hybrid WORLD subscribe → Kenya/WIO client filter) |
+
+East Africa terrestrial AIS coverage is often thin. Empty live windows are expected; SAMPLE keeps the product usable.
+"""
+)
+
+if summary.empty:
+    st.warning("No AIS data. Run seed_ais_sample.py and/or fetch_ais_realtime.py")
 else:
-    df["event_time"] = pd.to_datetime(df["event_time"])
-    latest = df.sort_values("event_time").groupby("mmsi").tail(1)
+    st.subheader("Positions by source")
+    st.dataframe(summary, use_container_width=True)
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("Unique vessels", df["mmsi"].nunique())
-    c2.metric("Positions loaded", len(df))
-    c3.metric("Fishing vessels (latest)", len(latest[latest["vessel_type"] == "FISHING"]))
+    c1.metric("Total vessels (latest)", latest["mmsi"].nunique() if not latest.empty else 0)
+    c2.metric("SAMPLE rows", int(summary.loc[summary["source"] == "SAMPLE", "positions"].sum()) if "SAMPLE" in summary["source"].values else 0)
+    c3.metric("AISSTREAM rows", int(summary.loc[summary["source"] == "AISSTREAM", "positions"].sum()) if "AISSTREAM" in summary["source"].values else 0)
 
-    m = folium.Map(location=[-1.5, 42.0], zoom_start=6, tiles="CartoDB positron")
-    folium.Rectangle(bounds=[[-5, 39], [2, 45]], color="blue", fill=True, fill_opacity=0.08).add_to(m)
+    if not latest.empty:
+        m = folium.Map(location=[-1.5, 42.0], zoom_start=6, tiles="CartoDB positron")
+        folium.Rectangle(bounds=[[-6, 38], [3, 46]], color="blue", fill=True, fill_opacity=0.06).add_to(m)
 
-    color_map = {
-        "FISHING": "red",
-        "CARGO": "blue",
-        "TANKER": "purple",
-        "PASSENGER": "green",
-        "OTHER": "gray"
-    }
+        for _, row in latest.iterrows():
+            color = "red" if row.get("source") == "AISSTREAM" else "green"
+            folium.CircleMarker(
+                location=[row["latitude"], row["longitude"]],
+                radius=5,
+                color=color,
+                fill=True,
+                fill_opacity=0.8,
+                popup=f"{row.get('vessel_name')}<br>{row.get('vessel_type')}<br>{row.get('source')}",
+            ).add_to(m)
 
-    for _, row in latest.iterrows():
-        folium.CircleMarker(
-            location=[row["latitude"], row["longitude"]],
-            radius=5,
-            color=color_map.get(row["vessel_type"], "gray"),
-            fill=True,
-            fill_opacity=0.8,
-            popup=f"{row['vessel_name']}<br>{row['vessel_type']}<br>SOG: {row['sog']} kn"
-        ).add_to(m)
+        st_folium(m, width=None, height=480, returned_objects=[])
+        st.caption("Green = SAMPLE · Red = AISSTREAM (live)")
 
-    st_folium(m, width=None, height=500, returned_objects=[])
-    st.caption("Red = Fishing · Blue = Cargo · Purple = Tanker · Green = Passenger")
-
-    st.subheader("Latest Positions")
-    st.dataframe(
-        latest[["event_time", "vessel_name", "vessel_type", "flag_country", "latitude", "longitude", "sog", "nav_status"]],
-        use_container_width=True
-    )
+        st.subheader("Latest positions")
+        st.dataframe(
+            latest[["event_time", "source", "vessel_name", "vessel_type", "latitude", "longitude", "sog"]].head(50),
+            use_container_width=True,
+        )
