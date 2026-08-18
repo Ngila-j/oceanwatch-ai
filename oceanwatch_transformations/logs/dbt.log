@@ -16648,3 +16648,1282 @@ drop table if exists "oceanwatch_db"."public"."feat_daily_ocean__dbt_backup" cas
 [0m07:07:43.869027 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b065aec9c90>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b065ac45de0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b065c8e84c0>]}
 [0m07:07:43.872362 [debug] [MainThread]: Flushing usage events
 [0m07:07:45.830247 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m08:32:17.872208 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7ded259a5c90>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7ded243d1ab0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7ded243d2950>]}
+
+
+============================== 08:32:18.502004 | 720f62a7-0bb0-4362-b11c-a8e722d5e828 ==============================
+[0m08:32:18.502004 [info ] [MainThread]: Running with dbt=1.12.2
+[0m08:32:18.511999 [debug] [MainThread]: running dbt with arguments {'fail_fast': 'False', 'target_path': 'None', 'send_anonymous_usage_stats': 'True', 'indirect_selection': 'eager', 'maximum_seed_size_mib': '1', 'no_print': 'None', 'debug': 'False', 'printer_width': '80', 'cache_selected_only': 'False', 'static_parser': 'True', 'warn_error': 'None', 'log_format': 'default', 'invocation_command': 'dbt deps --profiles-dir /opt/airflow/oceanwatch_transformations', 'hints_enabled': 'True', 'version_check': 'True', 'use_experimental_parser': 'False', 'log_cache_events': 'False', 'quiet': 'False', 'use_colors': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'log_path': '/opt/airflow/oceanwatch_transformations/logs', 'empty': 'None', 'partial_parse': 'True', 'profiles_dir': '/opt/airflow/oceanwatch_transformations', 'introspect': 'True', 'write_json': 'True'}
+[0m08:32:33.438054 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'project_id', 'label': '720f62a7-0bb0-4362-b11c-a8e722d5e828', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7ded278a1840>]}
+[0m08:32:39.387484 [debug] [MainThread]: Set downloads directory='/tmp/dbt-downloads-h279so5m'
+[0m08:32:39.390613 [debug] [MainThread]: Making package index registry request: GET https://hub.getdbt.com/api/v1/index.json
+[0m08:32:40.197520 [debug] [MainThread]: Response from registry index: GET https://hub.getdbt.com/api/v1/index.json 200
+[0m08:32:40.220470 [debug] [MainThread]: Making package registry request: GET https://hub.getdbt.com/api/v1/dbt-labs/dbt_utils.json
+[0m08:32:40.492890 [debug] [MainThread]: Response from registry: GET https://hub.getdbt.com/api/v1/dbt-labs/dbt_utils.json 200
+[0m08:32:40.524443 [info ] [MainThread]: Installing dbt-labs/dbt_utils
+[0m08:32:57.019882 [info ] [MainThread]: Installed from version 1.3.0
+[0m08:32:57.023117 [info ] [MainThread]: Updated version available: 1.4.1
+[0m08:32:57.027063 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'package', 'label': '720f62a7-0bb0-4362-b11c-a8e722d5e828', 'property_': 'install', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7ded240b2200>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7ded240b2800>]}
+[0m08:32:57.030191 [info ] [MainThread]: 
+[0m08:32:57.033691 [info ] [MainThread]: Updates available for packages: ['dbt-labs/dbt_utils']                 
+Update your versions in packages.yml, then run dbt deps
+[0m08:32:57.152287 [debug] [MainThread]: Resource report: {"command_name": "deps", "command_success": true, "command_wall_clock_time": 42.500057, "process_in_blocks": "3", "process_kernel_time": 87.40636, "process_mem_max_rss": "107216", "process_out_blocks": "344", "process_user_time": 62.4895}
+[0m08:32:57.160988 [debug] [MainThread]: Command `dbt deps` succeeded at 08:32:57.160010 after 42.62 seconds
+[0m08:32:57.170762 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7ded259a5c90>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7ded259ef160>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7ded240b2a70>]}
+[0m08:32:57.183369 [debug] [MainThread]: Flushing usage events
+[0m08:32:59.026888 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m08:33:17.345866 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bff2b5b40>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfda32e90>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfda32e30>]}
+
+
+============================== 08:33:17.359352 | 97acb2b7-74f3-4c02-a6a5-de1bcf6fc796 ==============================
+[0m08:33:17.359352 [info ] [MainThread]: Running with dbt=1.12.2
+[0m08:33:17.363939 [debug] [MainThread]: running dbt with arguments {'quiet': 'False', 'no_print': 'None', 'empty': 'False', 'indirect_selection': 'eager', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'printer_width': '80', 'introspect': 'True', 'send_anonymous_usage_stats': 'True', 'log_format': 'default', 'maximum_seed_size_mib': '1', 'partial_parse': 'True', 'use_colors': 'True', 'use_experimental_parser': 'False', 'version_check': 'True', 'fail_fast': 'False', 'profiles_dir': '/opt/airflow/oceanwatch_transformations', 'warn_error': 'None', 'target_path': 'None', 'cache_selected_only': 'False', 'debug': 'False', 'static_parser': 'True', 'hints_enabled': 'True', 'write_json': 'True', 'invocation_command': 'dbt run --profiles-dir /opt/airflow/oceanwatch_transformations', 'log_cache_events': 'False', 'log_path': '/opt/airflow/oceanwatch_transformations/logs'}
+[0m08:33:18.844275 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'project_id', 'label': '97acb2b7-74f3-4c02-a6a5-de1bcf6fc796', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfe533a30>]}
+[0m08:33:19.049086 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'adapter_info', 'label': '97acb2b7-74f3-4c02-a6a5-de1bcf6fc796', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfda46b90>]}
+[0m08:33:19.085159 [info ] [MainThread]: Registered adapter: postgres=1.11.0
+[0m08:33:21.727475 [debug] [MainThread]: checksum: 292060a60cf5911a1243e916e83e1186293f22342b13e75af027795565fbad74, vars: {}, profile: oceanwatch_transformations, target: dev, version: 1.12.2
+[0m08:33:22.394210 [info ] [MainThread]: Unable to do partial parsing because of a version mismatch
+[0m08:33:22.397429 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'partial_parser', 'label': '97acb2b7-74f3-4c02-a6a5-de1bcf6fc796', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2c00a3fd60>]}
+[0m08:33:33.252547 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'load_project', 'label': '97acb2b7-74f3-4c02-a6a5-de1bcf6fc796', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfb223ac0>]}
+[0m08:33:34.032788 [debug] [MainThread]: Wrote artifact WritableManifest to /opt/airflow/oceanwatch_transformations/target/manifest.json
+[0m08:33:34.114168 [debug] [MainThread]: Wrote artifact SemanticManifest to /opt/airflow/oceanwatch_transformations/target/semantic_manifest.json
+[0m08:33:36.089573 [debug] [MainThread]: Wrote artifact OsiDocument to /opt/airflow/oceanwatch_transformations/target/osi_document.json
+[0m08:33:36.935579 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'resource_counts', 'label': '97acb2b7-74f3-4c02-a6a5-de1bcf6fc796', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfaf641c0>]}
+[0m08:33:36.940225 [info ] [MainThread]: Found 5 models, 16 data tests, 3 sources, 593 macros
+[0m08:33:36.944846 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'runnable_timing', 'label': '97acb2b7-74f3-4c02-a6a5-de1bcf6fc796', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfaf640a0>]}
+[0m08:33:36.954586 [info ] [MainThread]: 
+[0m08:33:36.960333 [info ] [MainThread]: Concurrency: 2 threads (target='dev')
+[0m08:33:36.965297 [info ] [MainThread]: 
+[0m08:33:36.971578 [debug] [MainThread]: Acquiring new postgres connection 'master'
+[0m08:33:36.999319 [debug] [ThreadPool]: Acquiring new postgres connection 'list_oceanwatch_db'
+[0m08:33:39.412379 [debug] [ThreadPool]: Using postgres connection "list_oceanwatch_db"
+[0m08:33:39.423815 [debug] [ThreadPool]: On list_oceanwatch_db: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "list_oceanwatch_db"} */
+
+    select distinct nspname from pg_namespace
+  
+[0m08:33:39.436495 [debug] [ThreadPool]: Opening a new connection, currently in state init
+[0m08:33:39.491613 [debug] [ThreadPool]: SQL status: SELECT 7 in 0.056 seconds
+[0m08:33:39.497976 [debug] [ThreadPool]: On list_oceanwatch_db: Close
+[0m08:33:39.507122 [debug] [ThreadPool]: Re-using an available connection from the pool (formerly list_oceanwatch_db, now list_oceanwatch_db_public)
+[0m08:33:39.527479 [debug] [ThreadPool]: Using postgres connection "list_oceanwatch_db_public"
+[0m08:33:39.531687 [debug] [ThreadPool]: On list_oceanwatch_db_public: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "list_oceanwatch_db_public"} */
+select
+      'oceanwatch_db' as database,
+      tablename as name,
+      schemaname as schema,
+      'table' as type
+    from pg_tables
+    where schemaname ilike 'public'
+    union all
+    select
+      'oceanwatch_db' as database,
+      viewname as name,
+      schemaname as schema,
+      'view' as type
+    from pg_views
+    where schemaname ilike 'public'
+    union all
+    select
+      'oceanwatch_db' as database,
+      matviewname as name,
+      schemaname as schema,
+      'materialized_view' as type
+    from pg_matviews
+    where schemaname ilike 'public'
+    union all
+    select distinct
+     'oceanwatch_db' as database,
+     proname as name,
+     ns.nspname as schema,
+     'function' as type
+    from pg_proc
+     join pg_namespace as ns on pronamespace = ns.oid
+    where ns.nspname ilike 'public'
+  
+[0m08:33:39.536063 [debug] [ThreadPool]: Opening a new connection, currently in state closed
+[0m08:33:42.228166 [debug] [ThreadPool]: SQL status: SELECT 582 in 2.692 seconds
+[0m08:33:42.281931 [debug] [ThreadPool]: On list_oceanwatch_db_public: ROLLBACK
+[0m08:33:42.285492 [debug] [ThreadPool]: On list_oceanwatch_db_public: Close
+[0m08:33:42.765895 [debug] [MainThread]: Using postgres connection "master"
+[0m08:33:42.777953 [debug] [MainThread]: On master: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "master"} */
+select distinct
+        dependent_namespace.nspname as dependent_schema,
+        dependent_class.relname as dependent_name,
+        referenced_namespace.nspname as referenced_schema,
+        referenced_class.relname as referenced_name
+
+    -- Query for views: views are entries in pg_class with an entry in pg_rewrite, but we avoid
+    -- a seq scan on pg_rewrite by leveraging the fact there is an "internal" row in pg_depend for
+    -- the view...
+    from pg_class as dependent_class
+    join pg_namespace as dependent_namespace on dependent_namespace.oid = dependent_class.relnamespace
+    join pg_depend as dependent_depend on dependent_depend.refobjid = dependent_class.oid
+        and dependent_depend.classid = 'pg_rewrite'::regclass
+        and dependent_depend.refclassid = 'pg_class'::regclass
+        and dependent_depend.deptype = 'i'
+
+    -- ... and via pg_depend (that has a row per column, hence the need for "distinct" above, and
+    -- making sure to exclude the internal row to avoid a view appearing to depend on itself)...
+    join pg_depend as joining_depend on joining_depend.objid = dependent_depend.objid
+        and joining_depend.classid = 'pg_rewrite'::regclass
+        and joining_depend.refclassid = 'pg_class'::regclass
+        and joining_depend.refobjid != dependent_depend.refobjid
+
+    -- ... we can find the tables they query from in pg_class, but excluding system tables. Note we
+    -- don't need need to exclude _dependent_ system tables, because they only query from other
+    -- system tables, and so are automatically excluded by excluding _referenced_ system tables
+    join pg_class as referenced_class on referenced_class.oid = joining_depend.refobjid
+    join pg_namespace as referenced_namespace on referenced_namespace.oid = referenced_class.relnamespace
+        and referenced_namespace.nspname != 'information_schema'
+        and referenced_namespace.nspname not like 'pg\_%'
+
+    order by
+        dependent_schema, dependent_name, referenced_schema, referenced_name;
+[0m08:33:42.781919 [debug] [MainThread]: Opening a new connection, currently in state init
+[0m08:33:43.452480 [debug] [MainThread]: SQL status: SELECT 0 in 0.670 seconds
+[0m08:33:43.459152 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'runnable_timing', 'label': '97acb2b7-74f3-4c02-a6a5-de1bcf6fc796', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfb0e0940>]}
+[0m08:33:43.471297 [debug] [MainThread]: On master: ROLLBACK
+[0m08:33:43.477803 [debug] [MainThread]: On master: COMMIT
+[0m08:33:43.487311 [debug] [MainThread]: Using postgres connection "master"
+[0m08:33:43.491872 [debug] [MainThread]: On master: COMMIT
+[0m08:33:43.496777 [debug] [MainThread]: SQL status: COMMIT in 0.001 seconds
+[0m08:33:43.500366 [debug] [MainThread]: On master: Close
+[0m08:33:43.631556 [debug] [Thread-1 (]: Began running node model.oceanwatch_transformations.dim_date
+[0m08:33:43.633708 [debug] [Thread-2 (]: Began running node model.oceanwatch_transformations.dim_location
+[0m08:33:43.640034 [info ] [Thread-1 (]: 1 of 5 START sql table model public.dim_date ................................... [RUN]
+[0m08:33:43.647111 [info ] [Thread-2 (]: 2 of 5 START sql table model public.dim_location ............................... [RUN]
+[0m08:33:43.658352 [debug] [Thread-1 (]: Re-using an available connection from the pool (formerly list_oceanwatch_db_public, now model.oceanwatch_transformations.dim_date)
+[0m08:33:43.670187 [debug] [Thread-2 (]: Acquiring new postgres connection 'model.oceanwatch_transformations.dim_location'
+[0m08:33:43.676456 [debug] [Thread-1 (]: Began compiling node model.oceanwatch_transformations.dim_date
+[0m08:33:43.681051 [debug] [Thread-2 (]: Began compiling node model.oceanwatch_transformations.dim_location
+[0m08:33:43.759703 [debug] [Thread-1 (]: Writing injected SQL for node "model.oceanwatch_transformations.dim_date"
+[0m08:33:43.761640 [debug] [Thread-2 (]: Writing injected SQL for node "model.oceanwatch_transformations.dim_location"
+[0m08:33:43.834241 [debug] [Thread-2 (]: Began executing node model.oceanwatch_transformations.dim_location
+[0m08:33:43.872191 [debug] [Thread-1 (]: Began executing node model.oceanwatch_transformations.dim_date
+[0m08:33:44.137091 [debug] [Thread-2 (]: Writing runtime sql for node "model.oceanwatch_transformations.dim_location"
+[0m08:33:44.151184 [debug] [Thread-1 (]: Writing runtime sql for node "model.oceanwatch_transformations.dim_date"
+[0m08:33:44.300554 [debug] [Thread-2 (]: Using postgres connection "model.oceanwatch_transformations.dim_location"
+[0m08:33:44.306914 [debug] [Thread-2 (]: On model.oceanwatch_transformations.dim_location: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.dim_location"} */
+
+  
+    
+
+  create  table "oceanwatch_db"."public"."dim_location__dbt_tmp"
+  
+  
+    as
+  
+  (
+    
+
+select
+    1                                           as location_key,
+    'Western Indian Ocean'                      as region_name,
+    'Kenya EEZ / Mombasa area'                  as description,
+    39.0                                        as min_longitude,
+    45.0                                        as max_longitude,
+    -5.0                                        as min_latitude,
+    2.0                                         as max_latitude,
+    (39.0 + 45.0) / 2                           as centroid_lon,
+    (-5.0 + 2.0) / 2                            as centroid_lat,
+
+    -- PostGIS geometry: bounding box polygon
+    ST_SetSRID(
+        ST_MakeEnvelope(39.0, -5.0, 45.0, 2.0),
+        4326
+    )                                           as geom,
+
+    -- Centroid point
+    ST_SetSRID(
+        ST_MakePoint((39.0 + 45.0) / 2, (-5.0 + 2.0) / 2),
+        4326
+    )                                           as centroid_geom
+  );
+  
+[0m08:33:44.311200 [debug] [Thread-2 (]: Opening a new connection, currently in state init
+[0m08:33:44.313905 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.dim_date"
+[0m08:33:44.337316 [debug] [Thread-1 (]: On model.oceanwatch_transformations.dim_date: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.dim_date"} */
+
+  
+    
+
+  create  table "oceanwatch_db"."public"."dim_date__dbt_tmp"
+  
+  
+    as
+  
+  (
+    
+
+with date_spine as (
+    select
+        generate_series(
+            '2026-01-01'::date,
+            '2026-12-31'::date,
+            '1 day'::interval
+        )::date as date_day
+)
+
+select
+    date_day                                          as date_key,
+    date_day,
+    extract(year from date_day)::int                  as year,
+    extract(month from date_day)::int                 as month,
+    extract(day from date_day)::int                   as day,
+    to_char(date_day, 'Month')                        as month_name,
+    extract(dow from date_day)::int                   as day_of_week,
+    to_char(date_day, 'Day')                          as day_name,
+    case when extract(dow from date_day) in (0, 6) then true else false end as is_weekend
+from date_spine
+  );
+  
+[0m08:33:44.347727 [debug] [Thread-1 (]: Opening a new connection, currently in state closed
+[0m08:33:46.216716 [debug] [Thread-1 (]: SQL status: SELECT 365 in 1.869 seconds
+[0m08:33:46.250287 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.dim_date"
+[0m08:33:46.252919 [debug] [Thread-1 (]: On model.oceanwatch_transformations.dim_date: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.dim_date"} */
+alter table "oceanwatch_db"."public"."dim_date" rename to "dim_date__dbt_backup"
+[0m08:33:46.428815 [debug] [Thread-1 (]: SQL status: ALTER TABLE in 0.173 seconds
+[0m08:33:46.439482 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.dim_date"
+[0m08:33:46.443786 [debug] [Thread-1 (]: On model.oceanwatch_transformations.dim_date: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.dim_date"} */
+alter table "oceanwatch_db"."public"."dim_date__dbt_tmp" rename to "dim_date"
+[0m08:33:46.449018 [debug] [Thread-1 (]: SQL status: ALTER TABLE in 0.001 seconds
+[0m08:33:46.574993 [debug] [Thread-1 (]: On model.oceanwatch_transformations.dim_date: COMMIT
+[0m08:33:46.587622 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.dim_date"
+[0m08:33:46.614241 [debug] [Thread-1 (]: On model.oceanwatch_transformations.dim_date: COMMIT
+[0m08:33:46.755864 [debug] [Thread-1 (]: SQL status: COMMIT in 0.091 seconds
+[0m08:33:46.805582 [debug] [Thread-1 (]: Applying DROP to: "oceanwatch_db"."public"."dim_date__dbt_backup"
+[0m08:33:46.875139 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.dim_date"
+[0m08:33:46.886078 [debug] [Thread-1 (]: On model.oceanwatch_transformations.dim_date: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.dim_date"} */
+drop table if exists "oceanwatch_db"."public"."dim_date__dbt_backup" cascade
+[0m08:33:46.901927 [debug] [Thread-1 (]: SQL status: DROP TABLE in 0.012 seconds
+[0m08:33:46.910843 [debug] [Thread-1 (]: On model.oceanwatch_transformations.dim_date: Close
+[0m08:33:46.919112 [debug] [Thread-1 (]: Sending event: {'category': 'dbt', 'action': 'run_model', 'label': '97acb2b7-74f3-4c02-a6a5-de1bcf6fc796', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfa21ddb0>]}
+[0m08:33:46.923484 [info ] [Thread-1 (]: 1 of 5 OK created sql table model public.dim_date .............................. [[32mSELECT 365[0m in 3.26s]
+[0m08:33:46.927501 [debug] [Thread-1 (]: Finished running node model.oceanwatch_transformations.dim_date
+[0m08:33:46.931085 [debug] [Thread-1 (]: Began running node model.oceanwatch_transformations.stg_tides
+[0m08:33:46.934315 [info ] [Thread-1 (]: 3 of 5 START sql table model public.stg_tides .................................. [RUN]
+[0m08:33:46.938890 [debug] [Thread-1 (]: Re-using an available connection from the pool (formerly model.oceanwatch_transformations.dim_date, now model.oceanwatch_transformations.stg_tides)
+[0m08:33:46.941656 [debug] [Thread-1 (]: Began compiling node model.oceanwatch_transformations.stg_tides
+[0m08:33:46.947757 [debug] [Thread-1 (]: Writing injected SQL for node "model.oceanwatch_transformations.stg_tides"
+[0m08:33:47.034356 [debug] [Thread-1 (]: Began executing node model.oceanwatch_transformations.stg_tides
+[0m08:33:47.090476 [debug] [Thread-1 (]: Writing runtime sql for node "model.oceanwatch_transformations.stg_tides"
+[0m08:33:47.134885 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.stg_tides"
+[0m08:33:47.138143 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.stg_tides"} */
+
+  
+    
+
+  create  table "oceanwatch_db"."public"."stg_tides__dbt_tmp"
+  
+  
+    as
+  
+  (
+    
+
+select
+    t::timestamp          as observation_time,
+    v::float              as tide_height_meters,
+    s::float              as residual,
+    current_timestamp     as loaded_at
+from "oceanwatch_db"."public"."raw_tides"
+  );
+  
+[0m08:33:47.141304 [debug] [Thread-1 (]: Opening a new connection, currently in state closed
+[0m08:33:47.164788 [debug] [Thread-1 (]: SQL status: SELECT 803 in 0.023 seconds
+[0m08:33:47.181290 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.stg_tides"
+[0m08:33:47.184510 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.stg_tides"} */
+alter table "oceanwatch_db"."public"."stg_tides" rename to "stg_tides__dbt_backup"
+[0m08:33:47.191155 [debug] [Thread-1 (]: SQL status: ALTER TABLE in 0.001 seconds
+[0m08:33:47.199473 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.stg_tides"
+[0m08:33:47.202524 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.stg_tides"} */
+alter table "oceanwatch_db"."public"."stg_tides__dbt_tmp" rename to "stg_tides"
+[0m08:33:47.206106 [debug] [Thread-1 (]: SQL status: ALTER TABLE in 0.001 seconds
+[0m08:33:47.212193 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: COMMIT
+[0m08:33:47.215001 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.stg_tides"
+[0m08:33:47.218073 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: COMMIT
+[0m08:33:47.235635 [debug] [Thread-1 (]: SQL status: COMMIT in 0.014 seconds
+[0m08:33:47.247423 [debug] [Thread-1 (]: Applying DROP to: "oceanwatch_db"."public"."stg_tides__dbt_backup"
+[0m08:33:47.254552 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.stg_tides"
+[0m08:33:47.258295 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.stg_tides"} */
+drop table if exists "oceanwatch_db"."public"."stg_tides__dbt_backup" cascade
+[0m08:33:47.267156 [debug] [Thread-1 (]: SQL status: DROP TABLE in 0.006 seconds
+[0m08:33:47.273067 [debug] [Thread-1 (]: On model.oceanwatch_transformations.stg_tides: Close
+[0m08:33:47.276488 [debug] [Thread-1 (]: Sending event: {'category': 'dbt', 'action': 'run_model', 'label': '97acb2b7-74f3-4c02-a6a5-de1bcf6fc796', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfbada830>]}
+[0m08:33:47.280330 [info ] [Thread-1 (]: 3 of 5 OK created sql table model public.stg_tides ............................. [[32mSELECT 803[0m in 0.34s]
+[0m08:33:47.284372 [debug] [Thread-1 (]: Finished running node model.oceanwatch_transformations.stg_tides
+[0m08:33:47.287555 [debug] [Thread-1 (]: Began running node model.oceanwatch_transformations.fact_ocean_conditions
+[0m08:33:47.290848 [info ] [Thread-1 (]: 4 of 5 START sql table model public.fact_ocean_conditions ...................... [RUN]
+[0m08:33:47.294383 [debug] [Thread-1 (]: Re-using an available connection from the pool (formerly model.oceanwatch_transformations.stg_tides, now model.oceanwatch_transformations.fact_ocean_conditions)
+[0m08:33:47.297274 [debug] [Thread-1 (]: Began compiling node model.oceanwatch_transformations.fact_ocean_conditions
+[0m08:33:47.307979 [debug] [Thread-1 (]: Writing injected SQL for node "model.oceanwatch_transformations.fact_ocean_conditions"
+[0m08:33:47.382834 [debug] [Thread-1 (]: Began executing node model.oceanwatch_transformations.fact_ocean_conditions
+[0m08:33:47.431767 [debug] [Thread-1 (]: Writing runtime sql for node "model.oceanwatch_transformations.fact_ocean_conditions"
+[0m08:33:47.516648 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.fact_ocean_conditions"
+[0m08:33:47.522614 [debug] [Thread-1 (]: On model.oceanwatch_transformations.fact_ocean_conditions: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.fact_ocean_conditions"} */
+
+  
+    
+
+  create  table "oceanwatch_db"."public"."fact_ocean_conditions__dbt_tmp"
+  
+  
+    as
+  
+  (
+    
+
+with sst as (
+    select
+        time::date                      as date_key,
+        thetao_mean                     as sst_celsius,
+        source_file                     as sst_source_file
+    from "oceanwatch_db"."public"."raw_sst_daily"
+),
+
+chl as (
+    select
+        time::date                      as date_key,
+        "CHL_mean"                      as chlorophyll_mg_m3,
+        source_file                     as chl_source_file
+    from "oceanwatch_db"."public"."raw_chl_daily"
+),
+
+tides as (
+    select
+        observation_time::date          as date_key,
+        avg(tide_height_meters)         as tide_mean_m,
+        min(tide_height_meters)         as tide_min_m,
+        max(tide_height_meters)         as tide_max_m,
+        count(*)                        as tide_obs_count
+    from "oceanwatch_db"."public"."stg_tides"
+    group by 1
+)
+
+select
+    coalesce(s.date_key, c.date_key, t.date_key) as date_key,
+    1                                            as location_key,
+    s.sst_celsius,
+    c.chlorophyll_mg_m3,
+    t.tide_mean_m,
+    t.tide_min_m,
+    t.tide_max_m,
+    t.tide_obs_count,
+    s.sst_source_file,
+    c.chl_source_file,
+    current_timestamp                            as loaded_at
+from sst s
+full outer join chl c  on s.date_key = c.date_key
+full outer join tides t on coalesce(s.date_key, c.date_key) = t.date_key
+  );
+  
+[0m08:33:47.529185 [debug] [Thread-1 (]: Opening a new connection, currently in state closed
+[0m08:33:47.736491 [debug] [Thread-1 (]: SQL status: SELECT 91 in 0.208 seconds
+[0m08:33:47.767429 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.fact_ocean_conditions"
+[0m08:33:47.771495 [debug] [Thread-1 (]: On model.oceanwatch_transformations.fact_ocean_conditions: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.fact_ocean_conditions"} */
+alter table "oceanwatch_db"."public"."fact_ocean_conditions" rename to "fact_ocean_conditions__dbt_backup"
+[0m08:33:47.775453 [debug] [Thread-1 (]: SQL status: ALTER TABLE in 0.001 seconds
+[0m08:33:47.781759 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.fact_ocean_conditions"
+[0m08:33:47.784521 [debug] [Thread-1 (]: On model.oceanwatch_transformations.fact_ocean_conditions: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.fact_ocean_conditions"} */
+alter table "oceanwatch_db"."public"."fact_ocean_conditions__dbt_tmp" rename to "fact_ocean_conditions"
+[0m08:33:47.788002 [debug] [Thread-1 (]: SQL status: ALTER TABLE in 0.001 seconds
+[0m08:33:47.795494 [debug] [Thread-1 (]: On model.oceanwatch_transformations.fact_ocean_conditions: COMMIT
+[0m08:33:47.798473 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.fact_ocean_conditions"
+[0m08:33:47.801959 [debug] [Thread-1 (]: On model.oceanwatch_transformations.fact_ocean_conditions: COMMIT
+[0m08:33:47.819508 [debug] [Thread-1 (]: SQL status: COMMIT in 0.014 seconds
+[0m08:33:47.829983 [debug] [Thread-1 (]: Applying DROP to: "oceanwatch_db"."public"."fact_ocean_conditions__dbt_backup"
+[0m08:33:47.844191 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.fact_ocean_conditions"
+[0m08:33:47.848049 [debug] [Thread-1 (]: On model.oceanwatch_transformations.fact_ocean_conditions: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.fact_ocean_conditions"} */
+drop table if exists "oceanwatch_db"."public"."fact_ocean_conditions__dbt_backup" cascade
+[0m08:33:48.028140 [debug] [Thread-1 (]: SQL status: DROP TABLE in 0.176 seconds
+[0m08:33:48.042423 [debug] [Thread-1 (]: On model.oceanwatch_transformations.fact_ocean_conditions: Close
+[0m08:33:48.054444 [debug] [Thread-1 (]: Sending event: {'category': 'dbt', 'action': 'run_model', 'label': '97acb2b7-74f3-4c02-a6a5-de1bcf6fc796', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfb0907c0>]}
+[0m08:33:48.067435 [info ] [Thread-1 (]: 4 of 5 OK created sql table model public.fact_ocean_conditions ................. [[32mSELECT 91[0m in 0.76s]
+[0m08:33:48.079452 [debug] [Thread-1 (]: Finished running node model.oceanwatch_transformations.fact_ocean_conditions
+[0m08:33:48.207947 [debug] [Thread-1 (]: Began running node model.oceanwatch_transformations.feat_daily_ocean
+[0m08:33:48.247238 [info ] [Thread-1 (]: 5 of 5 START sql table model public.feat_daily_ocean ........................... [RUN]
+[0m08:33:48.253829 [debug] [Thread-1 (]: Re-using an available connection from the pool (formerly model.oceanwatch_transformations.fact_ocean_conditions, now model.oceanwatch_transformations.feat_daily_ocean)
+[0m08:33:48.257296 [debug] [Thread-1 (]: Began compiling node model.oceanwatch_transformations.feat_daily_ocean
+[0m08:33:48.272390 [debug] [Thread-1 (]: Writing injected SQL for node "model.oceanwatch_transformations.feat_daily_ocean"
+[0m08:33:48.312911 [debug] [Thread-1 (]: Began executing node model.oceanwatch_transformations.feat_daily_ocean
+[0m08:33:48.346120 [debug] [Thread-1 (]: Writing runtime sql for node "model.oceanwatch_transformations.feat_daily_ocean"
+[0m08:33:48.368084 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.feat_daily_ocean"
+[0m08:33:48.371144 [debug] [Thread-1 (]: On model.oceanwatch_transformations.feat_daily_ocean: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.feat_daily_ocean"} */
+
+  
+    
+
+  create  table "oceanwatch_db"."public"."feat_daily_ocean__dbt_tmp"
+  
+  
+    as
+  
+  (
+    
+
+select
+    date_key,
+    sst_celsius,
+    chlorophyll_mg_m3,
+    tide_mean_m,
+    tide_min_m,
+    tide_max_m,
+    lag(sst_celsius, 1) over (order by date_key) as sst_lag_1,
+    lag(sst_celsius, 7) over (order by date_key) as sst_lag_7,
+    avg(sst_celsius) over (order by date_key rows between 6 preceding and current row) as sst_roll_7,
+    current_timestamp as built_at
+from "oceanwatch_db"."public"."fact_ocean_conditions"
+  );
+  
+[0m08:33:48.373616 [debug] [Thread-1 (]: Opening a new connection, currently in state closed
+[0m08:33:48.488586 [debug] [Thread-1 (]: SQL status: SELECT 91 in 0.114 seconds
+[0m08:33:48.511715 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.feat_daily_ocean"
+[0m08:33:48.515504 [debug] [Thread-1 (]: On model.oceanwatch_transformations.feat_daily_ocean: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.feat_daily_ocean"} */
+alter table "oceanwatch_db"."public"."feat_daily_ocean" rename to "feat_daily_ocean__dbt_backup"
+[0m08:33:48.519957 [debug] [Thread-1 (]: SQL status: ALTER TABLE in 0.001 seconds
+[0m08:33:48.526912 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.feat_daily_ocean"
+[0m08:33:48.529828 [debug] [Thread-1 (]: On model.oceanwatch_transformations.feat_daily_ocean: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.feat_daily_ocean"} */
+alter table "oceanwatch_db"."public"."feat_daily_ocean__dbt_tmp" rename to "feat_daily_ocean"
+[0m08:33:48.533233 [debug] [Thread-1 (]: SQL status: ALTER TABLE in 0.001 seconds
+[0m08:33:48.538655 [debug] [Thread-1 (]: On model.oceanwatch_transformations.feat_daily_ocean: COMMIT
+[0m08:33:48.541934 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.feat_daily_ocean"
+[0m08:33:48.546802 [debug] [Thread-1 (]: On model.oceanwatch_transformations.feat_daily_ocean: COMMIT
+[0m08:33:48.553241 [debug] [Thread-1 (]: SQL status: COMMIT in 0.003 seconds
+[0m08:33:48.559929 [debug] [Thread-1 (]: Applying DROP to: "oceanwatch_db"."public"."feat_daily_ocean__dbt_backup"
+[0m08:33:48.563950 [debug] [Thread-1 (]: Using postgres connection "model.oceanwatch_transformations.feat_daily_ocean"
+[0m08:33:48.567278 [debug] [Thread-1 (]: On model.oceanwatch_transformations.feat_daily_ocean: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.feat_daily_ocean"} */
+drop table if exists "oceanwatch_db"."public"."feat_daily_ocean__dbt_backup" cascade
+[0m08:33:48.640642 [debug] [Thread-1 (]: SQL status: DROP TABLE in 0.070 seconds
+[0m08:33:48.649306 [debug] [Thread-1 (]: On model.oceanwatch_transformations.feat_daily_ocean: Close
+[0m08:33:48.657152 [debug] [Thread-1 (]: Sending event: {'category': 'dbt', 'action': 'run_model', 'label': '97acb2b7-74f3-4c02-a6a5-de1bcf6fc796', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfa230b50>]}
+[0m08:33:48.667442 [info ] [Thread-1 (]: 5 of 5 OK created sql table model public.feat_daily_ocean ...................... [[32mSELECT 91[0m in 0.40s]
+[0m08:33:48.676377 [debug] [Thread-1 (]: Finished running node model.oceanwatch_transformations.feat_daily_ocean
+[0m08:33:50.286684 [debug] [Thread-2 (]: SQL status: SELECT 1 in 5.976 seconds
+[0m08:33:50.316269 [debug] [Thread-2 (]: Using postgres connection "model.oceanwatch_transformations.dim_location"
+[0m08:33:50.319334 [debug] [Thread-2 (]: On model.oceanwatch_transformations.dim_location: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.dim_location"} */
+alter table "oceanwatch_db"."public"."dim_location" rename to "dim_location__dbt_backup"
+[0m08:33:50.323302 [debug] [Thread-2 (]: SQL status: ALTER TABLE in 0.001 seconds
+[0m08:33:50.330226 [debug] [Thread-2 (]: Using postgres connection "model.oceanwatch_transformations.dim_location"
+[0m08:33:50.333020 [debug] [Thread-2 (]: On model.oceanwatch_transformations.dim_location: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.dim_location"} */
+alter table "oceanwatch_db"."public"."dim_location__dbt_tmp" rename to "dim_location"
+[0m08:33:50.336788 [debug] [Thread-2 (]: SQL status: ALTER TABLE in 0.001 seconds
+[0m08:33:50.343259 [debug] [Thread-2 (]: On model.oceanwatch_transformations.dim_location: COMMIT
+[0m08:33:50.346092 [debug] [Thread-2 (]: Using postgres connection "model.oceanwatch_transformations.dim_location"
+[0m08:33:50.349361 [debug] [Thread-2 (]: On model.oceanwatch_transformations.dim_location: COMMIT
+[0m08:33:50.358425 [debug] [Thread-2 (]: SQL status: COMMIT in 0.006 seconds
+[0m08:33:50.367423 [debug] [Thread-2 (]: Applying DROP to: "oceanwatch_db"."public"."dim_location__dbt_backup"
+[0m08:33:50.373219 [debug] [Thread-2 (]: Using postgres connection "model.oceanwatch_transformations.dim_location"
+[0m08:33:50.378063 [debug] [Thread-2 (]: On model.oceanwatch_transformations.dim_location: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "model.oceanwatch_transformations.dim_location"} */
+drop table if exists "oceanwatch_db"."public"."dim_location__dbt_backup" cascade
+[0m08:33:50.389158 [debug] [Thread-2 (]: SQL status: DROP TABLE in 0.007 seconds
+[0m08:33:50.396737 [debug] [Thread-2 (]: On model.oceanwatch_transformations.dim_location: Close
+[0m08:33:50.401947 [debug] [Thread-2 (]: Sending event: {'category': 'dbt', 'action': 'run_model', 'label': '97acb2b7-74f3-4c02-a6a5-de1bcf6fc796', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfa29f8e0>]}
+[0m08:33:50.407100 [info ] [Thread-2 (]: 2 of 5 OK created sql table model public.dim_location .......................... [[32mSELECT 1[0m in 6.73s]
+[0m08:33:50.413833 [debug] [Thread-2 (]: Finished running node model.oceanwatch_transformations.dim_location
+[0m08:33:50.421806 [debug] [MainThread]: On master: COMMIT
+[0m08:33:50.425733 [debug] [MainThread]: Using postgres connection "master"
+[0m08:33:50.429759 [debug] [MainThread]: On master: COMMIT
+[0m08:33:50.433248 [debug] [MainThread]: Opening a new connection, currently in state closed
+[0m08:33:50.458288 [debug] [MainThread]: SQL status: COMMIT in 0.025 seconds
+[0m08:33:50.462344 [debug] [MainThread]: On master: Close
+[0m08:33:50.467052 [debug] [MainThread]: Connection 'master' was properly closed.
+[0m08:33:50.472920 [debug] [MainThread]: Connection 'model.oceanwatch_transformations.feat_daily_ocean' was properly closed.
+[0m08:33:50.477045 [debug] [MainThread]: Connection 'model.oceanwatch_transformations.dim_location' was properly closed.
+[0m08:33:50.481539 [info ] [MainThread]: 
+[0m08:33:50.485711 [info ] [MainThread]: Finished running 5 table models in 0 hours 0 minutes and 13.51 seconds (13.51s).
+[0m08:33:50.492690 [debug] [MainThread]: Command end result
+[0m08:33:50.755808 [debug] [MainThread]: Wrote artifact WritableManifest to /opt/airflow/oceanwatch_transformations/target/manifest.json
+[0m08:33:50.770448 [debug] [MainThread]: Wrote artifact SemanticManifest to /opt/airflow/oceanwatch_transformations/target/semantic_manifest.json
+[0m08:33:50.785188 [debug] [MainThread]: Wrote artifact OsiDocument to /opt/airflow/oceanwatch_transformations/target/osi_document.json
+[0m08:33:50.878282 [debug] [MainThread]: Wrote artifact RunExecutionResult to /opt/airflow/oceanwatch_transformations/target/run_results.json
+[0m08:33:50.881436 [info ] [MainThread]: 
+[0m08:33:50.884887 [info ] [MainThread]: [32mCompleted successfully[0m
+[0m08:33:50.887696 [info ] [MainThread]: 
+[0m08:33:50.890874 [info ] [MainThread]: Done. PASS=5 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=5
+[0m08:33:50.895449 [debug] [MainThread]: Resource report: {"command_name": "run", "command_success": true, "command_wall_clock_time": 33.785458, "process_in_blocks": "1534", "process_kernel_time": 5.575383, "process_mem_max_rss": "138356", "process_out_blocks": "0", "process_user_time": 25.407421}
+[0m08:33:50.898270 [debug] [MainThread]: Command `dbt run` succeeded at 08:33:50.898004 after 33.79 seconds
+[0m08:33:50.901444 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bff2b5b40>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfdad15a0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7b2bfa3f2560>]}
+[0m08:33:50.904561 [debug] [MainThread]: Flushing usage events
+[0m08:33:52.756475 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m08:34:11.709019 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7adbcd9adc00>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7adbcc2fafe0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7adbcc2faf80>]}
+
+
+============================== 08:34:11.720410 | a38ed66d-4703-4f61-908b-1a4af7ff6940 ==============================
+[0m08:34:11.720410 [info ] [MainThread]: Running with dbt=1.12.2
+[0m08:34:11.723792 [debug] [MainThread]: running dbt with arguments {'send_anonymous_usage_stats': 'True', 'no_print': 'None', 'log_path': '/opt/airflow/oceanwatch_transformations/logs', 'fail_fast': 'False', 'warn_error': 'None', 'introspect': 'True', 'profiles_dir': '/opt/airflow/oceanwatch_transformations', 'version_check': 'True', 'empty': 'None', 'target_path': 'None', 'write_json': 'True', 'printer_width': '80', 'log_cache_events': 'False', 'debug': 'False', 'partial_parse': 'True', 'cache_selected_only': 'False', 'log_format': 'default', 'maximum_seed_size_mib': '1', 'use_experimental_parser': 'False', 'invocation_command': 'dbt test --profiles-dir /opt/airflow/oceanwatch_transformations', 'indirect_selection': 'eager', 'static_parser': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'quiet': 'False', 'hints_enabled': 'True', 'use_colors': 'True'}
+[0m08:34:12.316605 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'project_id', 'label': 'a38ed66d-4703-4f61-908b-1a4af7ff6940', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7adbcf7e9870>]}
+[0m08:34:12.567349 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'adapter_info', 'label': 'a38ed66d-4703-4f61-908b-1a4af7ff6940', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7adbcc31aaa0>]}
+[0m08:34:12.572207 [info ] [MainThread]: Registered adapter: postgres=1.11.0
+[0m08:34:13.350453 [debug] [MainThread]: checksum: 292060a60cf5911a1243e916e83e1186293f22342b13e75af027795565fbad74, vars: {}, profile: oceanwatch_transformations, target: dev, version: 1.12.2
+[0m08:34:15.690835 [debug] [MainThread]: Partial parsing enabled: 0 files deleted, 0 files added, 0 files changed.
+[0m08:34:15.694513 [debug] [MainThread]: Nothing changed, skipping partial parsing.
+[0m08:34:15.698131 [debug] [MainThread]: Partial parsing enabled, no changes found, skipping parsing
+[0m08:34:15.740744 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'load_project', 'label': 'a38ed66d-4703-4f61-908b-1a4af7ff6940', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7adbca5a1150>]}
+[0m08:34:16.486481 [debug] [MainThread]: Wrote artifact WritableManifest to /opt/airflow/oceanwatch_transformations/target/manifest.json
+[0m08:34:16.499910 [debug] [MainThread]: Wrote artifact SemanticManifest to /opt/airflow/oceanwatch_transformations/target/semantic_manifest.json
+[0m08:34:16.533340 [debug] [MainThread]: Wrote artifact OsiDocument to /opt/airflow/oceanwatch_transformations/target/osi_document.json
+[0m08:34:17.486177 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'resource_counts', 'label': 'a38ed66d-4703-4f61-908b-1a4af7ff6940', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7adbca185ba0>]}
+[0m08:34:17.489037 [info ] [MainThread]: Found 5 models, 16 data tests, 3 sources, 593 macros
+[0m08:34:17.491856 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'runnable_timing', 'label': 'a38ed66d-4703-4f61-908b-1a4af7ff6940', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7adbca184880>]}
+[0m08:34:17.498675 [info ] [MainThread]: 
+[0m08:34:17.501555 [info ] [MainThread]: Concurrency: 2 threads (target='dev')
+[0m08:34:17.504207 [info ] [MainThread]: 
+[0m08:34:17.507089 [debug] [MainThread]: Acquiring new postgres connection 'master'
+[0m08:34:17.519556 [debug] [ThreadPool]: Acquiring new postgres connection 'list_oceanwatch_db_public'
+[0m08:34:17.718729 [debug] [ThreadPool]: Using postgres connection "list_oceanwatch_db_public"
+[0m08:34:17.721651 [debug] [ThreadPool]: On list_oceanwatch_db_public: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "list_oceanwatch_db_public"} */
+select
+      'oceanwatch_db' as database,
+      tablename as name,
+      schemaname as schema,
+      'table' as type
+    from pg_tables
+    where schemaname ilike 'public'
+    union all
+    select
+      'oceanwatch_db' as database,
+      viewname as name,
+      schemaname as schema,
+      'view' as type
+    from pg_views
+    where schemaname ilike 'public'
+    union all
+    select
+      'oceanwatch_db' as database,
+      matviewname as name,
+      schemaname as schema,
+      'materialized_view' as type
+    from pg_matviews
+    where schemaname ilike 'public'
+    union all
+    select distinct
+     'oceanwatch_db' as database,
+     proname as name,
+     ns.nspname as schema,
+     'function' as type
+    from pg_proc
+     join pg_namespace as ns on pronamespace = ns.oid
+    where ns.nspname ilike 'public'
+  
+[0m08:34:17.724128 [debug] [ThreadPool]: Opening a new connection, currently in state init
+[0m08:34:17.759266 [debug] [ThreadPool]: SQL status: SELECT 582 in 0.035 seconds
+[0m08:34:17.799335 [debug] [ThreadPool]: On list_oceanwatch_db_public: ROLLBACK
+[0m08:34:17.802414 [debug] [ThreadPool]: On list_oceanwatch_db_public: Close
+[0m08:34:18.115117 [debug] [MainThread]: Using postgres connection "master"
+[0m08:34:18.117847 [debug] [MainThread]: On master: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "connection_name": "master"} */
+select distinct
+        dependent_namespace.nspname as dependent_schema,
+        dependent_class.relname as dependent_name,
+        referenced_namespace.nspname as referenced_schema,
+        referenced_class.relname as referenced_name
+
+    -- Query for views: views are entries in pg_class with an entry in pg_rewrite, but we avoid
+    -- a seq scan on pg_rewrite by leveraging the fact there is an "internal" row in pg_depend for
+    -- the view...
+    from pg_class as dependent_class
+    join pg_namespace as dependent_namespace on dependent_namespace.oid = dependent_class.relnamespace
+    join pg_depend as dependent_depend on dependent_depend.refobjid = dependent_class.oid
+        and dependent_depend.classid = 'pg_rewrite'::regclass
+        and dependent_depend.refclassid = 'pg_class'::regclass
+        and dependent_depend.deptype = 'i'
+
+    -- ... and via pg_depend (that has a row per column, hence the need for "distinct" above, and
+    -- making sure to exclude the internal row to avoid a view appearing to depend on itself)...
+    join pg_depend as joining_depend on joining_depend.objid = dependent_depend.objid
+        and joining_depend.classid = 'pg_rewrite'::regclass
+        and joining_depend.refclassid = 'pg_class'::regclass
+        and joining_depend.refobjid != dependent_depend.refobjid
+
+    -- ... we can find the tables they query from in pg_class, but excluding system tables. Note we
+    -- don't need need to exclude _dependent_ system tables, because they only query from other
+    -- system tables, and so are automatically excluded by excluding _referenced_ system tables
+    join pg_class as referenced_class on referenced_class.oid = joining_depend.refobjid
+    join pg_namespace as referenced_namespace on referenced_namespace.oid = referenced_class.relnamespace
+        and referenced_namespace.nspname != 'information_schema'
+        and referenced_namespace.nspname not like 'pg\_%'
+
+    order by
+        dependent_schema, dependent_name, referenced_schema, referenced_name;
+[0m08:34:18.120742 [debug] [MainThread]: Opening a new connection, currently in state init
+[0m08:34:18.165574 [debug] [MainThread]: SQL status: SELECT 0 in 0.045 seconds
+[0m08:34:18.172480 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'runnable_timing', 'label': 'a38ed66d-4703-4f61-908b-1a4af7ff6940', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7adbcc263a60>]}
+[0m08:34:18.182967 [debug] [MainThread]: On master: ROLLBACK
+[0m08:34:18.188665 [debug] [MainThread]: On master: COMMIT
+[0m08:34:18.194677 [debug] [MainThread]: Using postgres connection "master"
+[0m08:34:18.199917 [debug] [MainThread]: On master: COMMIT
+[0m08:34:18.204087 [debug] [MainThread]: SQL status: COMMIT in 0.001 seconds
+[0m08:34:18.207924 [debug] [MainThread]: On master: Close
+[0m08:34:18.229780 [debug] [Thread-1 (]: Began running node test.oceanwatch_transformations.not_null_dim_date_date_key.881d0a31b6
+[0m08:34:18.232302 [debug] [Thread-2 (]: Began running node test.oceanwatch_transformations.not_null_dim_location_location_key.c1a2c0b86c
+[0m08:34:18.236898 [info ] [Thread-1 (]: 1 of 16 START test not_null_dim_date_date_key .................................. [RUN]
+[0m08:34:18.241824 [info ] [Thread-2 (]: 2 of 16 START test not_null_dim_location_location_key .......................... [RUN]
+[0m08:34:18.246862 [debug] [Thread-1 (]: Re-using an available connection from the pool (formerly list_oceanwatch_db_public, now test.oceanwatch_transformations.not_null_dim_date_date_key.881d0a31b6)
+[0m08:34:18.250612 [debug] [Thread-2 (]: Acquiring new postgres connection 'test.oceanwatch_transformations.not_null_dim_location_location_key.c1a2c0b86c'
+[0m08:34:18.254155 [debug] [Thread-1 (]: Began compiling node test.oceanwatch_transformations.not_null_dim_date_date_key.881d0a31b6
+[0m08:34:18.258159 [debug] [Thread-2 (]: Began compiling node test.oceanwatch_transformations.not_null_dim_location_location_key.c1a2c0b86c
+[0m08:34:18.368099 [debug] [Thread-1 (]: Writing injected SQL for node "test.oceanwatch_transformations.not_null_dim_date_date_key.881d0a31b6"
+[0m08:34:18.369883 [debug] [Thread-2 (]: Writing injected SQL for node "test.oceanwatch_transformations.not_null_dim_location_location_key.c1a2c0b86c"
+[0m08:34:18.439122 [debug] [Thread-1 (]: Began executing node test.oceanwatch_transformations.not_null_dim_date_date_key.881d0a31b6
+[0m08:34:18.466429 [debug] [Thread-2 (]: Began executing node test.oceanwatch_transformations.not_null_dim_location_location_key.c1a2c0b86c
+[0m08:34:18.638437 [debug] [Thread-1 (]: Writing runtime sql for node "test.oceanwatch_transformations.not_null_dim_date_date_key.881d0a31b6"
+[0m08:34:18.662613 [debug] [Thread-2 (]: Writing runtime sql for node "test.oceanwatch_transformations.not_null_dim_location_location_key.c1a2c0b86c"
+[0m08:34:18.706902 [debug] [Thread-2 (]: Using postgres connection "test.oceanwatch_transformations.not_null_dim_location_location_key.c1a2c0b86c"
+[0m08:34:18.708523 [debug] [Thread-1 (]: Using postgres connection "test.oceanwatch_transformations.not_null_dim_date_date_key.881d0a31b6"
+[0m08:34:18.711884 [debug] [Thread-2 (]: On test.oceanwatch_transformations.not_null_dim_location_location_key.c1a2c0b86c: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.not_null_dim_location_location_key.c1a2c0b86c"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select location_key
+from "oceanwatch_db"."public"."dim_location"
+where location_key is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:18.714835 [debug] [Thread-1 (]: On test.oceanwatch_transformations.not_null_dim_date_date_key.881d0a31b6: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.not_null_dim_date_date_key.881d0a31b6"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select date_key
+from "oceanwatch_db"."public"."dim_date"
+where date_key is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:18.718625 [debug] [Thread-2 (]: Opening a new connection, currently in state init
+[0m08:34:18.727621 [debug] [Thread-1 (]: Opening a new connection, currently in state closed
+[0m08:34:18.758940 [debug] [Thread-2 (]: SQL status: SELECT 1 in 0.040 seconds
+[0m08:34:18.780219 [debug] [Thread-2 (]: On test.oceanwatch_transformations.not_null_dim_location_location_key.c1a2c0b86c: ROLLBACK
+[0m08:34:18.781537 [debug] [Thread-1 (]: SQL status: SELECT 1 in 0.054 seconds
+[0m08:34:18.784804 [debug] [Thread-2 (]: On test.oceanwatch_transformations.not_null_dim_location_location_key.c1a2c0b86c: Close
+[0m08:34:18.792137 [debug] [Thread-1 (]: On test.oceanwatch_transformations.not_null_dim_date_date_key.881d0a31b6: ROLLBACK
+[0m08:34:18.795789 [info ] [Thread-2 (]: 2 of 16 PASS not_null_dim_location_location_key ................................ [[32mPASS[0m in 0.55s]
+[0m08:34:18.799778 [debug] [Thread-1 (]: On test.oceanwatch_transformations.not_null_dim_date_date_key.881d0a31b6: Close
+[0m08:34:18.802626 [debug] [Thread-2 (]: Finished running node test.oceanwatch_transformations.not_null_dim_location_location_key.c1a2c0b86c
+[0m08:34:18.808185 [info ] [Thread-1 (]: 1 of 16 PASS not_null_dim_date_date_key ........................................ [[32mPASS[0m in 0.56s]
+[0m08:34:18.813814 [debug] [Thread-2 (]: Began running node test.oceanwatch_transformations.not_null_fact_ocean_conditions_date_key.34691628df
+[0m08:34:18.822452 [debug] [Thread-1 (]: Finished running node test.oceanwatch_transformations.not_null_dim_date_date_key.881d0a31b6
+[0m08:34:18.826757 [info ] [Thread-2 (]: 3 of 16 START test not_null_fact_ocean_conditions_date_key ..................... [RUN]
+[0m08:34:18.834029 [debug] [Thread-1 (]: Began running node test.oceanwatch_transformations.not_null_fact_ocean_conditions_location_key.e4fded1166
+[0m08:34:18.838101 [debug] [Thread-2 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.not_null_dim_location_location_key.c1a2c0b86c, now test.oceanwatch_transformations.not_null_fact_ocean_conditions_date_key.34691628df)
+[0m08:34:18.842436 [info ] [Thread-1 (]: 4 of 16 START test not_null_fact_ocean_conditions_location_key ................. [RUN]
+[0m08:34:18.848918 [debug] [Thread-2 (]: Began compiling node test.oceanwatch_transformations.not_null_fact_ocean_conditions_date_key.34691628df
+[0m08:34:18.855540 [debug] [Thread-1 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.not_null_dim_date_date_key.881d0a31b6, now test.oceanwatch_transformations.not_null_fact_ocean_conditions_location_key.e4fded1166)
+[0m08:34:18.886649 [debug] [Thread-1 (]: Began compiling node test.oceanwatch_transformations.not_null_fact_ocean_conditions_location_key.e4fded1166
+[0m08:34:18.889642 [debug] [Thread-2 (]: Writing injected SQL for node "test.oceanwatch_transformations.not_null_fact_ocean_conditions_date_key.34691628df"
+[0m08:34:18.935774 [debug] [Thread-1 (]: Writing injected SQL for node "test.oceanwatch_transformations.not_null_fact_ocean_conditions_location_key.e4fded1166"
+[0m08:34:18.979976 [debug] [Thread-2 (]: Began executing node test.oceanwatch_transformations.not_null_fact_ocean_conditions_date_key.34691628df
+[0m08:34:18.989929 [debug] [Thread-2 (]: Writing runtime sql for node "test.oceanwatch_transformations.not_null_fact_ocean_conditions_date_key.34691628df"
+[0m08:34:18.993493 [debug] [Thread-1 (]: Began executing node test.oceanwatch_transformations.not_null_fact_ocean_conditions_location_key.e4fded1166
+[0m08:34:19.004665 [debug] [Thread-1 (]: Writing runtime sql for node "test.oceanwatch_transformations.not_null_fact_ocean_conditions_location_key.e4fded1166"
+[0m08:34:19.040589 [debug] [Thread-1 (]: Using postgres connection "test.oceanwatch_transformations.not_null_fact_ocean_conditions_location_key.e4fded1166"
+[0m08:34:19.045298 [debug] [Thread-1 (]: On test.oceanwatch_transformations.not_null_fact_ocean_conditions_location_key.e4fded1166: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.not_null_fact_ocean_conditions_location_key.e4fded1166"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select location_key
+from "oceanwatch_db"."public"."fact_ocean_conditions"
+where location_key is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:19.048170 [debug] [Thread-2 (]: Using postgres connection "test.oceanwatch_transformations.not_null_fact_ocean_conditions_date_key.34691628df"
+[0m08:34:19.051383 [debug] [Thread-1 (]: Opening a new connection, currently in state closed
+[0m08:34:19.056503 [debug] [Thread-2 (]: On test.oceanwatch_transformations.not_null_fact_ocean_conditions_date_key.34691628df: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.not_null_fact_ocean_conditions_date_key.34691628df"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select date_key
+from "oceanwatch_db"."public"."fact_ocean_conditions"
+where date_key is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:19.064703 [debug] [Thread-2 (]: Opening a new connection, currently in state closed
+[0m08:34:19.078141 [debug] [Thread-1 (]: SQL status: SELECT 1 in 0.027 seconds
+[0m08:34:19.082759 [debug] [Thread-1 (]: On test.oceanwatch_transformations.not_null_fact_ocean_conditions_location_key.e4fded1166: ROLLBACK
+[0m08:34:19.086031 [debug] [Thread-2 (]: SQL status: SELECT 1 in 0.021 seconds
+[0m08:34:19.087058 [debug] [Thread-1 (]: On test.oceanwatch_transformations.not_null_fact_ocean_conditions_location_key.e4fded1166: Close
+[0m08:34:19.090670 [debug] [Thread-2 (]: On test.oceanwatch_transformations.not_null_fact_ocean_conditions_date_key.34691628df: ROLLBACK
+[0m08:34:19.093710 [info ] [Thread-1 (]: 4 of 16 PASS not_null_fact_ocean_conditions_location_key ....................... [[32mPASS[0m in 0.24s]
+[0m08:34:19.097344 [debug] [Thread-2 (]: On test.oceanwatch_transformations.not_null_fact_ocean_conditions_date_key.34691628df: Close
+[0m08:34:19.099885 [debug] [Thread-1 (]: Finished running node test.oceanwatch_transformations.not_null_fact_ocean_conditions_location_key.e4fded1166
+[0m08:34:19.103378 [info ] [Thread-2 (]: 3 of 16 PASS not_null_fact_ocean_conditions_date_key ........................... [[32mPASS[0m in 0.27s]
+[0m08:34:19.107056 [debug] [Thread-1 (]: Began running node test.oceanwatch_transformations.not_null_stg_tides_loaded_at.024ea7590a
+[0m08:34:19.110524 [debug] [Thread-2 (]: Finished running node test.oceanwatch_transformations.not_null_fact_ocean_conditions_date_key.34691628df
+[0m08:34:19.113328 [info ] [Thread-1 (]: 5 of 16 START test not_null_stg_tides_loaded_at ................................ [RUN]
+[0m08:34:19.116055 [debug] [Thread-2 (]: Began running node test.oceanwatch_transformations.not_null_stg_tides_observation_time.9a0f0a5707
+[0m08:34:19.118607 [debug] [Thread-1 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.not_null_fact_ocean_conditions_location_key.e4fded1166, now test.oceanwatch_transformations.not_null_stg_tides_loaded_at.024ea7590a)
+[0m08:34:19.120982 [info ] [Thread-2 (]: 6 of 16 START test not_null_stg_tides_observation_time ......................... [RUN]
+[0m08:34:19.123482 [debug] [Thread-1 (]: Began compiling node test.oceanwatch_transformations.not_null_stg_tides_loaded_at.024ea7590a
+[0m08:34:19.125942 [debug] [Thread-2 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.not_null_fact_ocean_conditions_date_key.34691628df, now test.oceanwatch_transformations.not_null_stg_tides_observation_time.9a0f0a5707)
+[0m08:34:19.138485 [debug] [Thread-1 (]: Writing injected SQL for node "test.oceanwatch_transformations.not_null_stg_tides_loaded_at.024ea7590a"
+[0m08:34:19.140982 [debug] [Thread-2 (]: Began compiling node test.oceanwatch_transformations.not_null_stg_tides_observation_time.9a0f0a5707
+[0m08:34:19.159099 [debug] [Thread-2 (]: Writing injected SQL for node "test.oceanwatch_transformations.not_null_stg_tides_observation_time.9a0f0a5707"
+[0m08:34:19.181008 [debug] [Thread-1 (]: Began executing node test.oceanwatch_transformations.not_null_stg_tides_loaded_at.024ea7590a
+[0m08:34:19.190501 [debug] [Thread-1 (]: Writing runtime sql for node "test.oceanwatch_transformations.not_null_stg_tides_loaded_at.024ea7590a"
+[0m08:34:19.198254 [debug] [Thread-2 (]: Began executing node test.oceanwatch_transformations.not_null_stg_tides_observation_time.9a0f0a5707
+[0m08:34:19.216763 [debug] [Thread-2 (]: Writing runtime sql for node "test.oceanwatch_transformations.not_null_stg_tides_observation_time.9a0f0a5707"
+[0m08:34:19.245694 [debug] [Thread-2 (]: Using postgres connection "test.oceanwatch_transformations.not_null_stg_tides_observation_time.9a0f0a5707"
+[0m08:34:19.248898 [debug] [Thread-2 (]: On test.oceanwatch_transformations.not_null_stg_tides_observation_time.9a0f0a5707: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.not_null_stg_tides_observation_time.9a0f0a5707"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select observation_time
+from "oceanwatch_db"."public"."stg_tides"
+where observation_time is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:19.252949 [debug] [Thread-2 (]: Opening a new connection, currently in state closed
+[0m08:34:19.261366 [debug] [Thread-1 (]: Using postgres connection "test.oceanwatch_transformations.not_null_stg_tides_loaded_at.024ea7590a"
+[0m08:34:19.270296 [debug] [Thread-1 (]: On test.oceanwatch_transformations.not_null_stg_tides_loaded_at.024ea7590a: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.not_null_stg_tides_loaded_at.024ea7590a"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select loaded_at
+from "oceanwatch_db"."public"."stg_tides"
+where loaded_at is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:19.278787 [debug] [Thread-1 (]: Opening a new connection, currently in state closed
+[0m08:34:19.290644 [debug] [Thread-2 (]: SQL status: SELECT 1 in 0.038 seconds
+[0m08:34:19.296487 [debug] [Thread-2 (]: On test.oceanwatch_transformations.not_null_stg_tides_observation_time.9a0f0a5707: ROLLBACK
+[0m08:34:19.300127 [debug] [Thread-2 (]: On test.oceanwatch_transformations.not_null_stg_tides_observation_time.9a0f0a5707: Close
+[0m08:34:19.304470 [info ] [Thread-2 (]: 6 of 16 PASS not_null_stg_tides_observation_time ............................... [[32mPASS[0m in 0.18s]
+[0m08:34:19.310233 [debug] [Thread-2 (]: Finished running node test.oceanwatch_transformations.not_null_stg_tides_observation_time.9a0f0a5707
+[0m08:34:19.311784 [debug] [Thread-1 (]: SQL status: SELECT 1 in 0.033 seconds
+[0m08:34:19.315242 [debug] [Thread-2 (]: Began running node test.oceanwatch_transformations.not_null_stg_tides_tide_height_meters.98909dfccb
+[0m08:34:19.321556 [debug] [Thread-1 (]: On test.oceanwatch_transformations.not_null_stg_tides_loaded_at.024ea7590a: ROLLBACK
+[0m08:34:19.329364 [info ] [Thread-2 (]: 7 of 16 START test not_null_stg_tides_tide_height_meters ....................... [RUN]
+[0m08:34:19.334531 [debug] [Thread-1 (]: On test.oceanwatch_transformations.not_null_stg_tides_loaded_at.024ea7590a: Close
+[0m08:34:19.338330 [debug] [Thread-2 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.not_null_stg_tides_observation_time.9a0f0a5707, now test.oceanwatch_transformations.not_null_stg_tides_tide_height_meters.98909dfccb)
+[0m08:34:19.343161 [info ] [Thread-1 (]: 5 of 16 PASS not_null_stg_tides_loaded_at ...................................... [[32mPASS[0m in 0.22s]
+[0m08:34:19.347818 [debug] [Thread-2 (]: Began compiling node test.oceanwatch_transformations.not_null_stg_tides_tide_height_meters.98909dfccb
+[0m08:34:19.354286 [debug] [Thread-1 (]: Finished running node test.oceanwatch_transformations.not_null_stg_tides_loaded_at.024ea7590a
+[0m08:34:19.384652 [debug] [Thread-2 (]: Writing injected SQL for node "test.oceanwatch_transformations.not_null_stg_tides_tide_height_meters.98909dfccb"
+[0m08:34:19.387622 [debug] [Thread-1 (]: Began running node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily__CHL_mean_.e0a8115c4f
+[0m08:34:19.393551 [info ] [Thread-1 (]: 8 of 16 START test source_not_null_ocean_raw_raw_chl_daily__CHL_mean_ .......... [RUN]
+[0m08:34:19.398230 [debug] [Thread-1 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.not_null_stg_tides_loaded_at.024ea7590a, now test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily__CHL_mean_.e0a8115c4f)
+[0m08:34:19.401437 [debug] [Thread-1 (]: Began compiling node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily__CHL_mean_.e0a8115c4f
+[0m08:34:19.525877 [debug] [Thread-1 (]: Writing injected SQL for node "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily__CHL_mean_.e0a8115c4f"
+[0m08:34:19.530072 [debug] [Thread-2 (]: Began executing node test.oceanwatch_transformations.not_null_stg_tides_tide_height_meters.98909dfccb
+[0m08:34:19.538574 [debug] [Thread-2 (]: Writing runtime sql for node "test.oceanwatch_transformations.not_null_stg_tides_tide_height_meters.98909dfccb"
+[0m08:34:19.573912 [debug] [Thread-1 (]: Began executing node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily__CHL_mean_.e0a8115c4f
+[0m08:34:19.582305 [debug] [Thread-1 (]: Writing runtime sql for node "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily__CHL_mean_.e0a8115c4f"
+[0m08:34:19.584160 [debug] [Thread-2 (]: Using postgres connection "test.oceanwatch_transformations.not_null_stg_tides_tide_height_meters.98909dfccb"
+[0m08:34:19.589725 [debug] [Thread-2 (]: On test.oceanwatch_transformations.not_null_stg_tides_tide_height_meters.98909dfccb: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.not_null_stg_tides_tide_height_meters.98909dfccb"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select tide_height_meters
+from "oceanwatch_db"."public"."stg_tides"
+where tide_height_meters is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:19.593453 [debug] [Thread-2 (]: Opening a new connection, currently in state closed
+[0m08:34:19.617939 [debug] [Thread-2 (]: SQL status: SELECT 1 in 0.025 seconds
+[0m08:34:19.622469 [debug] [Thread-2 (]: On test.oceanwatch_transformations.not_null_stg_tides_tide_height_meters.98909dfccb: ROLLBACK
+[0m08:34:19.626368 [debug] [Thread-2 (]: On test.oceanwatch_transformations.not_null_stg_tides_tide_height_meters.98909dfccb: Close
+[0m08:34:19.628059 [debug] [Thread-1 (]: Using postgres connection "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily__CHL_mean_.e0a8115c4f"
+[0m08:34:19.631963 [info ] [Thread-2 (]: 7 of 16 PASS not_null_stg_tides_tide_height_meters ............................. [[32mPASS[0m in 0.29s]
+[0m08:34:19.636201 [debug] [Thread-1 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily__CHL_mean_.e0a8115c4f: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily__CHL_mean_.e0a8115c4f"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select "CHL_mean"
+from "oceanwatch_db"."public"."raw_chl_daily"
+where "CHL_mean" is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:19.639541 [debug] [Thread-2 (]: Finished running node test.oceanwatch_transformations.not_null_stg_tides_tide_height_meters.98909dfccb
+[0m08:34:19.642236 [debug] [Thread-1 (]: Opening a new connection, currently in state closed
+[0m08:34:19.645571 [debug] [Thread-2 (]: Began running node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily_time.c42ca6df53
+[0m08:34:19.652325 [info ] [Thread-2 (]: 9 of 16 START test source_not_null_ocean_raw_raw_chl_daily_time ................ [RUN]
+[0m08:34:19.657478 [debug] [Thread-2 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.not_null_stg_tides_tide_height_meters.98909dfccb, now test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily_time.c42ca6df53)
+[0m08:34:19.662070 [debug] [Thread-2 (]: Began compiling node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily_time.c42ca6df53
+[0m08:34:19.680677 [debug] [Thread-1 (]: SQL status: SELECT 1 in 0.038 seconds
+[0m08:34:19.688829 [debug] [Thread-2 (]: Writing injected SQL for node "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily_time.c42ca6df53"
+[0m08:34:19.694717 [debug] [Thread-1 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily__CHL_mean_.e0a8115c4f: ROLLBACK
+[0m08:34:19.702482 [debug] [Thread-1 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily__CHL_mean_.e0a8115c4f: Close
+[0m08:34:19.708062 [info ] [Thread-1 (]: 8 of 16 PASS source_not_null_ocean_raw_raw_chl_daily__CHL_mean_ ................ [[32mPASS[0m in 0.31s]
+[0m08:34:19.714782 [debug] [Thread-1 (]: Finished running node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily__CHL_mean_.e0a8115c4f
+[0m08:34:19.718235 [debug] [Thread-1 (]: Began running node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_thetao_mean.a0a8916b65
+[0m08:34:19.722391 [info ] [Thread-1 (]: 10 of 16 START test source_not_null_ocean_raw_raw_sst_daily_thetao_mean ........ [RUN]
+[0m08:34:19.729684 [debug] [Thread-1 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily__CHL_mean_.e0a8115c4f, now test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_thetao_mean.a0a8916b65)
+[0m08:34:19.733384 [debug] [Thread-1 (]: Began compiling node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_thetao_mean.a0a8916b65
+[0m08:34:19.799196 [debug] [Thread-1 (]: Writing injected SQL for node "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_thetao_mean.a0a8916b65"
+[0m08:34:19.824919 [debug] [Thread-2 (]: Began executing node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily_time.c42ca6df53
+[0m08:34:19.850421 [debug] [Thread-2 (]: Writing runtime sql for node "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily_time.c42ca6df53"
+[0m08:34:19.890681 [debug] [Thread-1 (]: Began executing node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_thetao_mean.a0a8916b65
+[0m08:34:19.907962 [debug] [Thread-2 (]: Using postgres connection "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily_time.c42ca6df53"
+[0m08:34:19.909054 [debug] [Thread-1 (]: Writing runtime sql for node "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_thetao_mean.a0a8916b65"
+[0m08:34:19.912320 [debug] [Thread-2 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily_time.c42ca6df53: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily_time.c42ca6df53"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select time
+from "oceanwatch_db"."public"."raw_chl_daily"
+where time is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:19.917656 [debug] [Thread-2 (]: Opening a new connection, currently in state closed
+[0m08:34:19.946297 [debug] [Thread-2 (]: SQL status: SELECT 1 in 0.029 seconds
+[0m08:34:19.949529 [debug] [Thread-1 (]: Using postgres connection "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_thetao_mean.a0a8916b65"
+[0m08:34:19.957808 [debug] [Thread-2 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily_time.c42ca6df53: ROLLBACK
+[0m08:34:19.962512 [debug] [Thread-1 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_thetao_mean.a0a8916b65: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_thetao_mean.a0a8916b65"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select thetao_mean
+from "oceanwatch_db"."public"."raw_sst_daily"
+where thetao_mean is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:19.967407 [debug] [Thread-2 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily_time.c42ca6df53: Close
+[0m08:34:19.970829 [debug] [Thread-1 (]: Opening a new connection, currently in state closed
+[0m08:34:19.974859 [info ] [Thread-2 (]: 9 of 16 PASS source_not_null_ocean_raw_raw_chl_daily_time ...................... [[32mPASS[0m in 0.32s]
+[0m08:34:19.981822 [debug] [Thread-2 (]: Finished running node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily_time.c42ca6df53
+[0m08:34:19.985350 [debug] [Thread-2 (]: Began running node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_time.9c9ec68f14
+[0m08:34:19.989364 [info ] [Thread-2 (]: 11 of 16 START test source_not_null_ocean_raw_raw_sst_daily_time ............... [RUN]
+[0m08:34:19.998341 [debug] [Thread-2 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.source_not_null_ocean_raw_raw_chl_daily_time.c42ca6df53, now test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_time.9c9ec68f14)
+[0m08:34:20.008597 [debug] [Thread-1 (]: SQL status: SELECT 1 in 0.037 seconds
+[0m08:34:20.012340 [debug] [Thread-2 (]: Began compiling node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_time.9c9ec68f14
+[0m08:34:20.020264 [debug] [Thread-1 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_thetao_mean.a0a8916b65: ROLLBACK
+[0m08:34:20.069353 [debug] [Thread-1 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_thetao_mean.a0a8916b65: Close
+[0m08:34:20.078881 [info ] [Thread-1 (]: 10 of 16 PASS source_not_null_ocean_raw_raw_sst_daily_thetao_mean .............. [[32mPASS[0m in 0.35s]
+[0m08:34:20.092215 [debug] [Thread-1 (]: Finished running node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_thetao_mean.a0a8916b65
+[0m08:34:20.072177 [debug] [Thread-2 (]: Writing injected SQL for node "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_time.9c9ec68f14"
+[0m08:34:20.100477 [debug] [Thread-1 (]: Began running node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_t.9dc4c554c5
+[0m08:34:20.133129 [info ] [Thread-1 (]: 12 of 16 START test source_not_null_ocean_raw_raw_tides_t ...................... [RUN]
+[0m08:34:20.151064 [debug] [Thread-1 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_thetao_mean.a0a8916b65, now test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_t.9dc4c554c5)
+[0m08:34:20.160156 [debug] [Thread-1 (]: Began compiling node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_t.9dc4c554c5
+[0m08:34:20.215998 [debug] [Thread-1 (]: Writing injected SQL for node "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_t.9dc4c554c5"
+[0m08:34:20.223323 [debug] [Thread-2 (]: Began executing node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_time.9c9ec68f14
+[0m08:34:20.234703 [debug] [Thread-2 (]: Writing runtime sql for node "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_time.9c9ec68f14"
+[0m08:34:20.306491 [debug] [Thread-1 (]: Began executing node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_t.9dc4c554c5
+[0m08:34:20.317299 [debug] [Thread-1 (]: Writing runtime sql for node "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_t.9dc4c554c5"
+[0m08:34:20.319159 [debug] [Thread-2 (]: Using postgres connection "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_time.9c9ec68f14"
+[0m08:34:20.338319 [debug] [Thread-2 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_time.9c9ec68f14: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_time.9c9ec68f14"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select time
+from "oceanwatch_db"."public"."raw_sst_daily"
+where time is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:20.341772 [debug] [Thread-2 (]: Opening a new connection, currently in state closed
+[0m08:34:20.398566 [debug] [Thread-2 (]: SQL status: SELECT 1 in 0.057 seconds
+[0m08:34:20.410371 [debug] [Thread-2 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_time.9c9ec68f14: ROLLBACK
+[0m08:34:20.415463 [debug] [Thread-2 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_time.9c9ec68f14: Close
+[0m08:34:20.417240 [debug] [Thread-1 (]: Using postgres connection "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_t.9dc4c554c5"
+[0m08:34:20.421945 [info ] [Thread-2 (]: 11 of 16 PASS source_not_null_ocean_raw_raw_sst_daily_time ..................... [[32mPASS[0m in 0.42s]
+[0m08:34:20.432604 [debug] [Thread-1 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_t.9dc4c554c5: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_t.9dc4c554c5"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select t
+from "oceanwatch_db"."public"."raw_tides"
+where t is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:20.437632 [debug] [Thread-2 (]: Finished running node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_time.9c9ec68f14
+[0m08:34:20.441488 [debug] [Thread-1 (]: Opening a new connection, currently in state closed
+[0m08:34:20.445146 [debug] [Thread-2 (]: Began running node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_v.a40cbb6f8a
+[0m08:34:20.461726 [info ] [Thread-2 (]: 13 of 16 START test source_not_null_ocean_raw_raw_tides_v ...................... [RUN]
+[0m08:34:20.466390 [debug] [Thread-2 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.source_not_null_ocean_raw_raw_sst_daily_time.9c9ec68f14, now test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_v.a40cbb6f8a)
+[0m08:34:20.470313 [debug] [Thread-2 (]: Began compiling node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_v.a40cbb6f8a
+[0m08:34:20.519722 [debug] [Thread-1 (]: SQL status: SELECT 1 in 0.078 seconds
+[0m08:34:20.530541 [debug] [Thread-2 (]: Writing injected SQL for node "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_v.a40cbb6f8a"
+[0m08:34:20.559370 [debug] [Thread-1 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_t.9dc4c554c5: ROLLBACK
+[0m08:34:20.566158 [debug] [Thread-1 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_t.9dc4c554c5: Close
+[0m08:34:20.579485 [info ] [Thread-1 (]: 12 of 16 PASS source_not_null_ocean_raw_raw_tides_t ............................ [[32mPASS[0m in 0.43s]
+[0m08:34:20.597576 [debug] [Thread-1 (]: Finished running node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_t.9dc4c554c5
+[0m08:34:20.604246 [debug] [Thread-1 (]: Began running node test.oceanwatch_transformations.unique_dim_date_date_key.0869fd48f9
+[0m08:34:20.609157 [info ] [Thread-1 (]: 14 of 16 START test unique_dim_date_date_key ................................... [RUN]
+[0m08:34:20.613558 [debug] [Thread-1 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_t.9dc4c554c5, now test.oceanwatch_transformations.unique_dim_date_date_key.0869fd48f9)
+[0m08:34:20.617610 [debug] [Thread-1 (]: Began compiling node test.oceanwatch_transformations.unique_dim_date_date_key.0869fd48f9
+[0m08:34:20.724865 [debug] [Thread-1 (]: Writing injected SQL for node "test.oceanwatch_transformations.unique_dim_date_date_key.0869fd48f9"
+[0m08:34:20.731516 [debug] [Thread-2 (]: Began executing node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_v.a40cbb6f8a
+[0m08:34:20.761053 [debug] [Thread-2 (]: Writing runtime sql for node "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_v.a40cbb6f8a"
+[0m08:34:20.808980 [debug] [Thread-1 (]: Began executing node test.oceanwatch_transformations.unique_dim_date_date_key.0869fd48f9
+[0m08:34:20.816953 [debug] [Thread-1 (]: Writing runtime sql for node "test.oceanwatch_transformations.unique_dim_date_date_key.0869fd48f9"
+[0m08:34:20.818632 [debug] [Thread-2 (]: Using postgres connection "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_v.a40cbb6f8a"
+[0m08:34:20.828537 [debug] [Thread-2 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_v.a40cbb6f8a: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_v.a40cbb6f8a"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+
+
+select v
+from "oceanwatch_db"."public"."raw_tides"
+where v is null
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:20.839971 [debug] [Thread-2 (]: Opening a new connection, currently in state closed
+[0m08:34:20.883759 [debug] [Thread-2 (]: SQL status: SELECT 1 in 0.044 seconds
+[0m08:34:20.885615 [debug] [Thread-1 (]: Using postgres connection "test.oceanwatch_transformations.unique_dim_date_date_key.0869fd48f9"
+[0m08:34:20.898337 [debug] [Thread-2 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_v.a40cbb6f8a: ROLLBACK
+[0m08:34:20.909587 [debug] [Thread-1 (]: On test.oceanwatch_transformations.unique_dim_date_date_key.0869fd48f9: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.unique_dim_date_date_key.0869fd48f9"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+select
+    date_key as unique_field,
+    count(*) as n_records
+
+from "oceanwatch_db"."public"."dim_date"
+where date_key is not null
+group by date_key
+having count(*) > 1
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:20.928496 [debug] [Thread-2 (]: On test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_v.a40cbb6f8a: Close
+[0m08:34:20.940292 [debug] [Thread-1 (]: Opening a new connection, currently in state closed
+[0m08:34:20.952559 [info ] [Thread-2 (]: 13 of 16 PASS source_not_null_ocean_raw_raw_tides_v ............................ [[32mPASS[0m in 0.48s]
+[0m08:34:20.995851 [debug] [Thread-2 (]: Finished running node test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_v.a40cbb6f8a
+[0m08:34:21.015622 [debug] [Thread-1 (]: SQL status: SELECT 1 in 0.076 seconds
+[0m08:34:21.027587 [debug] [Thread-2 (]: Began running node test.oceanwatch_transformations.unique_dim_location_location_key.b5757d64b6
+[0m08:34:21.035726 [debug] [Thread-1 (]: On test.oceanwatch_transformations.unique_dim_date_date_key.0869fd48f9: ROLLBACK
+[0m08:34:21.039469 [info ] [Thread-2 (]: 15 of 16 START test unique_dim_location_location_key ........................... [RUN]
+[0m08:34:21.044550 [debug] [Thread-1 (]: On test.oceanwatch_transformations.unique_dim_date_date_key.0869fd48f9: Close
+[0m08:34:21.048107 [debug] [Thread-2 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.source_not_null_ocean_raw_raw_tides_v.a40cbb6f8a, now test.oceanwatch_transformations.unique_dim_location_location_key.b5757d64b6)
+[0m08:34:21.053416 [info ] [Thread-1 (]: 14 of 16 PASS unique_dim_date_date_key ......................................... [[32mPASS[0m in 0.44s]
+[0m08:34:21.061631 [debug] [Thread-2 (]: Began compiling node test.oceanwatch_transformations.unique_dim_location_location_key.b5757d64b6
+[0m08:34:21.065354 [debug] [Thread-1 (]: Finished running node test.oceanwatch_transformations.unique_dim_date_date_key.0869fd48f9
+[0m08:34:21.082299 [debug] [Thread-2 (]: Writing injected SQL for node "test.oceanwatch_transformations.unique_dim_location_location_key.b5757d64b6"
+[0m08:34:21.085216 [debug] [Thread-1 (]: Began running node test.oceanwatch_transformations.unique_stg_tides_observation_time.320ccde21b
+[0m08:34:21.091140 [info ] [Thread-1 (]: 16 of 16 START test unique_stg_tides_observation_time .......................... [RUN]
+[0m08:34:21.099384 [debug] [Thread-1 (]: Re-using an available connection from the pool (formerly test.oceanwatch_transformations.unique_dim_date_date_key.0869fd48f9, now test.oceanwatch_transformations.unique_stg_tides_observation_time.320ccde21b)
+[0m08:34:21.105601 [debug] [Thread-1 (]: Began compiling node test.oceanwatch_transformations.unique_stg_tides_observation_time.320ccde21b
+[0m08:34:21.143495 [debug] [Thread-1 (]: Writing injected SQL for node "test.oceanwatch_transformations.unique_stg_tides_observation_time.320ccde21b"
+[0m08:34:21.149252 [debug] [Thread-2 (]: Began executing node test.oceanwatch_transformations.unique_dim_location_location_key.b5757d64b6
+[0m08:34:21.165632 [debug] [Thread-2 (]: Writing runtime sql for node "test.oceanwatch_transformations.unique_dim_location_location_key.b5757d64b6"
+[0m08:34:21.249295 [debug] [Thread-2 (]: Using postgres connection "test.oceanwatch_transformations.unique_dim_location_location_key.b5757d64b6"
+[0m08:34:21.253893 [debug] [Thread-1 (]: Began executing node test.oceanwatch_transformations.unique_stg_tides_observation_time.320ccde21b
+[0m08:34:21.257436 [debug] [Thread-2 (]: On test.oceanwatch_transformations.unique_dim_location_location_key.b5757d64b6: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.unique_dim_location_location_key.b5757d64b6"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+select
+    location_key as unique_field,
+    count(*) as n_records
+
+from "oceanwatch_db"."public"."dim_location"
+where location_key is not null
+group by location_key
+having count(*) > 1
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:21.265276 [debug] [Thread-1 (]: Writing runtime sql for node "test.oceanwatch_transformations.unique_stg_tides_observation_time.320ccde21b"
+[0m08:34:21.268238 [debug] [Thread-2 (]: Opening a new connection, currently in state closed
+[0m08:34:21.302015 [debug] [Thread-2 (]: SQL status: SELECT 1 in 0.034 seconds
+[0m08:34:21.310137 [debug] [Thread-2 (]: On test.oceanwatch_transformations.unique_dim_location_location_key.b5757d64b6: ROLLBACK
+[0m08:34:21.313621 [debug] [Thread-2 (]: On test.oceanwatch_transformations.unique_dim_location_location_key.b5757d64b6: Close
+[0m08:34:21.315353 [debug] [Thread-1 (]: Using postgres connection "test.oceanwatch_transformations.unique_stg_tides_observation_time.320ccde21b"
+[0m08:34:21.318807 [info ] [Thread-2 (]: 15 of 16 PASS unique_dim_location_location_key ................................. [[32mPASS[0m in 0.27s]
+[0m08:34:21.323800 [debug] [Thread-1 (]: On test.oceanwatch_transformations.unique_stg_tides_observation_time.320ccde21b: /* {"app": "dbt", "dbt_version": "1.12.2", "profile_name": "oceanwatch_transformations", "target_name": "dev", "node_id": "test.oceanwatch_transformations.unique_stg_tides_observation_time.320ccde21b"} */
+
+    
+    select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+    from (
+      
+    
+  
+    
+    
+
+select
+    observation_time as unique_field,
+    count(*) as n_records
+
+from "oceanwatch_db"."public"."stg_tides"
+where observation_time is not null
+group by observation_time
+having count(*) > 1
+
+
+
+  
+  
+      
+    ) dbt_internal_test
+[0m08:34:21.327214 [debug] [Thread-2 (]: Finished running node test.oceanwatch_transformations.unique_dim_location_location_key.b5757d64b6
+[0m08:34:21.332030 [debug] [Thread-1 (]: Opening a new connection, currently in state closed
+[0m08:34:21.363286 [debug] [Thread-1 (]: SQL status: SELECT 1 in 0.032 seconds
+[0m08:34:21.369008 [debug] [Thread-1 (]: On test.oceanwatch_transformations.unique_stg_tides_observation_time.320ccde21b: ROLLBACK
+[0m08:34:21.372447 [debug] [Thread-1 (]: On test.oceanwatch_transformations.unique_stg_tides_observation_time.320ccde21b: Close
+[0m08:34:21.378119 [info ] [Thread-1 (]: 16 of 16 PASS unique_stg_tides_observation_time ................................ [[32mPASS[0m in 0.28s]
+[0m08:34:21.385947 [debug] [Thread-1 (]: Finished running node test.oceanwatch_transformations.unique_stg_tides_observation_time.320ccde21b
+[0m08:34:21.393219 [debug] [MainThread]: On master: COMMIT
+[0m08:34:21.396802 [debug] [MainThread]: Using postgres connection "master"
+[0m08:34:21.400380 [debug] [MainThread]: On master: COMMIT
+[0m08:34:21.403486 [debug] [MainThread]: Opening a new connection, currently in state closed
+[0m08:34:21.449030 [debug] [MainThread]: SQL status: COMMIT in 0.045 seconds
+[0m08:34:21.456622 [debug] [MainThread]: On master: Close
+[0m08:34:21.473577 [debug] [MainThread]: Connection 'master' was properly closed.
+[0m08:34:21.481014 [debug] [MainThread]: Connection 'test.oceanwatch_transformations.unique_stg_tides_observation_time.320ccde21b' was properly closed.
+[0m08:34:21.484785 [debug] [MainThread]: Connection 'test.oceanwatch_transformations.unique_dim_location_location_key.b5757d64b6' was properly closed.
+[0m08:34:21.488172 [info ] [MainThread]: 
+[0m08:34:21.492445 [info ] [MainThread]: Finished running 16 data tests in 0 hours 0 minutes and 3.98 seconds (3.98s).
+[0m08:34:21.506104 [debug] [MainThread]: Command end result
+[0m08:34:21.937030 [debug] [MainThread]: Wrote artifact WritableManifest to /opt/airflow/oceanwatch_transformations/target/manifest.json
+[0m08:34:21.948742 [debug] [MainThread]: Wrote artifact SemanticManifest to /opt/airflow/oceanwatch_transformations/target/semantic_manifest.json
+[0m08:34:21.962585 [debug] [MainThread]: Wrote artifact OsiDocument to /opt/airflow/oceanwatch_transformations/target/osi_document.json
+[0m08:34:21.988262 [debug] [MainThread]: Wrote artifact RunExecutionResult to /opt/airflow/oceanwatch_transformations/target/run_results.json
+[0m08:34:21.990869 [info ] [MainThread]: 
+[0m08:34:21.993966 [info ] [MainThread]: [32mCompleted successfully[0m
+[0m08:34:21.997031 [info ] [MainThread]: 
+[0m08:34:22.000063 [info ] [MainThread]: Done. PASS=16 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=16
+[0m08:34:22.004685 [debug] [MainThread]: Resource report: {"command_name": "test", "command_success": true, "command_wall_clock_time": 10.492086, "process_in_blocks": "1530", "process_kernel_time": 1.465316, "process_mem_max_rss": "129768", "process_out_blocks": "0", "process_user_time": 9.202733}
+[0m08:34:22.007550 [debug] [MainThread]: Command `dbt test` succeeded at 08:34:22.007221 after 10.50 seconds
+[0m08:34:22.010113 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7adbcd9adc00>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7adbd03e9210>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7adbcec842e0>]}
+[0m08:34:22.012390 [debug] [MainThread]: Flushing usage events
+[0m08:34:23.536699 [debug] [MainThread]: An error was encountered while trying to flush usage events

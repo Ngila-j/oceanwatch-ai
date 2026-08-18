@@ -17,3 +17,9 @@ data/raw/
 .idea/
 .DS_Store
 .streamlit/secrets.toml
+
+# Secrets
+.env
+*.env
+ingestion/.env
+

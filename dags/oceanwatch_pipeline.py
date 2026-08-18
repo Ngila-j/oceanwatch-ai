@@ -13,11 +13,11 @@ default_args = {
 with DAG(
     dag_id="oceanwatch_full_pipeline",
     default_args=default_args,
-    description="OceanWatch: Ingest → Transform → Ops Intelligence → ML (+ optional live AIS)",
+    description="OceanWatch: Ingest → dbt → Ops → ML → GFW/AIS",
     schedule_interval="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=["oceanwatch", "ml", "ais", "alerts"],
+    tags=["oceanwatch", "ml", "gfw", "ais"],
 ) as dag:
 
     fetch_noaa = BashOperator(
@@ -70,10 +70,14 @@ with DAG(
         bash_command="python /opt/airflow/ingestion/seed_ais_sample.py",
     )
 
-    # Optional live AIS — short hybrid window so DAG is not blocked long
     fetch_ais_live = BashOperator(
         task_id="fetch_ais_live",
         bash_command="AIS_COLLECT_SECONDS=120 AIS_MAX_RAW=8000 python /opt/airflow/ingestion/fetch_ais_realtime.py",
+    )
+
+    fetch_gfw = BashOperator(
+        task_id="fetch_gfw_fishing_effort",
+        bash_command="python /opt/airflow/ingestion/fetch_gfw_fishing_effort.py",
     )
 
     run_intelligence = BashOperator(
@@ -106,19 +110,13 @@ with DAG(
         bash_command="python /opt/airflow/ingestion/ml_habitat_suitability.py",
     )
 
-    # Optional GFW fishing effort (safe if token missing — script handles it)
-    fetch_gfw = BashOperator(
-        task_id="fetch_gfw_fishing_effort",
-        bash_command="python /opt/airflow/ingestion/fetch_gfw_fishing_effort.py",
-    )
-
-    # Flow
     [fetch_noaa, fetch_copernicus] >> stage_with_duckdb >> dbt_deps >> run_dbt >> test_dbt
 
     run_dbt >> init_schema >> [seed_port, seed_fishing, seed_ais] >> fetch_ais_live
-    fetch_ais_live >> run_intelligence
+    run_dbt >> fetch_gfw
+
+    [fetch_ais_live, fetch_gfw, seed_fishing] >> run_intelligence
 
     run_dbt >> ml_sst
     [seed_ais, fetch_ais_live] >> ml_vessel
     run_intelligence >> [ml_port_risk, ml_bloom, ml_habitat]
-    run_dbt >> fetch_gfw
