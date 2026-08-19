@@ -1,6 +1,6 @@
 """
-OceanWatch AI — Phase 8 REST API
-Read-only access to Phase 6/7 products stored in PostgreSQL.
+OceanWatch AI — REST API (Phase 8–10)
+Read-only access to Phase 6–9 products stored in PostgreSQL.
 """
 
 from typing import Optional
@@ -27,11 +27,11 @@ app = FastAPI(
     description=(
         "Western Indian Ocean / Kenya EEZ monitoring API. "
         "Exposes ocean conditions, SST forecasts, operational alerts, "
-        "port risk, vessel anomalies, bloom/habitat scores, and "
-        "Global Fishing Watch effort summaries. "
+        "port risk, vessel anomalies, bloom/habitat scores, GFW effort, "
+        "and WIO-OII index summaries. "
         "Fishing effort data powered by Global Fishing Watch (non-commercial)."
     ),
-    version="0.8.1",
+    version="0.10.0",
 )
 
 app.add_middleware(
@@ -63,7 +63,7 @@ def health():
 def root():
     return {
         "service": "OceanWatch AI API",
-        "version": "0.8.1",
+        "version": "0.10.0",
         "docs": "/docs",
         "endpoints": [
             "/health",
@@ -76,7 +76,23 @@ def root():
             "/v1/vessels/anomalies",
             "/v1/bloom/risk",
             "/v1/habitat/suitability",
+            "/v1/wio/index",
         ],
+        "access_tiers": {
+            "public": ["ocean conditions summaries", "health"],
+            "research": ["forecasts", "gfw summary", "ml metrics", "wio index"],
+            "agency": ["alerts", "port risk", "vessel anomalies"],
+            "note": (
+                "Tier labels describe the product model. "
+                "Full IAM, API keys, and metering are not enforced yet."
+            ),
+        },
+        "commercial": {
+            "saas": "Agency dashboards (planned)",
+            "api": "Partner API access (planned metering)",
+            "reports": "Weekly Ocean Brief PDF",
+            "grants": "Blue Economy / climate adaptation framing",
+        },
     }
 
 
@@ -218,3 +234,34 @@ def habitat_suitability():
         """
     )
     return {"count": len(data), "results": data}
+
+
+@app.get("/v1/wio/index")
+def wio_index(limit: int = Query(5, ge=1, le=30)):
+    """Latest Western Indian Ocean Ocean Intelligence Index rows."""
+    data = rows(
+        """
+        SELECT
+            index_date,
+            region_id,
+            ocean_health_score,
+            maritime_activity_score,
+            fishing_pressure_score,
+            port_risk_score,
+            environmental_risk_score,
+            overall_score,
+            confidence_score,
+            drivers,
+            methodology_version,
+            created_at
+        FROM fact_wio_intelligence_index
+        ORDER BY index_date DESC
+        LIMIT :limit
+        """,
+        {"limit": limit},
+    )
+    return {
+        "count": len(data),
+        "results": data,
+        "note": "Prototype index with documented weights — not an official government score.",
+    }
