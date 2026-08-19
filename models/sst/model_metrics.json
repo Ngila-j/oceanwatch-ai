@@ -1,0 +1,28 @@
+{
+  "target": "mean_sst",
+  "forecast_horizon_days": 7,
+  "models": [
+    {
+      "model": "naive_persistence",
+      "mae": 0.006772232055664062,
+      "rmse": 0.008436631121327946
+    },
+    {
+      "model": "ridge_lags",
+      "mae": 0.00898827353393301,
+      "rmse": 0.010312427748867255
+    },
+    {
+      "model": "gradient_boosting",
+      "mae": 0.0055563515466189985,
+      "rmse": 0.006162939226705728
+    }
+  ],
+  "best_model": "gradient_boosting",
+  "best_mae": 0.0055563515466189985,
+  "best_rmse": 0.006162939226705728,
+  "train_rows": 85,
+  "test_rows": 5,
+  "training_end": "2026-08-13",
+  "generated_at": "2026-08-19T08:54:29.606573"
+}

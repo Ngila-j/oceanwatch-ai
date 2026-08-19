@@ -1,0 +1,20 @@
+{
+  "model": "isolation_forest_v1",
+  "n_vessels": 15,
+  "n_flagged_anomaly": 3,
+  "n_high_risk": 6,
+  "feature_cols": [
+    "speed_mean",
+    "speed_std",
+    "speed_min",
+    "low_speed_ratio",
+    "turn_rate",
+    "turn_std",
+    "distance_travelled_km",
+    "track_efficiency",
+    "time_span_h",
+    "near_boundary_ratio",
+    "engaged_fishing"
+  ],
+  "generated_at": "2026-08-19T08:57:48.732690"
+}
