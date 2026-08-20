@@ -13,11 +13,11 @@ default_args = {
 with DAG(
     dag_id="oceanwatch_full_pipeline",
     default_args=default_args,
-    description="OceanWatch: Ingest → dbt → Ops → ML → GFW/AIS → WIO-OII → Weekly Brief",
+    description="OceanWatch: Ingest → dbt → Ops → ML → WIO-OII → Brief → Data Quality",
     schedule_interval="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=["oceanwatch", "ml", "gfw", "ais", "wio-oii", "reports"],
+    tags=["oceanwatch", "ml", "gfw", "ais", "wio-oii", "reports", "quality"],
 ) as dag:
 
     fetch_noaa = BashOperator(
@@ -122,16 +122,19 @@ with DAG(
         bash_command="python /opt/airflow/ingestion/ml_habitat_suitability.py",
     )
 
-    # Phase 9 — WIO Ocean Intelligence Index
     compute_wio_index = BashOperator(
         task_id="compute_wio_index",
         bash_command="python /opt/airflow/ingestion/compute_wio_index.py",
     )
 
-    # Phase 10 — Weekly Ocean Brief PDF
     weekly_brief = BashOperator(
         task_id="generate_weekly_brief",
         bash_command="python /opt/airflow/ingestion/generate_weekly_brief.py",
+    )
+
+    data_quality = BashOperator(
+        task_id="compute_data_quality",
+        bash_command="python /opt/airflow/ingestion/compute_data_quality.py",
     )
 
     # --- Core ELT ---
@@ -148,7 +151,7 @@ with DAG(
     [seed_ais, fetch_ais_live] >> ml_vessel
     run_intelligence >> [ml_port_risk, ml_bloom, ml_habitat]
 
-    # --- WIO-OII after intelligence inputs ---
+    # --- WIO-OII ---
     [
         test_dbt,
         ml_sst,
@@ -160,5 +163,5 @@ with DAG(
         run_intelligence,
     ] >> compute_wio_index
 
-    # --- Weekly brief after index ---
-    compute_wio_index >> weekly_brief
+    # --- Report then quality ---
+    compute_wio_index >> weekly_brief >> data_quality
