@@ -1,87 +1,126 @@
 import streamlit as st
 import pandas as pd
-from sqlalchemy import create_engine
-from io import StringIO
+from sqlalchemy import create_engine, text
 
-st.set_page_config(page_title="Research Data", page_icon="🎓", layout="wide")
-st.title("🎓 Research Data Explorer")
+st.set_page_config(page_title="Research Data", page_icon="📚", layout="wide")
+st.title("📚 Research Data Explorer")
 st.caption(
-    "Structured access to OceanWatch datasets for research. "
-    "GFW layers: powered by Global Fishing Watch · non-commercial use."
+    "Read-only access to selected OceanWatch tables for research and portfolio demos. "
+    "Respect data licenses (especially Global Fishing Watch)."
 )
 
+DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+
 DATASETS = {
-    "Ocean Conditions": {
-        "table": "fact_ocean_conditions",
-        "date_col": "date_key",
+    "fact_ocean_conditions": {
+        "sql": """
+            SELECT date_key, location_key, sst_celsius, chlorophyll_mg_m3,
+                   tide_mean_m, tide_min_m, tide_max_m, loaded_at
+            FROM fact_ocean_conditions
+            ORDER BY date_key DESC
+            LIMIT :limit
+        """,
+        "access": "PUBLIC / RESEARCH",
+        "notes": "Daily ocean conditions (SST, chlorophyll, tides).",
+    },
+    "fact_sst_forecast": {
+        "sql": """
+            SELECT forecast_for_date, horizon_day, predicted_sst,
+                   lower_bound, upper_bound, model_name, mae
+            FROM fact_sst_forecast
+            ORDER BY horizon_day
+            LIMIT :limit
+        """,
+        "access": "RESEARCH",
+        "notes": "Short-horizon SST forecast outputs.",
+    },
+    "fact_wio_intelligence_index": {
+        "sql": """
+            SELECT index_date, region_id, overall_score, confidence_score,
+                   ocean_health_score, maritime_activity_score,
+                   fishing_pressure_score, port_risk_score,
+                   environmental_risk_score, methodology_version, drivers
+            FROM fact_wio_intelligence_index
+            ORDER BY index_date DESC
+            LIMIT :limit
+        """,
+        "access": "RESEARCH",
+        "notes": "WIO-OII prototype index (documented methodology).",
+    },
+    "fact_gfw_fishing_effort": {
+        "sql": """
+            SELECT *
+            FROM fact_gfw_fishing_effort
+            ORDER BY effort_date DESC
+            LIMIT :limit
+        """,
+        "access": "RESEARCH (GFW terms)",
+        "notes": "Powered by Global Fishing Watch — non-commercial use + attribution.",
+    },
+    "fact_bloom_risk": {
+        "sql": """
+            SELECT *
+            FROM fact_bloom_risk
+            ORDER BY risk_date DESC
+            LIMIT :limit
+        """,
+        "access": "RESEARCH",
+        "notes": "Bloom risk probability scores.",
+    },
+    "dim_regions": {
+        "sql": """
+            SELECT *
+            FROM dim_regions
+            ORDER BY is_primary DESC, region_id
+            LIMIT :limit
+        """,
         "access": "PUBLIC",
-    },
-    "SST Forecast": {
-        "table": "fact_sst_forecast",
-        "date_col": "forecast_for_date",
-        "access": "PUBLIC",
-    },
-    "GFW Fishing Effort": {
-        "table": "fact_gfw_fishing_effort",
-        "date_col": "effort_date",
-        "access": "PUBLIC",
-    },
-    "ML Model Metrics": {
-        "table": "ml_model_metrics",
-        "date_col": None,
-        "access": "PUBLIC",
-    },
-    "Bloom Risk": {
-        "table": "fact_bloom_risk",
-        "date_col": "risk_date",
-        "access": "RESTRICTED",
-    },
-    "Port Risk": {
-        "table": "fact_port_risk",
-        "date_col": "risk_date",
-        "access": "RESTRICTED",
-    },
-    "Alerts": {
-        "table": "fact_alerts",
-        "date_col": None,
-        "access": "RESTRICTED",
+        "notes": "Regional coverage model (Kenya ACTIVE; others PLANNED).",
     },
 }
 
-engine = create_engine("postgresql://postgres:password@localhost:5433/oceanwatch_db")
 
-ds_name = st.selectbox("Dataset", list(DATASETS.keys()))
-meta = DATASETS[ds_name]
-st.info(f"Table: `{meta['table']}` · Access tier: **{meta['access']}**")
+@st.cache_resource
+def get_engine():
+    return create_engine(DB_URI, pool_pre_ping=True)
 
-limit = st.slider("Preview rows", 10, 500, 100)
 
-sql = f"SELECT * FROM {meta['table']} LIMIT {int(limit)}"
+@st.cache_data(ttl=120)
+def load_dataset(name: str, limit: int) -> pd.DataFrame:
+    cfg = DATASETS[name]
+    engine = get_engine()
+    return pd.read_sql(text(cfg["sql"]), engine, params={"limit": limit})
+
+
+dataset = st.selectbox("Dataset", list(DATASETS.keys()))
+limit = st.slider("Row limit", min_value=10, max_value=2000, value=200, step=10)
+
+cfg = DATASETS[dataset]
+st.info(f"**Access:** {cfg['access']}  \n**Notes:** {cfg['notes']}")
+
 try:
-    df = pd.read_sql(sql, engine)
+    df = load_dataset(dataset, limit)
+    st.success(f"Loaded {len(df)} rows from `{dataset}`")
+    st.dataframe(df, use_container_width=True)
+
+    csv = df.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label="Download CSV",
+        data=csv,
+        file_name=f"{dataset}.csv",
+        mime="text/csv",
+    )
 except Exception as e:
     st.error(f"Could not load dataset: {e}")
-    st.stop()
-
-st.subheader("Preview")
-st.dataframe(df, use_container_width=True)
-st.metric("Rows in preview", len(df))
-
-csv = df.to_csv(index=False)
-st.download_button(
-    label="Download CSV (preview)",
-    data=csv,
-    file_name=f"oceanwatch_{meta['table']}_preview.csv",
-    mime="text/csv",
-)
+    st.caption("Ensure Postgres is running on localhost:5433 and the table exists.")
 
 st.markdown("---")
 st.markdown(
     """
-**API access**
-
-```text
-GET http://localhost:8000/v1/ocean/conditions
-GET http://localhost:8000/v1/forecasts/sst
-GET http://localhost:8000/v1/gfw/effort/summary
-GET http://localhost:8000/docs
+### Research guidelines
+- Use data for analysis and demonstration consistent with source licenses.
+- Always attribute Global Fishing Watch where fishing-effort data is shown.
+- Do not treat vessel anomaly scores as legal findings.
+- For production partner access, use the API at `http://localhost:8000/docs`.
+"""
+)

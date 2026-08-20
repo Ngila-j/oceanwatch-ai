@@ -29,4 +29,4 @@ RUN pip install --no-cache-dir \
     python-dotenv \
     scikit-learn \
     joblib \
-    scipy
+    reportlab

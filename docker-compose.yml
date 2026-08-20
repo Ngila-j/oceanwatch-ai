@@ -12,7 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d oceanwatch_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -29,25 +29,19 @@ services:
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:password@postgres:5432/airflow_db
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-      AIRFLOW__CORE__FERNET_KEY: "oceanwatch_dev_fernet_key_change_me_32b="
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
     volumes:
       - ./dags:/opt/airflow/dags
       - ./ingestion:/opt/airflow/ingestion
       - ./oceanwatch_transformations:/opt/airflow/oceanwatch_transformations
       - ./data:/opt/airflow/data
-      - ./models:/opt/airflow/models
+      - ./reports:/opt/airflow/data/reports
     entrypoint: /bin/bash
     command:
       - -c
       - |
         airflow db migrate
-        airflow users create \
-          --username admin \
-          --firstname Admin \
-          --lastname User \
-          --role Admin \
-          --email admin@oceanwatch.com \
-          --password admin || true
+        airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@oceanwatch.com --password admin || true
     networks:
       - oceanwatch
 
@@ -64,8 +58,7 @@ services:
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:password@postgres:5432/airflow_db
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-      AIRFLOW__CORE__FERNET_KEY: "oceanwatch_dev_fernet_key_change_me_32b="
-      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "True"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
     ports:
       - "8080:8080"
     volumes:
@@ -73,8 +66,8 @@ services:
       - ./ingestion:/opt/airflow/ingestion
       - ./oceanwatch_transformations:/opt/airflow/oceanwatch_transformations
       - ./data:/opt/airflow/data
+      - ./reports:/opt/airflow/data/reports
       - ./models:/opt/airflow/models
-      - airflow_logs:/opt/airflow/logs
     command: webserver
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
@@ -98,14 +91,14 @@ services:
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:password@postgres:5432/airflow_db
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-      AIRFLOW__CORE__FERNET_KEY: "oceanwatch_dev_fernet_key_change_me_32b="
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
     volumes:
       - ./dags:/opt/airflow/dags
       - ./ingestion:/opt/airflow/ingestion
       - ./oceanwatch_transformations:/opt/airflow/oceanwatch_transformations
       - ./data:/opt/airflow/data
+      - ./reports:/opt/airflow/data/reports
       - ./models:/opt/airflow/models
-      - airflow_logs:/opt/airflow/logs
     command: scheduler
     networks:
       - oceanwatch
@@ -113,26 +106,25 @@ services:
   api:
     image: python:3.10-slim
     container_name: oceanwatch_api
-    working_dir: /app
-    restart: unless-stopped
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       OCEANWATCH_DB_URI: postgresql://postgres:password@postgres:5432/oceanwatch_db
-    volumes:
-      - ./api:/app/api
-    command: >
-      bash -c "pip install --no-cache-dir fastapi uvicorn sqlalchemy psycopg2-binary
-      && python -m uvicorn api.main:app --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
+    volumes:
+      - ./api:/app/api
+    working_dir: /app
+    command: >
+      bash -c "pip install --no-cache-dir fastapi uvicorn sqlalchemy psycopg2-binary
+      && uvicorn api.main:app --host 0.0.0.0 --port 8000"
     networks:
       - oceanwatch
 
 volumes:
   postgres_data:
-  airflow_logs:
 
 networks:
   oceanwatch:
