@@ -2,6 +2,7 @@
 .env
 *.env
 ingestion/.env
+.streamlit/secrets.toml
 
 # Python
 __pycache__/
@@ -14,20 +15,23 @@ venv/
 logs/
 airflow/logs/
 oceanwatch_transformations/target/
-oceanwatch_transformations/dbt_packages/
 oceanwatch_transformations/logs/
+oceanwatch_transformations/dbt_packages/
 
-# Data (large / generated)
+# Data & reports (generated / large)
 data/raw/
+data/reports/
+reports/
 *.nc
 *.parquet
 *.duckdb
+*.pdf
+
+# Models artifacts (optional keep metrics json in git)
+# models/**/*.joblib
 
 # IDE / OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
-
-# Streamlit
-.streamlit/secrets.toml
