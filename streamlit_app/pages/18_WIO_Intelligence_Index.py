@@ -1,178 +1,115 @@
-"""WIO-OII v1 — upsert kenya_eez (compatible column names)."""
+"""
+WIO Ocean Intelligence Index — Kenya EEZ
+Matches fact_wio_intelligence_index columns.
+"""
 
-import logging
-from datetime import datetime, date
+import streamlit as st
+import pandas as pd
+from sqlalchemy import create_engine, text
 
-import duckdb
+from components.branding import attribution_footer, bandwidth_toggle, is_low_bandwidth
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
+st.set_page_config(page_title="WIO-OII", page_icon="📊", layout="wide")
+bandwidth_toggle()
 
+st.title("📊 WIO Ocean Intelligence Index")
+st.caption("Kenya EEZ signature index — history builds as daily runs accumulate.")
 
-def get_db_uri() -> str:
-    import os
-
-    if os.path.exists("/.dockerenv") or os.getenv("AIRFLOW_HOME"):
-        return "postgresql://postgres:password@postgres:5432/oceanwatch_db"
-    return "postgresql://postgres:password@localhost:5433/oceanwatch_db"
-
-
-def clamp(x, lo=0.0, hi=100.0):
-    return max(lo, min(hi, float(x)))
+DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
 
 
-def main():
-    logger.info("=== WIO-OII v1 (history upsert) ===")
-    con = duckdb.connect()
-    con.execute(f"ATTACH '{get_db_uri()}' AS pg (TYPE POSTGRES)")
-
-    drivers = []
-    conf_pts = 0
-
-    sst = con.execute(
-        """
-        SELECT AVG(sst_celsius) FROM (
-            SELECT sst_celsius FROM pg.public.fact_ocean_conditions
-            WHERE sst_celsius IS NOT NULL
-            ORDER BY date_key DESC LIMIT 14
-        ) s
-        """
-    ).fetchone()[0]
-    ocean = 70.0
-    if sst is not None:
-        conf_pts += 1
-        drivers.append(f"sst_14d={float(sst):.2f}")
-        ocean = clamp(100 - abs(float(sst) - 26.5) * 15)
-
-    ais_n = int(
-        con.execute(
-            "SELECT COUNT(DISTINCT mmsi) FROM pg.public.fact_ais_positions"
-        ).fetchone()[0]
-        or 0
-    )
-    conf_pts += 1
-    drivers.append(f"ais_vessels={ais_n}")
-    maritime = clamp(40 + min(ais_n, 40))
-
-    try:
-        gfw_h = float(
-            con.execute(
-                "SELECT COALESCE(SUM(hours),0) FROM pg.public.fact_gfw_fishing_effort"
-            ).fetchone()[0]
-            or 0
-        )
-    except Exception:
-        gfw_h = 0.0
-    conf_pts += 1
-    drivers.append(f"gfw_hours={gfw_h:.1f}")
-    fishing = clamp(30 + min(gfw_h / 10.0, 50))
-
-    port_risk = 50.0
-    try:
-        pr = con.execute(
+@st.cache_data(ttl=60)
+def load_index() -> pd.DataFrame:
+    eng = create_engine(DB_URI, pool_pre_ping=True)
+    return pd.read_sql(
+        text(
             """
-            SELECT composite_risk FROM pg.public.fact_port_risk
-            ORDER BY risk_date DESC LIMIT 1
+            SELECT
+                index_date,
+                region_id,
+                ocean_health_score,
+                maritime_activity_score,
+                fishing_pressure_score,
+                port_risk_score,
+                environmental_risk_score,
+                overall_score,
+                confidence_score,
+                drivers,
+                methodology_version,
+                created_at
+            FROM fact_wio_intelligence_index
+            ORDER BY index_date DESC
             """
-        ).fetchone()
-        if pr and pr[0] is not None:
-            port_risk = float(pr[0])
-            conf_pts += 1
-            drivers.append(f"composite_risk={port_risk:.1f}")
-    except Exception:
-        try:
-            ci = con.execute(
-                """
-                SELECT congestion_index FROM pg.public.fact_port_metrics
-                ORDER BY metric_date DESC LIMIT 1
-                """
-            ).fetchone()
-            if ci and ci[0] is not None:
-                port_risk = float(ci[0])
-                conf_pts += 1
-                drivers.append(f"congestion={port_risk:.1f}")
-        except Exception:
-            pass
-    port_component = clamp(100 - port_risk)
-
-    env = 70.0
-    try:
-        br = con.execute(
-            """
-            SELECT bloom_probability FROM pg.public.fact_bloom_risk
-            ORDER BY risk_date DESC LIMIT 1
-            """
-        ).fetchone()
-        if br and br[0] is not None:
-            env = clamp(100 - float(br[0]))
-            conf_pts += 1
-            drivers.append(f"bloom_prob={float(br[0]):.1f}")
-    except Exception:
-        pass
-
-    overall = clamp(
-        ocean * 0.25
-        + maritime * 0.20
-        + fishing * 0.20
-        + port_component * 0.20
-        + env * 0.15
-    )
-    confidence = clamp(50 + conf_pts * 9)
-    idx_day = date.today()
-    region = "kenya_eez"
-    now = datetime.utcnow()
-    drv = " | ".join(drivers)
-
-    con.execute(
-        """
-        DELETE FROM pg.public.fact_wio_intelligence_index
-        WHERE index_date = ? AND region_id = ?
-        """,
-        [idx_day, region],
+        ),
+        eng,
     )
 
-    con.execute(
-        """
-        INSERT INTO pg.public.fact_wio_intelligence_index (
-            index_date,
-            region_id,
-            overall_score,
-            confidence_score,
-            drivers,
-            methodology_version,
-            created_at,
-            ocean_health_score,
-            maritime_activity_score,
-            fishing_score,
-            environmental_score,
-            port_risk_score
-        )
-        VALUES (?, ?, ?, ?, ?, 'v1.0', ?, ?, ?, ?, ?, ?)
-        """,
-        [
-            idx_day,
-            region,
-            overall,
-            confidence,
-            drv,
-            now,
-            ocean,
-            maritime,
-            fishing,
-            env,
-            port_risk,
-        ],
-    )
 
-    logger.info(
-        "WIO-OII v1 %s overall=%.1f confidence=%.1f | %s",
-        region,
-        overall,
-        confidence,
-        drv,
-    )
-    logger.info("=== WIO-OII v1 completed ===")
+try:
+    df = load_index()
+except Exception as e:
+    st.error(f"Could not load index: {e}")
+    st.info("Run: docker exec -it oceanwatch_airflow_web python /opt/airflow/ingestion/compute_wio_index.py")
+    st.stop()
 
+if df.empty:
+    st.warning("No index rows yet. Run compute_wio_index.py first.")
+    st.stop()
 
-if __name__ == "__main__":
-    main()
+latest = df.iloc[0]
+
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Overall", f"{float(latest.get('overall_score') or 0):.1f}")
+c2.metric("Confidence", f"{float(latest.get('confidence_score') or 0):.1f}")
+c3.metric("As of", str(latest.get("index_date")))
+c4.metric("Method", str(latest.get("methodology_version") or "—"))
+
+st.write(f"Region: **{latest.get('region_id')}**")
+st.code(str(latest.get("drivers") or ""), language=None)
+
+st.subheader("Latest components")
+comp = {}
+mapping = [
+    ("Ocean health", "ocean_health_score"),
+    ("Maritime activity", "maritime_activity_score"),
+    ("Fishing pressure", "fishing_pressure_score"),
+    ("Port risk (raw)", "port_risk_score"),
+    ("Environmental risk (raw)", "environmental_risk_score"),
+]
+for label, col in mapping:
+    if col in df.columns and pd.notna(latest.get(col)):
+        comp[label] = float(latest[col])
+
+if comp:
+    if is_low_bandwidth():
+        st.dataframe(pd.DataFrame({"component": list(comp.keys()), "score": list(comp.values())}))
+    else:
+        st.bar_chart(pd.Series(comp))
+else:
+    st.caption("No component scores available.")
+
+st.subheader("History")
+window = st.selectbox("Window", ["All", "7 days", "30 days"], index=0)
+hist = df.copy()
+hist["index_date"] = pd.to_datetime(hist["index_date"])
+
+if window == "7 days":
+    hist = hist[hist["index_date"] >= hist["index_date"].max() - pd.Timedelta(days=7)]
+elif window == "30 days":
+    hist = hist[hist["index_date"] >= hist["index_date"].max() - pd.Timedelta(days=30)]
+
+hist = hist.sort_values("index_date")
+plot_cols = [c for c in ["overall_score", "ocean_health_score", "maritime_activity_score"] if c in hist.columns]
+
+if is_low_bandwidth():
+    st.dataframe(hist, use_container_width=True)
+else:
+    if plot_cols:
+        st.line_chart(hist.set_index("index_date")[plot_cols])
+    st.dataframe(hist, use_container_width=True)
+
+st.caption(
+    "Prototype decision-support index — not an official government statistic. "
+    "Port and environmental scores are risk-style (higher can mean more stress)."
+)
+attribution_footer()

@@ -13,11 +13,11 @@ default_args = {
 with DAG(
     dag_id="oceanwatch_full_pipeline",
     default_args=default_args,
-    description="OceanWatch: Ingest → dbt → Ops → ML → WIO-OII → Brief → Data Quality",
+    description="OceanWatch: Ingest → dbt → Ops → ML → Anomalies → Alerts → WIO-OII",
     schedule_interval="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=["oceanwatch", "ml", "gfw", "ais", "wio-oii", "reports", "quality"],
+    tags=["oceanwatch", "ml", "gfw", "ais", "wio-oii"],
 ) as dag:
 
     fetch_noaa = BashOperator(
@@ -80,11 +80,8 @@ with DAG(
     )
 
     fetch_ais_live = BashOperator(
-        task_id="fetch_ais_live",
-        bash_command=(
-            "AIS_COLLECT_SECONDS=120 AIS_MAX_RAW=8000 "
-            "python /opt/airflow/ingestion/fetch_ais_realtime.py"
-        ),
+        task_id="fetch_ais_realtime",
+        bash_command="python /opt/airflow/ingestion/fetch_ais_realtime.py",
     )
 
     fetch_gfw = BashOperator(
@@ -122,36 +119,49 @@ with DAG(
         bash_command="python /opt/airflow/ingestion/ml_habitat_suitability.py",
     )
 
+    # --- Polish: anomaly → alerts → WIO-OII ---
+    compute_anomalies = BashOperator(
+        task_id="compute_anomalies",
+        bash_command="python /opt/airflow/ingestion/compute_anomalies.py",
+    )
+
+    generate_alerts = BashOperator(
+        task_id="generate_alerts",
+        bash_command="python /opt/airflow/ingestion/generate_alerts.py",
+    )
+
+    enrich_alerts = BashOperator(
+        task_id="enrich_alerts",
+        bash_command="python /opt/airflow/ingestion/enrich_alerts.py",
+    )
+
     compute_wio_index = BashOperator(
         task_id="compute_wio_index",
         bash_command="python /opt/airflow/ingestion/compute_wio_index.py",
     )
 
-    weekly_brief = BashOperator(
-        task_id="generate_weekly_brief",
-        bash_command="python /opt/airflow/ingestion/generate_weekly_brief.py",
-    )
-
-    data_quality = BashOperator(
-        task_id="compute_data_quality",
-        bash_command="python /opt/airflow/ingestion/compute_data_quality.py",
-    )
-
-    # --- Core ELT ---
+    # Ingest → stage → dbt
     [fetch_noaa, fetch_copernicus] >> stage_with_duckdb >> dbt_deps >> run_dbt >> test_dbt
 
-    # --- Ops seeds / live feeds ---
+    # Seeds + live feeds after dbt
     run_dbt >> init_schema >> [seed_port, seed_fishing, seed_ais] >> fetch_ais_live
     run_dbt >> fetch_gfw
 
+    # Ops intelligence after AIS/GFW
     [fetch_ais_live, fetch_gfw, seed_fishing] >> run_intelligence
 
-    # --- ML ---
+    # ML
     run_dbt >> ml_sst
     [seed_ais, fetch_ais_live] >> ml_vessel
     run_intelligence >> [ml_port_risk, ml_bloom, ml_habitat]
 
-    # --- WIO-OII ---
+    # Anomalies need ocean + port + GFW facts
+    [run_dbt, run_intelligence, fetch_gfw] >> compute_anomalies
+
+    # Alerts: base generator then anomaly enrichment
+    [run_intelligence, compute_anomalies] >> generate_alerts >> enrich_alerts
+
+    # WIO-OII last: needs ML + GFW + AIS + anomalies context
     [
         test_dbt,
         ml_sst,
@@ -161,7 +171,5 @@ with DAG(
         ml_habitat,
         fetch_gfw,
         run_intelligence,
+        compute_anomalies,
     ] >> compute_wio_index
-
-    # --- Report then quality ---
-    compute_wio_index >> weekly_brief >> data_quality
