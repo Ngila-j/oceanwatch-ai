@@ -71,3 +71,23 @@ if not sample.empty:
 
 st.markdown("---")
 st.caption("Apparent fishing effort is model-derived from AIS · not a legal determination of fishing.")
+st.subheader("Open fishing-related alerts")
+try:
+    fa = pd.read_sql(
+        text("""
+            SELECT severity, title, description, created_at
+            FROM fact_alerts
+            WHERE status = 'OPEN'
+              AND UPPER(COALESCE(category, '')) IN ('FISHING')
+            ORDER BY created_at DESC
+            LIMIT 15
+        """),
+        create_engine(DB, pool_pre_ping=True),
+    )
+    st.dataframe(fa, use_container_width=True)
+except Exception as e:
+    st.caption(f"Alerts unavailable: {e}")
+st.caption(
+    "Fishing effort may use Global Fishing Watch data — attribution required; "
+    "non-commercial where their licence applies. Not a legal finding."
+)

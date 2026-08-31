@@ -30,6 +30,7 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:password@postgres:5432/airflow_db
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+      AIRFLOW__WEBSERVER__SECRET_KEY: oceanwatch_airflow_shared_secret_key_2026
     volumes:
       - ./dags:/opt/airflow/dags
       - ./ingestion:/opt/airflow/ingestion
@@ -59,6 +60,7 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:password@postgres:5432/airflow_db
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+      AIRFLOW__WEBSERVER__SECRET_KEY: oceanwatch_airflow_shared_secret_key_2026
     ports:
       - "8080:8080"
     volumes:
@@ -92,6 +94,7 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:password@postgres:5432/airflow_db
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+      AIRFLOW__WEBSERVER__SECRET_KEY: oceanwatch_airflow_shared_secret_key_2026
     volumes:
       - ./dags:/opt/airflow/dags
       - ./ingestion:/opt/airflow/ingestion
