@@ -1,61 +1,64 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Port Intelligence", page_icon="⚓", layout="wide")
 st.title("⚓ Mombasa Port Intelligence")
+st.caption("Operational snapshot · Kenya-first · decision-support only")
 
-@st.cache_data(ttl=120)
-def load_port_metrics():
-    engine = create_engine("postgresql://postgres:password@localhost:5433/oceanwatch_db")
-    try:
-        metrics = pd.read_sql("SELECT * FROM fact_port_metrics ORDER BY metric_date DESC LIMIT 1", engine)
-        activity = pd.read_sql("SELECT * FROM port_activity ORDER BY event_time DESC", engine)
-        return metrics, activity
-    except Exception as e:
-        st.error(str(e))
-        return pd.DataFrame(), pd.DataFrame()
+DB = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
 
-metrics, activity = load_port_metrics()
+@st.cache_data(ttl=60)
+def load():
+    eng = create_engine(DB, pool_pre_ping=True)
 
-if metrics.empty:
-    st.warning("No port metrics yet. Run the operational intelligence engine.")
+    def q(sql):
+        try:
+            return pd.read_sql(text(sql), eng)
+        except Exception as e:
+            return pd.DataFrame({"error": [str(e)]})
+
+    return {
+        "metrics": q(
+            "SELECT * FROM fact_port_metrics ORDER BY metric_date DESC LIMIT 14"
+        ),
+        "risk": q("SELECT * FROM fact_port_risk ORDER BY risk_date DESC LIMIT 7"),
+        "alerts": q(
+            """
+            SELECT severity, title, description, created_at
+            FROM fact_alerts
+            WHERE status = 'OPEN' AND UPPER(COALESCE(category, '')) = 'PORT'
+            ORDER BY created_at DESC
+            LIMIT 10
+            """
+        ),
+    }
+
+d = load()
+m, r, a = d["metrics"], d["risk"], d["alerts"]
+
+if not m.empty and "error" not in m.columns:
+    latest = m.iloc[0]
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Active vessels", latest.get("active_vessels", "—"))
+    c2.metric("Arrivals", latest.get("arrivals", "—"))
+    c3.metric("Departures", latest.get("departures", "—"))
+    c4.metric("Congestion", str(latest.get("congestion_level", "—")))
+    c5.metric("Vs 30d baseline %", latest.get("vs_30d_baseline_pct", "—"))
+    st.subheader("Recent port metrics")
+    st.dataframe(m, use_container_width=True)
 else:
-    m = metrics.iloc[0]
+    st.warning("No fact_port_metrics — run operational intelligence / DAG.")
 
-    st.subheader("MOMBASA PORT INTELLIGENCE")
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Active vessels", int(m["active_vessels"]))
-    c2.metric("Arrivals (7d)", int(m["arrivals"]))
-    c3.metric("Departures (7d)", int(m["departures"]))
-    c4.metric("Port congestion", m["congestion_level"])
+st.subheader("Port operational risk")
+if not r.empty and "error" not in r.columns:
+    st.dataframe(r, use_container_width=True)
+else:
+    st.info("No fact_port_risk rows yet.")
 
-    c5, c6, c7, c8 = st.columns(4)
-    c5.metric("Avg. waiting time", f"{m['avg_waiting_hours']} hrs")
-    c6.metric("Container vessels", int(m["container_vessels"]))
-    c7.metric("Tankers", int(m["tankers"]))
-    c8.metric("Fishing vessels", int(m["fishing_vessels"]))
+st.subheader("Open port alerts")
+st.dataframe(a if not a.empty else pd.DataFrame({"note": ["None open"]}), use_container_width=True)
 
-    st.metric("vs 30-day baseline", f"{m['vs_30d_baseline_pct']:+.1f}%")
-
-    if m["congestion_level"] == "HIGH":
-        st.error(f"⚠ Vessel activity {m['vs_30d_baseline_pct']:+.1f}% above 30-day baseline — congestion HIGH")
-    elif m["congestion_level"] == "MODERATE":
-        st.warning("Port congestion is MODERATE")
-    else:
-        st.success("Port congestion is LOW")
-
-    if not activity.empty:
-        activity["event_time"] = pd.to_datetime(activity["event_time"])
-        st.subheader("Vessel Type Mix (recent)")
-        type_counts = activity["vessel_type"].value_counts().reset_index()
-        type_counts.columns = ["vessel_type", "count"]
-        fig = px.pie(type_counts, names="vessel_type", values="count", hole=0.4)
-        st.plotly_chart(fig, use_container_width=True)
-
-        st.subheader("Recent Events")
-        st.dataframe(
-            activity[["event_time", "event_type", "vessel_name", "vessel_type", "flag_country", "status"]].head(25),
-            use_container_width=True
-        )
+st.info(
+    "Not official Kenya Ports Authority data. Prototype metrics for planning awareness only."
+)
