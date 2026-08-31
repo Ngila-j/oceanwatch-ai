@@ -1,6 +1,6 @@
 """
 OceanWatch Operational Intelligence Engine
-Writes port metrics, light anomalies context, and fact_alerts (17-col schema).
+Port metrics + fact_alerts (17-col safe writes). Same-day dedupe for key titles.
 """
 
 import logging
@@ -28,7 +28,7 @@ def connect():
     return con
 
 
-def table_columns(con, table: str) -> list[str]:
+def table_columns(con, table: str) -> list:
     rows = con.execute(
         """
         SELECT column_name
@@ -51,7 +51,7 @@ def write_df(con, table: str, df: pd.DataFrame, mode: str = "append") -> None:
         return
     use = [c for c in df.columns if c in cols]
     if not use:
-        logger.warning("No overlapping columns for %s. df=%s table=%s", table, list(df.columns), cols)
+        logger.warning("No overlapping columns for %s", table)
         return
     out = df[use].copy()
     con.register("tmp_df", out)
@@ -62,16 +62,7 @@ def write_df(con, table: str, df: pd.DataFrame, mode: str = "append") -> None:
     logger.info("Wrote %s rows → %s (%s cols)", len(out), table, len(use))
 
 
-def fetch_scalar(con, sql: str, default=None):
-    try:
-        r = con.execute(sql).fetchone()
-        return r[0] if r and r[0] is not None else default
-    except Exception:
-        return default
-
-
 def build_port_metrics(con) -> pd.DataFrame:
-    """Prefer existing fact_port_metrics; else synthesize a daily snapshot from seeds if present."""
     try:
         df = con.execute(
             """
@@ -110,7 +101,6 @@ def build_alerts(con, port_row: dict) -> pd.DataFrame:
     now = datetime.utcnow()
     rows = []
 
-    # System heartbeat
     rows.append(
         {
             "alert_id": random.randint(1_000_000, 9_999_999),
@@ -150,9 +140,7 @@ def build_alerts(con, port_row: dict) -> pd.DataFrame:
                 "confidence_score": 70.0,
                 "risk_score": min(100.0, cong),
                 "title": "Mombasa Port Congestion HIGH",
-                "description": (
-                    f"Congestion index {cong}. Activity {vs:+.1f}% vs 30-day baseline."
-                ),
+                "description": f"Congestion index {cong}. Activity {vs:+.1f}% vs 30-day baseline.",
                 "evidence": str(
                     {
                         "congestion_index": cong,
@@ -167,7 +155,6 @@ def build_alerts(con, port_row: dict) -> pd.DataFrame:
             }
         )
 
-    # Vessel anomalies → alerts (if table exists)
     try:
         va = con.execute(
             """
@@ -210,30 +197,40 @@ def build_alerts(con, port_row: dict) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def clear_today_titles(con, titles: list) -> None:
+    for title in titles:
+        try:
+            con.execute(
+                """
+                DELETE FROM pg.public.fact_alerts
+                WHERE status = 'OPEN'
+                  AND title = ?
+                  AND created_at::date = CURRENT_DATE
+                """,
+                [title],
+            )
+        except Exception as e:
+            logger.info("clear_today skip %s: %s", title, e)
+
+
 def run_engine():
     logger.info("=== OceanWatch Operational Intelligence Engine Started ===")
     con = connect()
 
     port_df = build_port_metrics(con)
     port_row = port_df.iloc[0].to_dict() if not port_df.empty else {}
-
-    # Refresh today's port metrics row if table supports it
     write_df(con, "fact_port_metrics", port_df, mode="append")
 
-    alerts = build_alerts(con, port_row)
-    # Avoid duplicate SYSTEM spam: optional delete of same-day SYSTEM titles
-    try:
-        con.execute(
-            """
-            DELETE FROM pg.public.fact_alerts
-            WHERE alert_type = 'SYSTEM'
-              AND title = 'OceanWatch Monitoring Active'
-              AND created_at::date = CURRENT_DATE
-            """
-        )
-    except Exception:
-        pass
+    clear_today_titles(
+        con,
+        [
+            "OceanWatch Monitoring Active",
+            "Mombasa Port Congestion HIGH",
+            "Potential Anomalous Vessel Behaviour",
+        ],
+    )
 
+    alerts = build_alerts(con, port_row)
     write_df(con, "fact_alerts", alerts, mode="append")
 
     logger.info("=== Operational Intelligence completed ===")

@@ -1,93 +1,106 @@
 import streamlit as st
 import pandas as pd
-import folium
-from streamlit_folium import st_folium
-from sqlalchemy import create_engine
-import plotly.express as px
+from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Fishing Activity", page_icon="🐟", layout="wide")
 st.title("🐟 Fishing Activity Intelligence")
-st.caption(
-    "Sample AIS behaviour + Global Fishing Watch apparent fishing effort. "
-    "GFW data powered by [Global Fishing Watch](https://globalfishingwatch.org)."
-)
+st.caption("Kenya EEZ · effort, behaviour flags, decision-support only")
 
-@st.cache_data(ttl=180)
+DB = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+
+
+@st.cache_data(ttl=60)
 def load():
-    engine = create_engine("postgresql://postgres:password@localhost:5433/oceanwatch_db")
-    gfw = pd.DataFrame()
-    sample = pd.DataFrame()
-    try:
-        gfw = pd.read_sql(
-            "SELECT effort_date, lat, lon, hours, flag FROM fact_gfw_fishing_effort WHERE hours IS NOT NULL",
-            engine,
-        )
-    except Exception:
-        pass
-    try:
-        sample = pd.read_sql(
-            "SELECT * FROM fact_fishing_activity LIMIT 500",
-            engine,
-        )
-    except Exception:
-        pass
-    return gfw, sample
+    eng = create_engine(DB, pool_pre_ping=True)
 
+    def q(sql):
+        try:
+            return pd.read_sql(text(sql), eng)
+        except Exception as e:
+            return pd.DataFrame({"error": [str(e)]})
 
-gfw, sample = load()
-
-c1, c2, c3 = st.columns(3)
-c1.metric("GFW effort cells", len(gfw))
-c2.metric("GFW total hours", f"{gfw['hours'].sum():.1f}" if not gfw.empty else "0")
-c3.metric("Sample fishing events", len(sample))
-
-if not gfw.empty:
-    st.subheader("GFW daily apparent fishing hours")
-    daily = gfw.groupby("effort_date", as_index=False)["hours"].sum()
-    st.plotly_chart(px.bar(daily, x="effort_date", y="hours"), use_container_width=True)
-
-    st.subheader("GFW effort map")
-    m = folium.Map(location=[-1.5, 42.0], zoom_start=6, tiles="CartoDB positron")
-    folium.Rectangle(bounds=[[-5, 39], [2, 45]], color="blue", fill=True, fill_opacity=0.05).add_to(m)
-    max_h = max(float(gfw["hours"].max()), 0.01)
-    for _, row in gfw.iterrows():
-        if pd.isna(row["lat"]) or pd.isna(row["lon"]):
-            continue
-        folium.CircleMarker(
-            [row["lat"], row["lon"]],
-            radius=3 + 10 * (float(row["hours"]) / max_h),
-            color="#c0392b",
-            fill=True,
-            fill_opacity=0.65,
-            popup=f"{row['effort_date']} · {row['hours']:.2f}h",
-        ).add_to(m)
-    st_folium(m, width=None, height=420, returned_objects=[])
-
-st.page_link("pages/15_GFW_Fishing_Effort.py", label="Open full GFW Fishing Effort page →")
-
-if not sample.empty:
-    st.subheader("Sample / internal fishing activity table")
-    st.dataframe(sample.head(50), use_container_width=True)
-
-st.markdown("---")
-st.caption("Apparent fishing effort is model-derived from AIS · not a legal determination of fishing.")
-st.subheader("Open fishing-related alerts")
-try:
-    fa = pd.read_sql(
-        text("""
+    return {
+        "gfw": q(
+            """
+            SELECT
+                COUNT(*) AS cells,
+                COALESCE(SUM(hours), 0) AS total_hours,
+                COUNT(DISTINCT effort_date) AS days,
+                MIN(effort_date) AS start_date,
+                MAX(effort_date) AS end_date
+            FROM fact_gfw_fishing_effort
+            """
+        ),
+        "gfw_daily": q(
+            """
+            SELECT effort_date, SUM(hours) AS hours, COUNT(*) AS cells
+            FROM fact_gfw_fishing_effort
+            GROUP BY effort_date
+            ORDER BY effort_date DESC
+            LIMIT 14
+            """
+        ),
+        "vessel": q(
+            """
+            SELECT vessel_name, vessel_type, risk_score, confidence_score, status, evidence
+            FROM fact_vessel_anomalies
+            ORDER BY risk_score DESC
+            LIMIT 20
+            """
+        ),
+        "alerts": q(
+            """
             SELECT severity, title, description, created_at
             FROM fact_alerts
             WHERE status = 'OPEN'
-              AND UPPER(COALESCE(category, '')) IN ('FISHING')
+              AND UPPER(COALESCE(category, '')) = 'FISHING'
             ORDER BY created_at DESC
             LIMIT 15
-        """),
-        create_engine(DB, pool_pre_ping=True),
+            """
+        ),
+    }
+
+
+d = load()
+
+st.subheader("GFW fishing effort (summary)")
+g = d["gfw"]
+if not g.empty and "error" not in g.columns:
+    row = g.iloc[0]
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Cells", int(row.get("cells") or 0))
+    c2.metric("Total hours", round(float(row.get("total_hours") or 0), 1))
+    c3.metric("Days", int(row.get("days") or 0))
+    st.caption(
+        f"Range: {row.get('start_date')} → {row.get('end_date')} · "
+        "Powered by Global Fishing Watch — https://globalfishingwatch.org"
     )
-    st.dataframe(fa, use_container_width=True)
-except Exception as e:
-    st.caption(f"Alerts unavailable: {e}")
-st.caption(
-    "Fishing effort may use Global Fishing Watch data — attribution required; "
-    "non-commercial where their licence applies. Not a legal finding."
+else:
+    st.warning("No GFW effort table/data yet.")
+
+st.subheader("Recent daily effort")
+gd = d["gfw_daily"]
+if not gd.empty and "error" not in gd.columns:
+    st.dataframe(gd, use_container_width=True)
+else:
+    st.caption("No daily effort rows.")
+
+st.subheader("Vessel behaviour scores")
+v = d["vessel"]
+if not v.empty and "error" not in v.columns:
+    st.dataframe(v, use_container_width=True)
+else:
+    st.caption("No vessel anomaly rows — run ml_vessel_anomaly.")
+
+st.divider()
+st.subheader("Open fishing-related alerts")
+a = d["alerts"]
+if not a.empty and "error" not in a.columns:
+    st.dataframe(a, use_container_width=True)
+else:
+    st.caption("No open fishing alerts.")
+
+st.info(
+    "Not a legal or enforcement product. Anomalies mean unusual vs baseline. "
+    "GFW use: attribution required; non-commercial where their licence applies."
 )

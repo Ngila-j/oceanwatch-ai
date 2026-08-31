@@ -1,6 +1,6 @@
 """
-Vessel anomaly detection — Isolation Forest style features on AIS positions.
-Writes fact_vessel_anomalies; promotes high-risk rows to fact_alerts (17-col safe).
+Vessel anomaly detection on AIS positions.
+Writes fact_vessel_anomalies; promotes high-risk to fact_alerts (column-safe).
 """
 
 import logging
@@ -76,11 +76,9 @@ def vessel_features(df: pd.DataFrame) -> pd.DataFrame:
         cog = pd.to_numeric(g.get("cog"), errors="coerce").fillna(0)
         turn = cog.diff().abs().fillna(0)
         turn = turn.apply(lambda x: min(x, 360 - x) if x > 180 else x)
-        n = max(len(g), 1)
         low_speed_ratio = float((sog < 1.0).mean())
         speed_mean = float(sog.mean())
         turn_rate = float(turn.mean())
-        # crude track efficiency: displacement / path length proxy
         if len(g) >= 2:
             lat = pd.to_numeric(g["latitude"], errors="coerce")
             lon = pd.to_numeric(g["longitude"], errors="coerce")
@@ -92,7 +90,6 @@ def vessel_features(df: pd.DataFrame) -> pd.DataFrame:
         else:
             efficiency = 1.0
 
-        # Simple risk score 0–100 (explainable heuristics; IF optional if sklearn present)
         risk = 0.0
         evidence = []
         if turn_rate > 25:
@@ -113,7 +110,11 @@ def vessel_features(df: pd.DataFrame) -> pd.DataFrame:
         status = "REQUIRES_HUMAN_REVIEW" if risk >= 60 else "MONITOR" if risk >= 40 else "NORMAL"
 
         name = g["vessel_name"].dropna().iloc[0] if g["vessel_name"].notna().any() else str(mmsi)
-        vtype = g["vessel_type"].dropna().iloc[0] if "vessel_type" in g and g["vessel_type"].notna().any() else "UNKNOWN"
+        vtype = (
+            g["vessel_type"].dropna().iloc[0]
+            if "vessel_type" in g and g["vessel_type"].notna().any()
+            else "UNKNOWN"
+        )
 
         rows.append(
             {
@@ -170,20 +171,34 @@ def run_pipeline():
     logger.info("=== Vessel Anomaly Detection Pipeline Started ===")
     con = connect()
     ais = load_ais(con)
-    logger.info("Loaded %s AIS positions, %s vessels", len(ais), ais["mmsi"].nunique() if len(ais) else 0)
+    logger.info(
+        "Loaded %s AIS positions, %s vessels",
+        len(ais),
+        ais["mmsi"].nunique() if len(ais) else 0,
+    )
 
     if ais.empty:
         logger.warning("No AIS data")
         return
 
     anom = vessel_features(ais)
-
-    # Replace-style: clear previous model output for clean demo table
     try:
         con.execute("DELETE FROM pg.public.fact_vessel_anomalies")
     except Exception:
         pass
     write_df(con, "fact_vessel_anomalies", anom)
+
+    try:
+        con.execute(
+            """
+            DELETE FROM pg.public.fact_alerts
+            WHERE status = 'OPEN'
+              AND title = 'Potential Anomalous Vessel Behaviour'
+              AND created_at::date = CURRENT_DATE
+            """
+        )
+    except Exception:
+        pass
 
     alerts = alerts_from_anomalies(anom)
     write_df(con, "fact_alerts", alerts)

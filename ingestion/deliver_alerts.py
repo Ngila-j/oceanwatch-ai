@@ -1,6 +1,6 @@
 """
 OceanWatch alert delivery (S3 Reach)
-Outbox always; email when SMTP_* + ALERT_EMAIL_TO (or subscription emails) work.
+Outbox always; optional SMTP when App Password works.
 """
 
 import logging
@@ -71,6 +71,7 @@ def load_alerts(con) -> pd.DataFrame:
             FROM pg.public.fact_alerts
             WHERE status = 'OPEN'
               AND UPPER(severity) IN ({sev})
+              AND created_at >= (CURRENT_DATE - INTERVAL '7 days')
             ORDER BY created_at DESC
             LIMIT 50
             """
@@ -82,9 +83,7 @@ def load_alerts(con) -> pd.DataFrame:
 
 def load_subscriptions(con) -> pd.DataFrame:
     try:
-        return con.execute(
-            "SELECT * FROM pg.public.alert_subscriptions"
-        ).fetchdf()
+        return con.execute("SELECT * FROM pg.public.alert_subscriptions").fetchdf()
     except Exception as e:
         logger.info("Subscriptions unavailable: %s", e)
         return pd.DataFrame()
@@ -96,13 +95,17 @@ def format_digest(alerts: pd.DataFrame) -> str:
         "Region: Kenya EEZ / Western Indian Ocean",
         "Decision-support only. Not an official authority notice.",
         "",
-        f"Elevated+ open alerts: {len(alerts)}",
-        "",
     ]
-    if alerts.empty:
+    if alerts is None or alerts.empty:
+        lines.append("Elevated+ open alerts (unique): 0")
+        lines.append("")
         lines.append("No ELEVATED/HIGH/CRITICAL open alerts.")
     else:
-        for _, a in alerts.iterrows():
+        key_cols = [c for c in ("title", "category", "severity") if c in alerts.columns]
+        uniq = alerts.drop_duplicates(subset=key_cols) if key_cols else alerts
+        lines.append(f"Elevated+ open alerts (unique): {len(uniq)}")
+        lines.append("")
+        for _, a in uniq.iterrows():
             lines.append(f"- [{a.get('severity')}] {a.get('title')} ({a.get('category')})")
             if a.get("why_it_matters"):
                 lines.append(f"  Why it matters: {a.get('why_it_matters')}")
@@ -132,7 +135,6 @@ def recipient_list(subs: pd.DataFrame) -> list:
                     s = str(x).strip()
                     if s and "@" in s:
                         emails.append(s)
-    # Always allow env fallback
     default = (os.getenv("ALERT_EMAIL_TO") or "").strip()
     for e in default.split(","):
         e = e.strip()
