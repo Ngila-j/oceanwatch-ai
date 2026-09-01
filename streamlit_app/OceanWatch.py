@@ -1,10 +1,10 @@
 """
 OceanWatch AI — main shell
-Grouped sidebar (canvas Level 1). Material icons (no emoji).
-Each page registered at most once. Sidebar titles strip numeric filename prefixes.
+Sidebar groups match product canvas.
+Theme: light canvas + deep navy chrome (ow_theme).
+Material icons only. Each page registered once.
 """
 
-import re
 from pathlib import Path
 
 import streamlit as st
@@ -25,13 +25,6 @@ except Exception:
 
 ROOT = Path(__file__).resolve().parent
 PAGES = ROOT / "pages"
-
-
-def clean_title(stem: str) -> str:
-    """0_Kenya_EEZ_Today -> Kenya EEZ Today"""
-    s = re.sub(r"^\d+[_\-\s]*", "", stem)
-    s = s.replace("_", " ").strip()
-    return s.title() if s else stem
 
 
 def page(
@@ -65,14 +58,13 @@ with st.sidebar:
     st.caption("Western Indian Ocean Intelligence")
     st.markdown("---")
 
-# --- Core pages ---
+# --- Pages ---
 home = page("Home.py", "Home", ":material/home:", default=True)
 
 kenya = (
     page("pages/0_Kenya_EEZ_Today.py", "Kenya EEZ Today", ":material/public:")
     or page("pages/Kenya_EEZ_Today.py", "Kenya EEZ Today", ":material/public:")
 )
-
 exec_sum = page(
     "pages/1_Executive_Summary.py",
     "Executive Summary",
@@ -88,11 +80,9 @@ brief = page(
     "Weekly Ocean Brief",
     ":material/newspaper:",
 )
-quality = page(
-    "pages/25_Quality_and_Provenance.py",
-    "Quality & Provenance",
-    ":material/verified:",
-    url_path="quality_provenance",
+intel_map = (
+    page("pages/2_Intelligence_Map.py", "Intelligence Map", ":material/map:")
+    or page("pages/Intelligence_Map.py", "Intelligence Map", ":material/map:")
 )
 
 ocean = page(
@@ -107,13 +97,17 @@ fish_clim = page(
 )
 bloom = (
     page("pages/12_Bloom_Risk.py", "Bloom Risk", ":material/eco:")
-    or page("pages/11_Bloom_Risk.py", "Bloom Risk", ":material/eco:")
     or page("pages/13_Bloom_Risk.py", "Bloom Risk", ":material/eco:")
+    or page("pages/11_Bloom_Risk.py", "Bloom Risk", ":material/eco:")
 )
 habitat = (
-    page("pages/13_Habitat_Suitability.py", "Habitat Suitability", ":material/forest:")
+    page("pages/14_Habitat_Suitability.py", "Habitat Suitability", ":material/forest:")
+    or page("pages/13_Habitat_Suitability.py", "Habitat Suitability", ":material/forest:")
     or page("pages/12_Habitat_Suitability.py", "Habitat Suitability", ":material/forest:")
-    or page("pages/14_Habitat_Suitability.py", "Habitat Suitability", ":material/forest:")
+)
+ai_forecasts = (
+    page("pages/6_AI_Forecasts.py", "AI Forecasts", ":material/trending_up:")
+    or page("pages/AI_Forecasts.py", "AI Forecasts", ":material/trending_up:")
 )
 
 vessel = page(
@@ -122,8 +116,8 @@ vessel = page(
     ":material/directions_boat:",
 )
 ais = (
-    page("pages/10_AIS_Live.py", "AIS Live", ":material/cell_tower:")
-    or page("pages/11_AIS_Live.py", "AIS Live", ":material/cell_tower:")
+    page("pages/11_AIS_Live.py", "AIS Live", ":material/cell_tower:")
+    or page("pages/10_AIS_Live.py", "AIS Live", ":material/cell_tower:")
     or page("pages/AIS_Live.py", "AIS Live", ":material/cell_tower:")
 )
 
@@ -144,9 +138,8 @@ port = page(
     ":material/anchor:",
 )
 port_risk = (
-    page("pages/11_Port_Risk.py", "Port Risk", ":material/analytics:")
-    or page("pages/12_Port_Risk.py", "Port Risk", ":material/analytics:")
-    or page("pages/Port_Risk.py", "Port Risk", ":material/analytics:")
+    page("pages/12_Port_Risk.py", "Port Risk", ":material/analytics:")
+    or page("pages/11_Port_Risk.py", "Port Risk", ":material/analytics:")
 )
 
 alerts = page(
@@ -159,11 +152,40 @@ subs = page(
     "Alert Subscriptions",
     ":material/notifications:",
 )
+anomaly_engine = (
+    page("pages/23_Anomaly_Engine.py", "Anomaly Engine", ":material/psychology:")
+    or page("pages/Anomaly_Engine.py", "Anomaly Engine", ":material/psychology:")
+)
 
 research = page(
     "pages/16_Research_Data.py",
     "Research Data",
     ":material/menu_book:",
+)
+quality = page(
+    "pages/25_Quality_and_Provenance.py",
+    "Quality & Provenance",
+    ":material/verified:",
+    url_path="quality_provenance",
+)
+methodology = (
+    page(
+        "pages/21_Methodology_and_Sources.py",
+        "Methodology and Sources",
+        ":material/menu_book:",
+    )
+    or page(
+        "pages/Methodology_and_Sources.py",
+        "Methodology and Sources",
+        ":material/menu_book:",
+    )
+)
+api_access = page("pages/22_API_Access.py", "API Access", ":material/api:") or page(
+    "pages/API_Access.py", "API Access", ":material/api:"
+)
+playback = (
+    page("pages/24_Historical_Playback.py", "Historical Playback", ":material/history:")
+    or page("pages/Historical_Playback.py", "Historical Playback", ":material/history:")
 )
 
 onboard = page(
@@ -177,101 +199,53 @@ health = page(
     ":material/settings:",
 )
 
-methodology = (
-    page("pages/21_Methodology_and_Sources.py", "Methodology and Sources", ":material/menu_book:")
-    or page("pages/Methodology_and_Sources.py", "Methodology and Sources", ":material/menu_book:")
-)
-api_access = page("pages/22_API_Access.py", "API Access", ":material/api:") or page(
-    "pages/API_Access.py", "API Access", ":material/api:"
-)
-anomaly_engine = page(
-    "pages/23_Anomaly_Engine.py", "Anomaly Engine", ":material/psychology:"
-) or page("pages/Anomaly_Engine.py", "Anomaly Engine", ":material/psychology:")
-playback = page(
-    "pages/24_Historical_Playback.py", "Historical Playback", ":material/history:"
-) or page("pages/Historical_Playback.py", "Historical Playback", ":material/history:")
-intel_map = page(
-    "pages/2_Intelligence_Map.py", "Intelligence Map", ":material/map:"
-) or page("pages/Intelligence_Map.py", "Intelligence Map", ":material/map:")
-ai_forecasts = page(
-    "pages/6_AI_Forecasts.py", "AI Forecasts", ":material/trending_up:"
-) or page("pages/AI_Forecasts.py", "AI Forecasts", ":material/trending_up:")
-
-used_names = {
-    "Home.py",
-    "0_Kenya_EEZ_Today.py",
-    "Kenya_EEZ_Today.py",
-    "1_Executive_Summary.py",
-    "2_Intelligence_Map.py",
-    "Intelligence_Map.py",
-    "3_Ocean_Conditions.py",
-    "4_Vessel_Tracking.py",
-    "5_Fisheries_and_Climate.py",
-    "6_AI_Forecasts.py",
-    "AI_Forecasts.py",
-    "7_Operational_Alerts.py",
-    "8_Port_Intelligence.py",
-    "9_Fishing_Activity.py",
-    "10_AIS_Live.py",
-    "11_AIS_Live.py",
-    "11_Port_Risk.py",
-    "12_Port_Risk.py",
-    "11_Bloom_Risk.py",
-    "12_Bloom_Risk.py",
-    "13_Bloom_Risk.py",
-    "12_Habitat_Suitability.py",
-    "13_Habitat_Suitability.py",
-    "14_Habitat_Suitability.py",
-    "15_GFW_Fishing_Effort.py",
-    "16_Research_Data.py",
-    "17_Alert_Subscriptions.py",
-    "18_WIO_Intelligence_Index.py",
-    "19_Onboarding_and_Access.py",
-    "20_System_Health.py",
-    "21_Methodology_and_Sources.py",
-    "Methodology_and_Sources.py",
-    "22_API_Access.py",
-    "API_Access.py",
-    "23_Anomaly_Engine.py",
-    "Anomaly_Engine.py",
-    "24_Historical_Playback.py",
-    "Historical_Playback.py",
-    "25_Quality_and_Provenance.py",
-    "26_Weekly_Ocean_Brief.py",
-}
-
-extra = []
-if PAGES.is_dir():
-    for f in sorted(PAGES.glob("*.py")):
-        if f.name.startswith("_") or f.name in used_names:
-            continue
-        slug = re.sub(r"^\d+[_\-\s]*", "", f.stem).lower().replace(" ", "_")
-        if not slug:
-            slug = f.stem.lower()
-        extra.append(
-            st.Page(
-                f"pages/{f.name}",
-                title=clean_title(f.stem),
-                icon=":material/description:",
-                url_path=slug,
-            )
-        )
-
+# Fixed section order (no auto-extra clutter)
 nav_dict = {
-    "Overview & Intelligence": keep(home, kenya, exec_sum, wio, brief, intel_map),
-    "Ocean & Environment": keep(ocean, fish_clim, bloom, habitat, ai_forecasts),
-    "Maritime & Vessels": keep(vessel, ais),
-    "Fisheries & Activity": keep(fishing, gfw),
-    "Ports & Infrastructure": keep(port, port_risk),
-    "Risks & Alerts": keep(alerts, subs, anomaly_engine),
-    "Data, Research & Analytics": keep(research, quality, methodology, api_access, playback),
-    "Platform & System": keep(onboard, health, *extra),
+    "Overview & Intelligence": keep(
+        home,
+        kenya,
+        exec_sum,
+        wio,
+        brief,
+        intel_map,
+    ),
+    "Ocean & Environment": keep(
+        ocean,
+        fish_clim,
+        bloom,
+        habitat,
+        ai_forecasts,
+    ),
+    "Maritime & Vessels": keep(
+        vessel,
+        ais,
+    ),
+    "Fisheries & Activity": keep(
+        fishing,
+        gfw,
+    ),
+    "Ports & Infrastructure": keep(
+        port,
+        port_risk,
+    ),
+    "Risks & Alerts": keep(
+        alerts,
+        subs,
+        anomaly_engine,
+    ),
+    "Data, Research & Analytics": keep(
+        research,
+        quality,
+        methodology,
+        api_access,
+        playback,
+    ),
+    "Platform & System": keep(
+        onboard,
+        health,
+    ),
 }
 nav_dict = {k: v for k, v in nav_dict.items() if v}
-
-if not nav_dict:
-    st.error("No pages found. Check streamlit_app/pages.")
-    st.stop()
 
 nav = st.navigation(nav_dict, position="sidebar")
 nav.run()
