@@ -3,7 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Quality & Provenance", page_icon="ðŸ”Ž", layout="wide")
-st.title("ðŸ”Ž Quality & Provenance")
+st.title("Quality & Provenance")
 st.caption("What data we use, how fresh it is, and what we do not claim.")
 
 DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"

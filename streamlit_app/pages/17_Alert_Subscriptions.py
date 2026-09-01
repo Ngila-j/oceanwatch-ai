@@ -3,7 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Alert Subscriptions", page_icon="ðŸ“§", layout="wide")
-st.title("ðŸ“§ Alert Subscriptions")
+st.title("Alert Subscriptions")
 st.caption(
     "Phase 8 foundation: store preferences in PostgreSQL. "
     "Email/WhatsApp delivery is optional and off by default."

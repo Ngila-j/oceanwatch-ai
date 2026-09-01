@@ -3,7 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 st.set_page_config(page_title="Bloom Risk", page_icon="ðŸŒŠ", layout="wide")
-st.title("ðŸŒŠ Chlorophyll Bloom-Risk Probability")
+st.title("Chlorophyll Bloom-Risk Probability")
 st.caption("Bloom-risk indicator â€” not a confirmed harmful algal bloom diagnosis")
 
 @st.cache_data(ttl=120)

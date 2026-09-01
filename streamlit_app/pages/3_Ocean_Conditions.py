@@ -4,7 +4,7 @@ import plotly.express as px
 from sqlalchemy import create_engine
 
 st.set_page_config(page_title="Ocean Conditions", page_icon="ðŸŒŠ", layout="wide")
-st.title("ðŸŒŠ Ocean Conditions Trends")
+st.title("Ocean Conditions Trends")
 
 @st.cache_data(ttl=300)
 def load_data():
@@ -25,7 +25,7 @@ else:
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Sea Surface Temperature (Â°C)")
+        st.subheader("Sea Surface Temperature ( deg C)")
         fig_sst = px.line(df.dropna(subset=["sst_celsius"]), 
                           x="date_key", y="sst_celsius",
                           markers=True)

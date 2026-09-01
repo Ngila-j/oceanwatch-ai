@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 import plotly.express as px
 
 st.set_page_config(page_title="GFW Fishing Effort", page_icon="ðŸŽ£", layout="wide")
-st.title("ðŸŽ£ Apparent Fishing Effort (Global Fishing Watch)")
+st.title("Apparent Fishing Effort (Global Fishing Watch)")
 
 st.caption(
     "Fishing effort data powered by [Global Fishing Watch](https://globalfishingwatch.org). "

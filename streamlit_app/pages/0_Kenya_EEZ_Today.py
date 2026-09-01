@@ -11,10 +11,10 @@ from components.branding import (
 )
 from components.data_access import list_briefs, qdf
 
-st.set_page_config(page_title="Kenya EEZ Today", page_icon="ðŸ‡°ðŸ‡ª", layout="wide")
+st.set_page_config(page_title="Kenya EEZ Today", page_icon="ðŸ‡ deg ðŸ‡ª", layout="wide")
 bandwidth_toggle()
 
-st.title("ðŸ‡°ðŸ‡ª Kenya EEZ / Mombasa â€” Today")
+st.title("Kenya EEZ / Mombasa  Today")
 st.caption(
     "One-screen operational snapshot. Free open intelligence for Kenyaâ€™s Western Indian Ocean coast."
 )
@@ -87,9 +87,9 @@ with c2:
     )
 with c3:
     if not ocean_latest.empty and pd.notna(ocean_latest.iloc[0].get("sst_celsius")):
-        st.metric("SST (Â°C)", f"{float(ocean_latest.iloc[0]['sst_celsius']):.2f}")
+        st.metric("SST ( deg C)", f"{float(ocean_latest.iloc[0]['sst_celsius']):.2f}")
     else:
-        st.metric("SST (Â°C)", "â€”")
+        st.metric("SST ( deg C)", "â€”")
 with c4:
     if not ocean_latest.empty and pd.notna(ocean_latest.iloc[0].get("chlorophyll_mg_m3")):
         st.metric("CHL", f"{float(ocean_latest.iloc[0]['chlorophyll_mg_m3']):.3f}")

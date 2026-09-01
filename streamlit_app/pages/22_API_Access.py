@@ -5,7 +5,7 @@ from components.branding import attribution_footer, bandwidth_toggle
 st.set_page_config(page_title="API Access", page_icon="🔌", layout="wide")
 bandwidth_toggle()
 
-st.title("🔌 Partner API — free access (prototype)")
+st.title("Partner API  free access (prototype)")
 st.caption(
     "Copernicus-style open access: explore the API freely in development. "
     "Hosted free-key issuance can be added when the server is public."

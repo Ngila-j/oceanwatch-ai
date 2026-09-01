@@ -7,7 +7,7 @@ from components.branding import attribution_footer, bandwidth_toggle
 st.set_page_config(page_title="Operational Alerts", page_icon="🚨", layout="wide")
 bandwidth_toggle()
 
-st.title("🚨 Operational Alerts")
+st.title("Operational Alerts")
 st.caption("What happened, why it matters — not legal determinations.")
 
 DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"

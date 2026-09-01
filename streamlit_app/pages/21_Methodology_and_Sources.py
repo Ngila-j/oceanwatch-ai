@@ -3,7 +3,7 @@ import streamlit as st
 from components.branding import attribution_footer
 
 st.set_page_config(page_title="Methodology & Sources", page_icon="📎", layout="wide")
-st.title("📎 Methodology & Sources")
+st.title("Methodology & Sources")
 st.caption("Transparency for a free, open Western Indian Ocean intelligence prototype.")
 
 st.markdown(
@@ -11,7 +11,7 @@ st.markdown(
 ## Purpose
 
 OceanWatch AI combines open ocean, vessel, and fishing-effort related datasets focused on
-**Kenya’s EEZ and Mombasa** to provide **decision-support indicators** — not official
+**Kenya's EEZ and Mombasa** to provide **decision-support indicators** — not official
 government statistics and not legal determinations.
 
 ## Data sources
@@ -57,7 +57,7 @@ government statistics and not legal determinations.
 - Spatial focus is intentionally **Kenya-first**, not global
 - Satellite and AIS feeds have gaps, latency, and cloud/coverage limits
 - Free prototype: no formal SLA
-- Licence compliance is the **user’s responsibility** for any redistribution
+- Licence compliance is the **user's responsibility** for any redistribution
 
 ## How to cite (suggested)
 

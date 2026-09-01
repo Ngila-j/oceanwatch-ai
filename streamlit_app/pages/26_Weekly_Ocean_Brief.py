@@ -3,8 +3,8 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 from datetime import date
 
-st.set_page_config(page_title="Weekly Ocean Brief", page_icon="ðŸ“°", layout="wide")
-st.title("ðŸ“° Weekly Ocean Brief")
+st.set_page_config(page_title="Weekly Ocean Brief", page_icon="ðŸ“ deg ", layout="wide")
+st.title("Weekly Ocean Brief")
 st.caption(f"Kenya EEZ Â· generated {date.today().isoformat()}")
 
 DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
@@ -82,7 +82,7 @@ if not sst.empty:
     st.markdown("### 2. Recent ocean conditions (up to 7 days)")
     st.dataframe(sst, width="stretch")
     if len(sst) and pd.notna(sst.iloc[0].get("sst_celsius")):
-        st.caption(f"Latest SST: **{float(sst.iloc[0]['sst_celsius']):.2f} Â°C**")
+        st.caption(f"Latest SST: **{float(sst.iloc[0]['sst_celsius']):.2f}  deg C**")
 
 st.markdown("### 3. Anomalies")
 elevated = (

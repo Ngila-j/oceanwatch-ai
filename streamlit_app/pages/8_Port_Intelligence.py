@@ -3,7 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Port Intelligence", page_icon="âš“", layout="wide")
-st.title("âš“ Mombasa Port Intelligence")
+st.title("Mombasa Port Intelligence")
 st.caption("Operational snapshot Â· Kenya-first Â· decision-support only")
 
 DB = "postgresql://postgres:password@localhost:5433/oceanwatch_db"

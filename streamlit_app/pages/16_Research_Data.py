@@ -3,7 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Research Data", page_icon="ðŸ“š", layout="wide")
-st.title("ðŸ“š Research Data Explorer")
+st.title("Research Data Explorer")
 st.caption(
     "Read-only access to selected OceanWatch tables for research and portfolio demos. "
     "Respect data licenses (especially Global Fishing Watch)."

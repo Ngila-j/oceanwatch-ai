@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(page_title="Vessel Tracking", page_icon="🚢", layout="wide")
-st.title("🚢 Vessel Tracking & AIS Analytics")
+st.title("Vessel Tracking & AIS Analytics")
 
 st.info("""
 **Coming soon in the next phase**

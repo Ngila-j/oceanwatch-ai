@@ -10,7 +10,7 @@ from streamlit_folium import st_folium
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Historical Playback", page_icon="âª", layout="wide")
-st.title("âª Historical Playback")
+st.title("Historical Playback")
 st.caption(
     "Select a day and review available ocean, AIS, and index snapshots. "
     "Not a complete archive â€” only what OceanWatch has stored."
@@ -79,7 +79,7 @@ c1, c2, c3 = st.columns(3)
 if not ocean.empty:
     row = ocean.iloc[0]
     c1.metric(
-        "SST (Â°C)",
+        "SST ( deg C)",
         f"{float(row['sst_celsius']):.2f}" if pd.notna(row.get("sst_celsius")) else "â€”",
     )
     c2.metric(

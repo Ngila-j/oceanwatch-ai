@@ -4,7 +4,7 @@ import plotly.express as px
 from sqlalchemy import create_engine
 
 st.set_page_config(page_title="Fisheries & Climate", page_icon="ðŸŸ", layout="wide")
-st.title("ðŸŸ Fisheries & Climate Indicators")
+st.title("Fisheries & Climate Indicators")
 
 @st.cache_data(ttl=300)
 def load_data():
@@ -40,7 +40,7 @@ else:
 
     st.subheader("Interpretation Guide")
     st.markdown("""
-    - **Higher Chlorophyll** â†’ higher primary productivity â†’ potentially better fishing conditions  
-    - **SST > 29â€“30Â°C** â†’ possible thermal stress for some species  
+    - **Higher Chlorophyll** â†' higher primary productivity â†' potentially better fishing conditions  
+    - **SST > 29â€“30 deg C** â†' possible thermal stress for some species  
     - Combination of moderate SST + elevated chlorophyll is often favourable for pelagic species
     """)

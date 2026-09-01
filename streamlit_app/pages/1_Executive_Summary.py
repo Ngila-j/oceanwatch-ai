@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from datetime import datetime
 
 st.set_page_config(page_title="Executive Summary", page_icon="ðŸ“Š", layout="wide")
-st.title("ðŸ“Š OceanWatch Executive Summary")
+st.title("OceanWatch Executive Summary")
 st.caption(f"Last refreshed: {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC")
 
 @st.cache_data(ttl=120)

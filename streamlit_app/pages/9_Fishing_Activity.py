@@ -3,7 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Fishing Activity", page_icon="ðŸŸ", layout="wide")
-st.title("ðŸŸ Fishing Activity Intelligence")
+st.title("Fishing Activity Intelligence")
 st.caption("Kenya EEZ Â· effort, behaviour flags, decision-support only")
 
 DB = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
@@ -72,7 +72,7 @@ if not g.empty and "error" not in g.columns:
     c2.metric("Total hours", round(float(row.get("total_hours") or 0), 1))
     c3.metric("Days", int(row.get("days") or 0))
     st.caption(
-        f"Range: {row.get('start_date')} â†’ {row.get('end_date')} Â· "
+        f"Range: {row.get('start_date')} â†' {row.get('end_date')} Â· "
         "Powered by Global Fishing Watch â€” https://globalfishingwatch.org"
     )
 else:

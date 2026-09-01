@@ -12,7 +12,7 @@ from components.branding import attribution_footer, bandwidth_toggle, is_low_ban
 st.set_page_config(page_title="WIO-OII", page_icon="ðŸ“Š", layout="wide")
 bandwidth_toggle()
 
-st.title("ðŸ“Š WIO Ocean Intelligence Index")
+st.title("WIO Ocean Intelligence Index")
 st.caption("Kenya EEZ signature index â€” history builds as daily runs accumulate.")
 
 DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"

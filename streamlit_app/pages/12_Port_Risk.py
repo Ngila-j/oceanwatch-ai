@@ -3,7 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 st.set_page_config(page_title="Port Risk", page_icon="âš“", layout="wide")
-st.title("âš“ Mombasa Port Operational Risk")
+st.title("Mombasa Port Operational Risk")
 
 @st.cache_data(ttl=120)
 def load():

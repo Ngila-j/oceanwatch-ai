@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.title("🌊 OceanWatch AI")
+st.title("OceanWatch AI")
 st.caption(
     "Western Indian Ocean · Kenya EEZ monitoring · "
     "Ocean · port · fishing effort · anomalies · WIO intelligence index"
@@ -62,7 +62,7 @@ def load_kpis():
 
 k = load_kpis()
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("Latest SST (°C)", f"{k['sst']:.2f}" if k["sst"] is not None else "—")
+c1.metric("Latest SST ( deg C)", f"{k['sst']:.2f}" if k["sst"] is not None else "—")
 c2.metric("WIO-OII", f"{k['wio']:.1f}" if k["wio"] is not None else "—")
 c3.metric("Open alerts", int(k["alerts"] or 0))
 c4.metric("Elevated anomalies", int(k["anoms"] or 0))

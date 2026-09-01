@@ -5,7 +5,7 @@ from streamlit_folium import st_folium
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="AIS Live", page_icon="ðŸ“¡", layout="wide")
-st.title("ðŸ“¡ AIS Vessel Positions")
+st.title("AIS Vessel Positions")
 st.caption(
     "Kenya EEZ monitoring box â€” SAMPLE enrichment + live AISSTREAM when coverage allows"
 )
@@ -53,7 +53,7 @@ st.info(
 | Source | Meaning |
 |--------|---------|
 | **SAMPLE** | Synthetic enrichment for demos, maps, and ML when live coverage is sparse |
-| **AISSTREAM** | Real live AIS via AISStream.io (hybrid WORLD subscribe â†’ Kenya/WIO filter) |
+| **AISSTREAM** | Real live AIS via AISStream.io (hybrid WORLD subscribe â†' Kenya/WIO filter) |
 
 East Africa terrestrial AIS coverage is often thin. Empty live windows are expected; SAMPLE keeps the product usable.
 """

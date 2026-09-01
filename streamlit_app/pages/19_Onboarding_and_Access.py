@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(page_title="Onboarding & Access", page_icon="📘", layout="wide")
-st.title("📘 Onboarding, Access & Monetization Framing")
+st.title("Onboarding, Access & Monetization Framing")
 
 st.markdown(
     """

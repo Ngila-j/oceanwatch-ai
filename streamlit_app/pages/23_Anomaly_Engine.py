@@ -7,7 +7,7 @@ from components.branding import attribution_footer, bandwidth_toggle
 st.set_page_config(page_title="Anomaly Engine", page_icon="ðŸ“‰", layout="wide")
 bandwidth_toggle()
 
-st.title("ðŸ“‰ OceanWatch Anomaly Engine")
+st.title("OceanWatch Anomaly Engine")
 st.caption("Is this unusual vs recent baselines? Decision-support only.")
 
 DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"

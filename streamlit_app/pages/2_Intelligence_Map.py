@@ -14,7 +14,7 @@ from components.branding import attribution_footer, bandwidth_toggle, is_low_ban
 st.set_page_config(page_title="Intelligence Map", page_icon="🗺️", layout="wide")
 bandwidth_toggle()
 
-st.title("🗺️ OceanWatch Intelligence Map")
+st.title("OceanWatch Intelligence Map")
 st.caption("Kenya EEZ / Mombasa — toggle layers. Decision-support only.")
 
 DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
@@ -92,7 +92,7 @@ sst = qdf(
 ocean_note = None
 if not sst.empty:
     ocean_note = (
-        f"Latest SST mean (region product): {float(sst.iloc[0]['sst_celsius']):.2f} °C "
+        f"Latest SST mean (region product): {float(sst.iloc[0]['sst_celsius']):.2f}  deg C "
         f"on {sst.iloc[0]['date_key']}"
     )
 
