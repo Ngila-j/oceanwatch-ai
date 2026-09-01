@@ -1,6 +1,7 @@
 """
 Vessel anomaly detection on AIS positions.
 Writes fact_vessel_anomalies; promotes high-risk to fact_alerts (column-safe).
+Same-day dedupe for vessel behaviour alerts.
 """
 
 import logging
