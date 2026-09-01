@@ -1,88 +1,101 @@
+"""OceanWatch — Platform System Health (canvas Level 8)."""
+
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
+from datetime import datetime
 
-st.set_page_config(page_title="System Health", page_icon="🩺", layout="wide")
-st.title("🩺 System Health & Data Quality")
-st.caption("Phase 10 observability — freshness and quality for operators.")
+try:
+    import requests
+except ImportError:
+    requests = None
 
-DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+st.set_page_config(page_title="System Health", page_icon=":material/settings:", layout="wide")
+st.title("System Health")
+st.caption("Prototype posture checks · not a production SRE console")
+
+DB = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+API = "http://localhost:8000"
 
 
-@st.cache_resource
-def get_engine():
-    return create_engine(DB_URI, pool_pre_ping=True)
-
-
-@st.cache_data(ttl=60)
-def load_quality():
-    engine = get_engine()
+@st.cache_data(ttl=30)
+def db_checks():
+    eng = create_engine(DB, pool_pre_ping=True)
+    out = {"ok": False, "error": None, "tables": {}, "alerts": None}
     try:
-        return pd.read_sql(
-            """
-            SELECT DISTINCT ON (dataset_name)
-                dataset_name, overall_score, completeness, validity, timeliness,
-                consistency, records_total, records_flagged, last_observation,
-                status, notes, scored_at
-            FROM fact_data_quality
-            ORDER BY dataset_name, scored_at DESC
-            """,
-            engine,
-        )
+        with eng.connect() as conn:
+            conn.execute(text("SELECT 1"))
+            out["ok"] = True
+            for t in (
+                "fact_ocean_conditions",
+                "fact_alerts",
+                "fact_ais_positions",
+                "fact_gfw_fishing_effort",
+                "fact_wio_intelligence_index",
+                "fact_vessel_anomalies",
+                "fact_port_metrics",
+            ):
+                try:
+                    n = conn.execute(text(f"SELECT COUNT(*) FROM {t}")).scalar()
+                    out["tables"][t] = int(n or 0)
+                except Exception:
+                    out["tables"][t] = None
+            try:
+                out["alerts"] = pd.read_sql(
+                    text(
+                        """
+                        SELECT status, COUNT(*) AS n
+                        FROM fact_alerts
+                        GROUP BY status
+                        ORDER BY 1
+                        """
+                    ),
+                    conn,
+                )
+            except Exception:
+                out["alerts"] = pd.DataFrame()
     except Exception as e:
-        st.warning(f"Quality table missing — run compute_data_quality.py ({e})")
-        return pd.DataFrame()
+        out["error"] = str(e)
+    return out
 
 
-@st.cache_data(ttl=60)
-def load_freshness():
-    engine = get_engine()
-    # Use real column names for this project
-    queries = {
-        "ocean_conditions": "SELECT MAX(date_key) AS last_ts FROM fact_ocean_conditions",
-        "ais_positions": "SELECT MAX(event_time) AS last_ts FROM fact_ais_positions",
-        "gfw_effort": "SELECT MAX(effort_date) AS last_ts FROM fact_gfw_fishing_effort",
-        "wio_index": "SELECT MAX(index_date) AS last_ts FROM fact_wio_intelligence_index",
-        "port_metrics": "SELECT MAX(metric_date) AS last_ts FROM fact_port_metrics",
-        "alerts": "SELECT MAX(created_at) AS last_ts FROM fact_alerts",
-        "data_quality": "SELECT MAX(scored_at) AS last_ts FROM fact_data_quality",
-    }
-    rows = []
-    for name, sql in queries.items():
-        try:
-            df = pd.read_sql(text(sql), engine)
-            rows.append({"dataset": name, "last_update": df.iloc[0]["last_ts"]})
-        except Exception:
-            rows.append({"dataset": name, "last_update": None})
-    return pd.DataFrame(rows)
+def api_check():
+    if requests is None:
+        return {"ok": False, "detail": "requests not installed"}
+    try:
+        r = requests.get(f"{API}/health", timeout=5)
+        return {"ok": r.status_code == 200, "status_code": r.status_code, "body": r.json()}
+    except Exception as e:
+        return {"ok": False, "detail": str(e)}
 
 
-q = load_quality()
-f = load_freshness()
+c1, c2, c3 = st.columns(3)
+db = db_checks()
+api = api_check()
 
-st.subheader("Data freshness")
-st.dataframe(f, use_container_width=True)
+c1.metric("PostgreSQL", "UP" if db["ok"] else "DOWN")
+c2.metric("API /health", "UP" if api.get("ok") else "DOWN")
+c3.metric("Checked at", datetime.utcnow().strftime("%H:%M UTC"))
 
-st.subheader("Quality scores")
-if q.empty:
-    st.info("No quality rows yet. Run: python /opt/airflow/ingestion/compute_data_quality.py")
+if db.get("error"):
+    st.error(f"DB: {db['error']}")
+if not api.get("ok"):
+    st.warning(f"API: {api.get('detail') or api}")
+
+st.subheader("Core table row counts")
+rows = [{"table": k, "rows": v} for k, v in (db.get("tables") or {}).items()]
+st.dataframe(pd.DataFrame(rows), width="stretch")
+
+st.subheader("Alert status")
+if db.get("alerts") is not None and not db["alerts"].empty:
+    st.dataframe(db["alerts"], width="stretch")
 else:
-    n = min(4, len(q))
-    cols = st.columns(n) if n else []
-    for i, (_, row) in enumerate(q.iterrows()):
-        with cols[i % n]:
-            st.metric(
-                str(row["dataset_name"]),
-                f"{float(row['overall_score']):.0f}",
-                delta=str(row["status"]),
-            )
-    st.dataframe(q, use_container_width=True)
+    st.caption("No alert status breakdown.")
 
-st.markdown(
-    """
-### Status guide
-- **HEALTHY** — overall ≥ 80  
-- **DEGRADED** — investigate validity/timeliness  
-- Quality is a **transparency** metric, not a legal guarantee of source correctness.
-"""
+st.subheader("API response")
+st.json(api)
+
+st.info(
+    "Decision-support prototype. Green checks mean local stack is reachable, "
+    "not that operational SLAs are met."
 )

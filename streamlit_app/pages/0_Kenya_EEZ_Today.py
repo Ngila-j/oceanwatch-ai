@@ -11,12 +11,12 @@ from components.branding import (
 )
 from components.data_access import list_briefs, qdf
 
-st.set_page_config(page_title="Kenya EEZ Today", page_icon="🇰🇪", layout="wide")
+st.set_page_config(page_title="Kenya EEZ Today", page_icon="ðŸ‡°ðŸ‡ª", layout="wide")
 bandwidth_toggle()
 
-st.title("🇰🇪 Kenya EEZ / Mombasa — Today")
+st.title("ðŸ‡°ðŸ‡ª Kenya EEZ / Mombasa â€” Today")
 st.caption(
-    "One-screen operational snapshot. Free open intelligence for Kenya’s Western Indian Ocean coast."
+    "One-screen operational snapshot. Free open intelligence for Kenyaâ€™s Western Indian Ocean coast."
 )
 methodology_blurb()
 
@@ -69,48 +69,48 @@ gfw = qdf(
 # Last-update stamps
 st.markdown("##### Data as of")
 u1, u2, u3, u4 = st.columns(4)
-u1.write(f"Ocean: **{ocean_latest.iloc[0]['date_key'] if not ocean_latest.empty else '—'}**")
-u2.write(f"Port: **{port.iloc[0]['metric_date'] if not port.empty else '—'}**")
-u3.write(f"WIO-OII: **{wio.iloc[0]['index_date'] if not wio.empty else '—'}**")
-u4.write(f"GFW last day: **{gfw.iloc[0]['last_day'] if not gfw.empty else '—'}**")
+u1.write(f"Ocean: **{ocean_latest.iloc[0]['date_key'] if not ocean_latest.empty else 'â€”'}**")
+u2.write(f"Port: **{port.iloc[0]['metric_date'] if not port.empty else 'â€”'}**")
+u3.write(f"WIO-OII: **{wio.iloc[0]['index_date'] if not wio.empty else 'â€”'}**")
+u4.write(f"GFW last day: **{gfw.iloc[0]['last_day'] if not gfw.empty else 'â€”'}**")
 
 c1, c2, c3, c4, c5, c6 = st.columns(6)
 with c1:
     st.metric(
         "Port congestion",
-        str(port.iloc[0]["congestion_level"]) if not port.empty else "—",
+        str(port.iloc[0]["congestion_level"]) if not port.empty else "â€”",
     )
 with c2:
     st.metric(
         "Active vessels",
-        str(port.iloc[0]["active_vessels"]) if not port.empty else "—",
+        str(port.iloc[0]["active_vessels"]) if not port.empty else "â€”",
     )
 with c3:
     if not ocean_latest.empty and pd.notna(ocean_latest.iloc[0].get("sst_celsius")):
-        st.metric("SST (°C)", f"{float(ocean_latest.iloc[0]['sst_celsius']):.2f}")
+        st.metric("SST (Â°C)", f"{float(ocean_latest.iloc[0]['sst_celsius']):.2f}")
     else:
-        st.metric("SST (°C)", "—")
+        st.metric("SST (Â°C)", "â€”")
 with c4:
     if not ocean_latest.empty and pd.notna(ocean_latest.iloc[0].get("chlorophyll_mg_m3")):
         st.metric("CHL", f"{float(ocean_latest.iloc[0]['chlorophyll_mg_m3']):.3f}")
     else:
-        st.metric("CHL", "—")
+        st.metric("CHL", "â€”")
 with c5:
     st.metric(
         "WIO-OII",
-        f"{float(wio.iloc[0]['overall_score']):.1f}" if not wio.empty else "—",
+        f"{float(wio.iloc[0]['overall_score']):.1f}" if not wio.empty else "â€”",
     )
 with c6:
     st.metric(
         "GFW hours (stored)",
-        f"{float(gfw.iloc[0]['hours']):.0f}" if not gfw.empty else "—",
+        f"{float(gfw.iloc[0]['hours']):.0f}" if not gfw.empty else "â€”",
     )
 
 st.markdown("#### Recent alerts")
 if alerts.empty:
     st.write("No alerts in database.")
 else:
-    st.dataframe(alerts, use_container_width=True)
+    st.dataframe(alerts, width="stretch")
 
 left, right = st.columns(2)
 with left:
@@ -121,11 +121,11 @@ with left:
         p = port.iloc[0]
         st.write(
             f"- Date: **{p.get('metric_date')}**\n"
-            f"- Arrivals: **{p.get('arrivals')}** · Departures: **{p.get('departures')}**\n"
+            f"- Arrivals: **{p.get('arrivals')}** Â· Departures: **{p.get('departures')}**\n"
             f"- Avg wait (h): **{p.get('avg_waiting_hours')}**\n"
             f"- vs 30d baseline: **{p.get('vs_30d_baseline_pct')}%**"
         )
-        st.caption("May include modelled/sample activity — check System Health.")
+        st.caption("May include modelled/sample activity â€” check System Health.")
 
 with right:
     st.markdown("#### WIO-OII drivers")
@@ -134,7 +134,7 @@ with right:
     else:
         w = wio.iloc[0]
         st.write(
-            f"- Region: **{w.get('region_id')}** · Confidence: **{w.get('confidence_score')}**\n"
+            f"- Region: **{w.get('region_id')}** Â· Confidence: **{w.get('confidence_score')}**\n"
             f"- Method: **{w.get('methodology_version')}**"
         )
         st.code(str(w.get("drivers") or ""), language=None)
@@ -146,7 +146,7 @@ if ocean_hist.empty:
 elif is_low_bandwidth():
     st.dataframe(
         ocean_hist.sort_values("date_key"),
-        use_container_width=True,
+        width="stretch",
     )
 else:
     hist = ocean_hist.sort_values("date_key")
@@ -158,7 +158,7 @@ st.markdown("#### Data quality")
 if quality.empty:
     st.write("Run compute_data_quality.py to populate scores.")
 else:
-    st.dataframe(quality, use_container_width=True)
+    st.dataframe(quality, width="stretch")
 
 st.markdown("#### Weekly Ocean Brief")
 briefs = list_briefs()
@@ -187,5 +187,5 @@ else:
                     key=f"brief_{b.name}",
                 )
 
-st.caption("GFW hours are stored aggregates — attribute Global Fishing Watch; check licence for your use.")
+st.caption("GFW hours are stored aggregates â€” attribute Global Fishing Watch; check licence for your use.")
 attribution_footer()

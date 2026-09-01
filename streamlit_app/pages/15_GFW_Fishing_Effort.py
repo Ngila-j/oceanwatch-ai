@@ -5,12 +5,12 @@ from streamlit_folium import st_folium
 from sqlalchemy import create_engine
 import plotly.express as px
 
-st.set_page_config(page_title="GFW Fishing Effort", page_icon="🎣", layout="wide")
-st.title("🎣 Apparent Fishing Effort (Global Fishing Watch)")
+st.set_page_config(page_title="GFW Fishing Effort", page_icon="ðŸŽ£", layout="wide")
+st.title("ðŸŽ£ Apparent Fishing Effort (Global Fishing Watch)")
 
 st.caption(
     "Fishing effort data powered by [Global Fishing Watch](https://globalfishingwatch.org). "
-    "Non-commercial use · CC BY-NC 4.0 · Apparent fishing effort from AIS-based models."
+    "Non-commercial use Â· CC BY-NC 4.0 Â· Apparent fishing effort from AIS-based models."
 )
 
 @st.cache_data(ttl=180)
@@ -45,7 +45,7 @@ c4.metric("Flags", int(df["flag"].nunique()) if "flag" in df.columns and df["fla
 st.subheader("Daily fishing hours (Kenya monitoring box)")
 daily = df.groupby("effort_date", as_index=False)["hours"].sum()
 fig = px.bar(daily, x="effort_date", y="hours", labels={"hours": "Apparent fishing hours"})
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width="stretch")
 
 st.subheader("Spatial effort map")
 m = folium.Map(location=[-1.5, 42.0], zoom_start=6, tiles="CartoDB positron")
@@ -68,13 +68,13 @@ for _, row in df.iterrows():
 st_folium(m, width=None, height=480, returned_objects=[])
 
 st.subheader("Top cells")
-st.dataframe(df.sort_values("hours", ascending=False).head(30), use_container_width=True)
+st.dataframe(df.sort_values("hours", ascending=False).head(30), width="stretch")
 
 st.markdown("---")
 st.markdown(
     """
 **Attribution**  
-Global Fishing Watch · 4Wings API (`public-global-fishing-effort:latest`)  
+Global Fishing Watch Â· 4Wings API (`public-global-fishing-effort:latest`)  
 [https://globalfishingwatch.org/our-apis/](https://globalfishingwatch.org/our-apis/)
 
 Apparent fishing effort is model-derived from AIS and is not a legal determination of fishing activity.

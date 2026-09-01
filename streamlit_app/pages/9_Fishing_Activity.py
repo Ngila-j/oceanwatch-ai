@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-st.set_page_config(page_title="Fishing Activity", page_icon="🐟", layout="wide")
-st.title("🐟 Fishing Activity Intelligence")
-st.caption("Kenya EEZ · effort, behaviour flags, decision-support only")
+st.set_page_config(page_title="Fishing Activity", page_icon="ðŸŸ", layout="wide")
+st.title("ðŸŸ Fishing Activity Intelligence")
+st.caption("Kenya EEZ Â· effort, behaviour flags, decision-support only")
 
 DB = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
 
@@ -72,8 +72,8 @@ if not g.empty and "error" not in g.columns:
     c2.metric("Total hours", round(float(row.get("total_hours") or 0), 1))
     c3.metric("Days", int(row.get("days") or 0))
     st.caption(
-        f"Range: {row.get('start_date')} → {row.get('end_date')} · "
-        "Powered by Global Fishing Watch — https://globalfishingwatch.org"
+        f"Range: {row.get('start_date')} â†’ {row.get('end_date')} Â· "
+        "Powered by Global Fishing Watch â€” https://globalfishingwatch.org"
     )
 else:
     st.warning("No GFW effort table/data yet.")
@@ -81,22 +81,22 @@ else:
 st.subheader("Recent daily effort")
 gd = d["gfw_daily"]
 if not gd.empty and "error" not in gd.columns:
-    st.dataframe(gd, use_container_width=True)
+    st.dataframe(gd, width="stretch")
 else:
     st.caption("No daily effort rows.")
 
 st.subheader("Vessel behaviour scores")
 v = d["vessel"]
 if not v.empty and "error" not in v.columns:
-    st.dataframe(v, use_container_width=True)
+    st.dataframe(v, width="stretch")
 else:
-    st.caption("No vessel anomaly rows — run ml_vessel_anomaly.")
+    st.caption("No vessel anomaly rows â€” run ml_vessel_anomaly.")
 
 st.divider()
 st.subheader("Open fishing-related alerts")
 a = d["alerts"]
 if not a.empty and "error" not in a.columns:
-    st.dataframe(a, use_container_width=True)
+    st.dataframe(a, width="stretch")
 else:
     st.caption("No open fishing alerts.")
 

@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-st.set_page_config(page_title="Port Intelligence", page_icon="⚓", layout="wide")
-st.title("⚓ Mombasa Port Intelligence")
-st.caption("Operational snapshot · Kenya-first · decision-support only")
+st.set_page_config(page_title="Port Intelligence", page_icon="âš“", layout="wide")
+st.title("âš“ Mombasa Port Intelligence")
+st.caption("Operational snapshot Â· Kenya-first Â· decision-support only")
 
 DB = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
 
@@ -40,24 +40,24 @@ m, r, a = d["metrics"], d["risk"], d["alerts"]
 if not m.empty and "error" not in m.columns:
     latest = m.iloc[0]
     c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("Active vessels", latest.get("active_vessels", "—"))
-    c2.metric("Arrivals", latest.get("arrivals", "—"))
-    c3.metric("Departures", latest.get("departures", "—"))
-    c4.metric("Congestion", str(latest.get("congestion_level", "—")))
-    c5.metric("Vs 30d baseline %", latest.get("vs_30d_baseline_pct", "—"))
+    c1.metric("Active vessels", latest.get("active_vessels", "â€”"))
+    c2.metric("Arrivals", latest.get("arrivals", "â€”"))
+    c3.metric("Departures", latest.get("departures", "â€”"))
+    c4.metric("Congestion", str(latest.get("congestion_level", "â€”")))
+    c5.metric("Vs 30d baseline %", latest.get("vs_30d_baseline_pct", "â€”"))
     st.subheader("Recent port metrics")
-    st.dataframe(m, use_container_width=True)
+    st.dataframe(m, width="stretch")
 else:
-    st.warning("No fact_port_metrics — run operational intelligence / DAG.")
+    st.warning("No fact_port_metrics â€” run operational intelligence / DAG.")
 
 st.subheader("Port operational risk")
 if not r.empty and "error" not in r.columns:
-    st.dataframe(r, use_container_width=True)
+    st.dataframe(r, width="stretch")
 else:
     st.info("No fact_port_risk rows yet.")
 
 st.subheader("Open port alerts")
-st.dataframe(a if not a.empty else pd.DataFrame({"note": ["None open"]}), use_container_width=True)
+st.dataframe(a if not a.empty else pd.DataFrame({"note": ["None open"]}), width="stretch")
 
 st.info(
     "Not official Kenya Ports Authority data. Prototype metrics for planning awareness only."

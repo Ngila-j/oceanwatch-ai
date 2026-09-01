@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-st.set_page_config(page_title="Alert Subscriptions", page_icon="📧", layout="wide")
-st.title("📧 Alert Subscriptions")
+st.set_page_config(page_title="Alert Subscriptions", page_icon="ðŸ“§", layout="wide")
+st.title("ðŸ“§ Alert Subscriptions")
 st.caption(
     "Phase 8 foundation: store preferences in PostgreSQL. "
     "Email/WhatsApp delivery is optional and off by default."
@@ -69,7 +69,7 @@ try:
         "SELECT * FROM alert_subscriptions ORDER BY created_at DESC LIMIT 50",
         engine,
     )
-    st.dataframe(subs, use_container_width=True)
+    st.dataframe(subs, width="stretch")
 except Exception as e:
     st.warning(f"Could not load subscriptions: {e}")
 

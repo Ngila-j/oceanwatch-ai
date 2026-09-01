@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine
 
-st.set_page_config(page_title="Bloom Risk", page_icon="🌊", layout="wide")
-st.title("🌊 Chlorophyll Bloom-Risk Probability")
-st.caption("Bloom-risk indicator — not a confirmed harmful algal bloom diagnosis")
+st.set_page_config(page_title="Bloom Risk", page_icon="ðŸŒŠ", layout="wide")
+st.title("ðŸŒŠ Chlorophyll Bloom-Risk Probability")
+st.caption("Bloom-risk indicator â€” not a confirmed harmful algal bloom diagnosis")
 
 @st.cache_data(ttl=120)
 def load():
@@ -23,12 +23,12 @@ else:
     c3.metric("CHL Anomaly", f"{r['chl_anomaly_pct']:+.1f}%")
 
     if r["risk_level"] == "ELEVATED":
-        st.warning(f"**Elevated bloom-risk** — {r['drivers']}")
+        st.warning(f"**Elevated bloom-risk** â€” {r['drivers']}")
     elif r["risk_level"] == "WATCH":
-        st.info(f"**Watch** — {r['drivers']}")
+        st.info(f"**Watch** â€” {r['drivers']}")
     else:
-        st.success(f"**Low bloom-risk** — {r['drivers']}")
+        st.success(f"**Low bloom-risk** â€” {r['drivers']}")
 
     st.subheader("Detail")
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df, width="stretch")
     st.caption("Confirmation of harmful blooms requires additional biological sampling.")

@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-st.set_page_config(page_title="Quality & Provenance", page_icon="🔎", layout="wide")
-st.title("🔎 Quality & Provenance")
+st.set_page_config(page_title="Quality & Provenance", page_icon="ðŸ”Ž", layout="wide")
+st.title("ðŸ”Ž Quality & Provenance")
 st.caption("What data we use, how fresh it is, and what we do not claim.")
 
 DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
@@ -56,7 +56,7 @@ def load_health():
 
 
 st.subheader("Freshness snapshot")
-st.dataframe(load_health(), use_container_width=True)
+st.dataframe(load_health(), width="stretch")
 
 st.subheader("Source registry")
 st.markdown(
@@ -68,7 +68,7 @@ st.markdown(
 | AISStream | Live AIS | Vessel positions when coverage allows |
 | Global Fishing Watch | Fishing effort | Effort cells (CC BY-NC; attribution required) |
 | OceanWatch SAMPLE AIS | Synthetic | Demo continuity when live AIS is sparse |
-| OceanWatch models | Anomalies, WIO-OII, ML | Derived intelligence — not legal findings |
+| OceanWatch models | Anomalies, WIO-OII, ML | Derived intelligence â€” not legal findings |
 """
 )
 
@@ -79,7 +79,7 @@ st.warning(
 - **AISSTREAM** coverage over Kenya can be thin; **SAMPLE** is not real traffic.  
 - **GFW** is non-commercial where their licence applies; always attribute.  
 - **WIO-OII** is a transparent prototype score (v1.0), not a regulatory index.  
-- Anomalies mean “unusual vs recent baseline,” not “illegal.”
+- Anomalies mean â€œunusual vs recent baseline,â€ not â€œillegal.â€
 """
 )
 
@@ -93,4 +93,4 @@ st.markdown(
 """
 )
 
-st.caption("OceanWatch AI · Kenya-first · transparent methods")
+st.caption("OceanWatch AI Â· Kenya-first Â· transparent methods")

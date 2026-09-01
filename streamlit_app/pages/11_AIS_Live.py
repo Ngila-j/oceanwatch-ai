@@ -4,10 +4,10 @@ import folium
 from streamlit_folium import st_folium
 from sqlalchemy import create_engine, text
 
-st.set_page_config(page_title="AIS Live", page_icon="📡", layout="wide")
-st.title("📡 AIS Vessel Positions")
+st.set_page_config(page_title="AIS Live", page_icon="ðŸ“¡", layout="wide")
+st.title("ðŸ“¡ AIS Vessel Positions")
 st.caption(
-    "Kenya EEZ monitoring box — SAMPLE enrichment + live AISSTREAM when coverage allows"
+    "Kenya EEZ monitoring box â€” SAMPLE enrichment + live AISSTREAM when coverage allows"
 )
 
 DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
@@ -53,7 +53,7 @@ st.info(
 | Source | Meaning |
 |--------|---------|
 | **SAMPLE** | Synthetic enrichment for demos, maps, and ML when live coverage is sparse |
-| **AISSTREAM** | Real live AIS via AISStream.io (hybrid WORLD subscribe → Kenya/WIO filter) |
+| **AISSTREAM** | Real live AIS via AISStream.io (hybrid WORLD subscribe â†’ Kenya/WIO filter) |
 
 East Africa terrestrial AIS coverage is often thin. Empty live windows are expected; SAMPLE keeps the product usable.
 """
@@ -63,7 +63,7 @@ if summary.empty:
     st.warning("No AIS data. Run seed_ais_sample.py and/or fetch_ais_realtime.py")
 else:
     st.subheader("Positions by source")
-    st.dataframe(summary, use_container_width=True)
+    st.dataframe(summary, width="stretch")
 
     c1, c2, c3 = st.columns(3)
     c1.metric(
@@ -84,7 +84,7 @@ else:
     )
 
     if not latest.empty:
-        # OpenStreetMap — free, no CARTO API key watermarks
+        # OpenStreetMap â€” free, no CARTO API key watermarks
         m = folium.Map(
             location=[-1.5, 42.0],
             zoom_start=6,
@@ -123,7 +123,7 @@ else:
             ).add_to(m)
 
         st_folium(m, width=None, height=480, returned_objects=[])
-        st.caption("Green = SAMPLE · Red = AISSTREAM (live)")
+        st.caption("Green = SAMPLE Â· Red = AISSTREAM (live)")
 
         st.subheader("Latest positions")
         cols = [
@@ -139,4 +139,4 @@ else:
             ]
             if c in latest.columns
         ]
-        st.dataframe(latest[cols].head(50), use_container_width=True)
+        st.dataframe(latest[cols].head(50), width="stretch")

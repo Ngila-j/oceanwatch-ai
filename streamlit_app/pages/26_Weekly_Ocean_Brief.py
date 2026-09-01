@@ -3,9 +3,9 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 from datetime import date
 
-st.set_page_config(page_title="Weekly Ocean Brief", page_icon="📰", layout="wide")
-st.title("📰 Weekly Ocean Brief")
-st.caption(f"Kenya EEZ · generated {date.today().isoformat()}")
+st.set_page_config(page_title="Weekly Ocean Brief", page_icon="ðŸ“°", layout="wide")
+st.title("ðŸ“° Weekly Ocean Brief")
+st.caption(f"Kenya EEZ Â· generated {date.today().isoformat()}")
 
 DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
 
@@ -65,24 +65,24 @@ if not idx.empty:
     r = idx.iloc[0]
     c1.metric(
         "WIO-OII",
-        f"{float(r['overall_score']):.1f}" if pd.notna(r.get("overall_score")) else "—",
+        f"{float(r['overall_score']):.1f}" if pd.notna(r.get("overall_score")) else "â€”",
     )
     c2.metric(
         "Confidence",
-        f"{float(r['confidence_score']):.0f}" if pd.notna(r.get("confidence_score")) else "—",
+        f"{float(r['confidence_score']):.0f}" if pd.notna(r.get("confidence_score")) else "â€”",
     )
-    c3.metric("Index date", str(r.get("index_date") or "—"))
-    c4.metric("Method", str(r.get("methodology_version") or "—"))
+    c3.metric("Index date", str(r.get("index_date") or "â€”"))
+    c4.metric("Method", str(r.get("methodology_version") or "â€”"))
     if r.get("drivers"):
         st.code(str(r["drivers"]), language=None)
 else:
-    st.info("No WIO-OII yet — run compute_wio_index.py")
+    st.info("No WIO-OII yet â€” run compute_wio_index.py")
 
 if not sst.empty:
     st.markdown("### 2. Recent ocean conditions (up to 7 days)")
-    st.dataframe(sst, use_container_width=True)
+    st.dataframe(sst, width="stretch")
     if len(sst) and pd.notna(sst.iloc[0].get("sst_celsius")):
-        st.caption(f"Latest SST: **{float(sst.iloc[0]['sst_celsius']):.2f} °C**")
+        st.caption(f"Latest SST: **{float(sst.iloc[0]['sst_celsius']):.2f} Â°C**")
 
 st.markdown("### 3. Anomalies")
 elevated = (
@@ -92,18 +92,18 @@ elevated = (
 )
 st.dataframe(
     elevated if elevated is not None and not elevated.empty else pd.DataFrame({"note": ["None elevated"]}),
-    use_container_width=True,
+    width="stretch",
 )
 
 st.markdown("### 4. Open alerts")
 st.dataframe(
     alerts if not alerts.empty else pd.DataFrame({"note": ["None open"]}),
-    use_container_width=True,
+    width="stretch",
 )
 
 st.markdown("### 5. Share / download")
 lines = [
-    f"OceanWatch Weekly Ocean Brief — {date.today().isoformat()}",
+    f"OceanWatch Weekly Ocean Brief â€” {date.today().isoformat()}",
     "Region: Kenya EEZ / Western Indian Ocean monitoring box",
     "",
 ]
@@ -146,4 +146,4 @@ st.info(
     "For maps and day detail use **Historical Playback**, **Operational Alerts**, "
     "and **WIO Intelligence Index**."
 )
-st.caption("OceanWatch AI · Kenya-first · transparent methods")
+st.caption("OceanWatch AI Â· Kenya-first Â· transparent methods")

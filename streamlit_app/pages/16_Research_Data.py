@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-st.set_page_config(page_title="Research Data", page_icon="📚", layout="wide")
-st.title("📚 Research Data Explorer")
+st.set_page_config(page_title="Research Data", page_icon="ðŸ“š", layout="wide")
+st.title("ðŸ“š Research Data Explorer")
 st.caption(
     "Read-only access to selected OceanWatch tables for research and portfolio demos. "
     "Respect data licenses (especially Global Fishing Watch)."
@@ -55,7 +55,7 @@ DATASETS = {
             LIMIT :limit
         """,
         "access": "RESEARCH (GFW terms)",
-        "notes": "Powered by Global Fishing Watch — non-commercial use + attribution.",
+        "notes": "Powered by Global Fishing Watch â€” non-commercial use + attribution.",
     },
     "fact_bloom_risk": {
         "sql": """
@@ -101,7 +101,7 @@ st.info(f"**Access:** {cfg['access']}  \n**Notes:** {cfg['notes']}")
 try:
     df = load_dataset(dataset, limit)
     st.success(f"Loaded {len(df)} rows from `{dataset}`")
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df, width="stretch")
 
     csv = df.to_csv(index=False).encode("utf-8")
     st.download_button(

@@ -3,8 +3,8 @@ import pandas as pd
 import plotly.express as px
 from sqlalchemy import create_engine
 
-st.set_page_config(page_title="Ocean Conditions", page_icon="🌊", layout="wide")
-st.title("🌊 Ocean Conditions Trends")
+st.set_page_config(page_title="Ocean Conditions", page_icon="ðŸŒŠ", layout="wide")
+st.title("ðŸŒŠ Ocean Conditions Trends")
 
 @st.cache_data(ttl=300)
 def load_data():
@@ -25,21 +25,21 @@ else:
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Sea Surface Temperature (°C)")
+        st.subheader("Sea Surface Temperature (Â°C)")
         fig_sst = px.line(df.dropna(subset=["sst_celsius"]), 
                           x="date_key", y="sst_celsius",
                           markers=True)
-        st.plotly_chart(fig_sst, use_container_width=True)
+        st.plotly_chart(fig_sst, width="stretch")
 
     with col2:
-        st.subheader("Chlorophyll-a (mg/m³)")
+        st.subheader("Chlorophyll-a (mg/mÂ³)")
         fig_chl = px.line(df.dropna(subset=["chlorophyll_mg_m3"]), 
                           x="date_key", y="chlorophyll_mg_m3",
                           markers=True, color_discrete_sequence=["green"])
-        st.plotly_chart(fig_chl, use_container_width=True)
+        st.plotly_chart(fig_chl, width="stretch")
 
     st.subheader("Tide Statistics")
     fig_tide = px.line(df.dropna(subset=["tide_mean_m"]), 
                        x="date_key", y=["tide_min_m", "tide_mean_m", "tide_max_m"],
                        markers=True)
-    st.plotly_chart(fig_tide, use_container_width=True)
+    st.plotly_chart(fig_tide, width="stretch")

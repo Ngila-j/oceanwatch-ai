@@ -3,8 +3,8 @@ import pandas as pd
 from sqlalchemy import create_engine
 from datetime import datetime
 
-st.set_page_config(page_title="Executive Summary", page_icon="📊", layout="wide")
-st.title("📊 OceanWatch Executive Summary")
+st.set_page_config(page_title="Executive Summary", page_icon="ðŸ“Š", layout="wide")
+st.title("ðŸ“Š OceanWatch Executive Summary")
 st.caption(f"Last refreshed: {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC")
 
 @st.cache_data(ttl=120)
@@ -55,16 +55,16 @@ if alerts.empty:
 else:
     for _, row in alerts.iterrows():
         if row["severity"] in ("CRITICAL", "ELEVATED"):
-            st.warning(f"**{row['title']}**  ·  {row['category']}  ·  Risk {row['risk_score']}")
+            st.warning(f"**{row['title']}**  Â·  {row['category']}  Â·  Risk {row['risk_score']}")
         else:
-            st.info(f"**{row['title']}**  ·  {row['category']}")
+            st.info(f"**{row['title']}**  Â·  {row['category']}")
 
 # --- Coastal snapshot ---
 st.subheader("Coastal Conditions Snapshot")
 if not anomalies.empty:
     st.dataframe(
         anomalies[["date_key", "metric", "current_value", "mean_30d", "anomaly_pct", "severity"]],
-        use_container_width=True
+        width="stretch"
     )
 else:
     st.caption("No anomaly records yet.")

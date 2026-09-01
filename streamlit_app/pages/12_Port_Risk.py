@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine
 
-st.set_page_config(page_title="Port Risk", page_icon="⚓", layout="wide")
-st.title("⚓ Mombasa Port Operational Risk")
+st.set_page_config(page_title="Port Risk", page_icon="âš“", layout="wide")
+st.title("âš“ Mombasa Port Operational Risk")
 
 @st.cache_data(ttl=120)
 def load():
@@ -25,15 +25,15 @@ else:
     c4.metric("Tide Score", f"{r['tide_score']:.1f}")
 
     if r["risk_level"] == "HIGH":
-        st.error(f"**HIGH operational risk** — {r['drivers']}")
+        st.error(f"**HIGH operational risk** â€” {r['drivers']}")
     elif r["risk_level"] == "MODERATE":
-        st.warning(f"**MODERATE risk** — {r['drivers']}")
+        st.warning(f"**MODERATE risk** â€” {r['drivers']}")
     else:
-        st.success(f"**LOW risk** — {r['drivers']}")
+        st.success(f"**LOW risk** â€” {r['drivers']}")
 
     st.subheader("Score breakdown")
-    st.dataframe(risk, use_container_width=True)
+    st.dataframe(risk, width="stretch")
 
     if not metrics.empty:
         st.subheader("Latest port metrics")
-        st.dataframe(metrics, use_container_width=True)
+        st.dataframe(metrics, width="stretch")

@@ -1,5 +1,5 @@
 """
-WIO Ocean Intelligence Index — Kenya EEZ
+WIO Ocean Intelligence Index â€” Kenya EEZ
 Matches fact_wio_intelligence_index columns.
 """
 
@@ -9,11 +9,11 @@ from sqlalchemy import create_engine, text
 
 from components.branding import attribution_footer, bandwidth_toggle, is_low_bandwidth
 
-st.set_page_config(page_title="WIO-OII", page_icon="📊", layout="wide")
+st.set_page_config(page_title="WIO-OII", page_icon="ðŸ“Š", layout="wide")
 bandwidth_toggle()
 
-st.title("📊 WIO Ocean Intelligence Index")
-st.caption("Kenya EEZ signature index — history builds as daily runs accumulate.")
+st.title("ðŸ“Š WIO Ocean Intelligence Index")
+st.caption("Kenya EEZ signature index â€” history builds as daily runs accumulate.")
 
 DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
 
@@ -62,7 +62,7 @@ c1, c2, c3, c4 = st.columns(4)
 c1.metric("Overall", f"{float(latest.get('overall_score') or 0):.1f}")
 c2.metric("Confidence", f"{float(latest.get('confidence_score') or 0):.1f}")
 c3.metric("As of", str(latest.get("index_date")))
-c4.metric("Method", str(latest.get("methodology_version") or "—"))
+c4.metric("Method", str(latest.get("methodology_version") or "â€”"))
 
 st.write(f"Region: **{latest.get('region_id')}**")
 st.code(str(latest.get("drivers") or ""), language=None)
@@ -102,14 +102,14 @@ hist = hist.sort_values("index_date")
 plot_cols = [c for c in ["overall_score", "ocean_health_score", "maritime_activity_score"] if c in hist.columns]
 
 if is_low_bandwidth():
-    st.dataframe(hist, use_container_width=True)
+    st.dataframe(hist, width="stretch")
 else:
     if plot_cols:
         st.line_chart(hist.set_index("index_date")[plot_cols])
-    st.dataframe(hist, use_container_width=True)
+    st.dataframe(hist, width="stretch")
 
 st.caption(
-    "Prototype decision-support index — not an official government statistic. "
+    "Prototype decision-support index â€” not an official government statistic. "
     "Port and environmental scores are risk-style (higher can mean more stress)."
 )
 attribution_footer()

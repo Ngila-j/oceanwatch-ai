@@ -3,8 +3,8 @@ import pandas as pd
 import plotly.express as px
 from sqlalchemy import create_engine
 
-st.set_page_config(page_title="Fisheries & Climate", page_icon="🐟", layout="wide")
-st.title("🐟 Fisheries & Climate Indicators")
+st.set_page_config(page_title="Fisheries & Climate", page_icon="ðŸŸ", layout="wide")
+st.title("ðŸŸ Fisheries & Climate Indicators")
 
 @st.cache_data(ttl=300)
 def load_data():
@@ -30,17 +30,17 @@ else:
     with col1:
         st.subheader("SST Trend")
         fig = px.line(df.dropna(subset=["sst_celsius"]), x="date_key", y="sst_celsius", markers=True)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         st.subheader("Chlorophyll Trend")
         fig = px.line(df.dropna(subset=["chlorophyll_mg_m3"]), x="date_key", y="chlorophyll_mg_m3",
                       markers=True, color_discrete_sequence=["#2ca02c"])
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     st.subheader("Interpretation Guide")
     st.markdown("""
-    - **Higher Chlorophyll** → higher primary productivity → potentially better fishing conditions  
-    - **SST > 29–30°C** → possible thermal stress for some species  
+    - **Higher Chlorophyll** â†’ higher primary productivity â†’ potentially better fishing conditions  
+    - **SST > 29â€“30Â°C** â†’ possible thermal stress for some species  
     - Combination of moderate SST + elevated chlorophyll is often favourable for pelagic species
     """)
