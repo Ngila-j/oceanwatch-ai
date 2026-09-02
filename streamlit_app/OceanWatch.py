@@ -120,6 +120,11 @@ ais = (
     or page("pages/10_AIS_Live.py", "AIS Live", ":material/cell_tower:")
     or page("pages/AIS_Live.py", "AIS Live", ":material/cell_tower:")
 )
+vessel_intel = page(
+    "pages/27_Vessel_Intelligence.py",
+    "Vessel Intelligence",
+    ":material/sailing:",
+)
 
 fishing = page(
     "pages/9_Fishing_Activity.py",
@@ -199,7 +204,6 @@ health = page(
     ":material/settings:",
 )
 
-# Fixed section order (no auto-extra clutter)
 nav_dict = {
     "Overview & Intelligence": keep(
         home,
@@ -219,6 +223,7 @@ nav_dict = {
     "Maritime & Vessels": keep(
         vessel,
         ais,
+        vessel_intel,
     ),
     "Fisheries & Activity": keep(
         fishing,
