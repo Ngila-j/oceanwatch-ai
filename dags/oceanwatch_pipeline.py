@@ -14,11 +14,11 @@ default_args = {
 with DAG(
     dag_id="oceanwatch_full_pipeline",
     default_args=default_args,
-    description="OceanWatch: Ingest → dbt → Ops → ML → GFW/AIS → Alerts → WIO-OII → Digest",
+    description="OceanWatch: Ingest → dbt → Ops → ML → Events → Alerts → WIO → Digest",
     schedule_interval="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=["oceanwatch", "ml", "gfw", "ais"],
+    tags=["oceanwatch", "ml", "events"],
 ) as dag:
 
     fetch_noaa = BashOperator(
@@ -102,6 +102,10 @@ with DAG(
         task_id="ml_habitat_suitability",
         bash_command="python /opt/airflow/ingestion/ml_habitat_suitability.py",
     )
+    detect_events = BashOperator(
+        task_id="detect_events",
+        bash_command="python /opt/airflow/ingestion/detect_events.py",
+    )
     compute_anomalies = BashOperator(
         task_id="compute_anomalies",
         bash_command="python /opt/airflow/ingestion/compute_anomalies.py",
@@ -130,7 +134,13 @@ with DAG(
     run_dbt >> ml_sst
     [seed_ais, fetch_ais_live] >> ml_vessel
     run_intelligence >> [ml_port_risk, ml_bloom, ml_habitat]
+
+    # Events after ML + intelligence
+    [run_intelligence, ml_vessel, ml_port_risk, ml_bloom, ml_habitat, fetch_gfw] >> detect_events
+
     [run_intelligence, ml_vessel, fetch_gfw] >> compute_anomalies
     compute_anomalies >> generate_alerts >> enrich_alerts
+    detect_events >> enrich_alerts
+
     [enrich_alerts, ml_port_risk, ml_bloom, ml_habitat, ml_sst] >> compute_wio
     [enrich_alerts, compute_wio] >> deliver_alerts
