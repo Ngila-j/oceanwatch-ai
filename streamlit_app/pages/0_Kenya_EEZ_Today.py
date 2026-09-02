@@ -1,191 +1,180 @@
-from pathlib import Path
+"""Kenya EEZ Today — operational heart of OceanWatch (Kenya-first)."""
 
-import pandas as pd
+from datetime import datetime
+
 import streamlit as st
+import pandas as pd
+from sqlalchemy import create_engine, text
 
-from components.branding import (
-    attribution_footer,
-    bandwidth_toggle,
-    is_low_bandwidth,
-    methodology_blurb,
-)
-from components.data_access import list_briefs, qdf
+st.set_page_config(page_title="Kenya EEZ Today", page_icon=":material/public:", layout="wide")
+st.title("Kenya EEZ — Today")
+st.caption("Operational snapshot for Kenya EEZ / Mombasa. Decision-support only.")
 
-st.set_page_config(page_title="Kenya EEZ Today", page_icon="ðŸ‡ deg ðŸ‡ª", layout="wide")
-bandwidth_toggle()
+DB = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
 
-st.title("Kenya EEZ / Mombasa  Today")
-st.caption(
-    "One-screen operational snapshot. Free open intelligence for Kenyaâ€™s Western Indian Ocean coast."
-)
-methodology_blurb()
 
-port = qdf("SELECT * FROM fact_port_metrics ORDER BY metric_date DESC LIMIT 1")
-wio = qdf(
-    "SELECT * FROM fact_wio_intelligence_index ORDER BY index_date DESC LIMIT 1"
-)
-ocean_latest = qdf(
-    """
-    SELECT date_key, sst_celsius, chlorophyll_mg_m3
-    FROM fact_ocean_conditions
-    WHERE sst_celsius IS NOT NULL OR chlorophyll_mg_m3 IS NOT NULL
-    ORDER BY date_key DESC
-    LIMIT 1
-    """
-)
-ocean_hist = qdf(
-    """
-    SELECT date_key, sst_celsius, chlorophyll_mg_m3
-    FROM fact_ocean_conditions
-    WHERE sst_celsius IS NOT NULL
-    ORDER BY date_key DESC
-    LIMIT 30
-    """
-)
-alerts = qdf(
-    """
-    SELECT category, severity, title, risk_score, created_at
-    FROM fact_alerts
-    ORDER BY created_at DESC
-    LIMIT 5
-    """
-)
-quality = qdf(
-    """
-    SELECT DISTINCT ON (dataset_name)
-        dataset_name, overall_score, status, scored_at
-    FROM fact_data_quality
-    ORDER BY dataset_name, scored_at DESC
-    """
-)
-gfw = qdf(
-    """
-    SELECT COUNT(*) AS cells, COALESCE(SUM(hours), 0) AS hours,
-           MAX(effort_date) AS last_day
-    FROM fact_gfw_fishing_effort
-    """
-)
+@st.cache_data(ttl=45)
+def load():
+    eng = create_engine(DB, pool_pre_ping=True)
 
-# Last-update stamps
-st.markdown("##### Data as of")
-u1, u2, u3, u4 = st.columns(4)
-u1.write(f"Ocean: **{ocean_latest.iloc[0]['date_key'] if not ocean_latest.empty else 'â€”'}**")
-u2.write(f"Port: **{port.iloc[0]['metric_date'] if not port.empty else 'â€”'}**")
-u3.write(f"WIO-OII: **{wio.iloc[0]['index_date'] if not wio.empty else 'â€”'}**")
-u4.write(f"GFW last day: **{gfw.iloc[0]['last_day'] if not gfw.empty else 'â€”'}**")
+    def q(sql):
+        try:
+            return pd.read_sql(text(sql), eng)
+        except Exception:
+            return pd.DataFrame()
+
+    return {
+        "ocean": q(
+            """
+            SELECT date_key, sst_celsius, chlorophyll_mg_m3
+            FROM fact_ocean_conditions
+            WHERE sst_celsius IS NOT NULL OR chlorophyll_mg_m3 IS NOT NULL
+            ORDER BY date_key DESC LIMIT 1
+            """
+        ),
+        "port": q(
+            """
+            SELECT * FROM fact_port_metrics
+            ORDER BY metric_date DESC LIMIT 1
+            """
+        ),
+        "wio": q(
+            """
+            SELECT * FROM fact_wio_intelligence_index
+            ORDER BY index_date DESC LIMIT 1
+            """
+        ),
+        "gfw": q(
+            """
+            SELECT COALESCE(SUM(hours),0) AS hours, MAX(effort_date) AS last_day
+            FROM fact_gfw_fishing_effort
+            """
+        ),
+        "ais_n": q(
+            """
+            SELECT COUNT(DISTINCT mmsi) AS vessels, MAX(event_time) AS last_ais
+            FROM fact_ais_positions
+            """
+        ),
+        "events": q(
+            """
+            SELECT severity, event_category, title, risk_score, confidence_score,
+                   evidence, source, created_at
+            FROM oceanwatch_events
+            WHERE status = 'OPEN'
+            ORDER BY risk_score DESC NULLS LAST, created_at DESC
+            LIMIT 12
+            """
+        ),
+        "risks": q(
+            """
+            SELECT domain, entity_id, risk_score, confidence_score, risk_level,
+                   reason, data_freshness_minutes, model_version
+            FROM risk_scores
+            ORDER BY created_at DESC
+            LIMIT 12
+            """
+        ),
+        "forecast": q(
+            """
+            SELECT forecast_for_date, horizon_day, predicted_sst, model_name
+            FROM fact_sst_forecast
+            ORDER BY horizon_day
+            LIMIT 7
+            """
+        ),
+        "alerts": q(
+            """
+            SELECT category, severity, title, risk_score, created_at
+            FROM fact_alerts
+            WHERE status = 'OPEN'
+            ORDER BY risk_score DESC NULLS LAST
+            LIMIT 8
+            """
+        ),
+    }
+
+
+def freshness_label(ts) -> str:
+    if ts is None or (isinstance(ts, float) and pd.isna(ts)):
+        return "UNKNOWN"
+    try:
+        t = pd.to_datetime(ts).to_pydatetime()
+        if getattr(t, "tzinfo", None):
+            t = t.replace(tzinfo=None)
+        mins = (datetime.utcnow() - t).total_seconds() / 60.0
+        if mins < 180:
+            return f"FRESH (~{mins:.0f}m)"
+        if mins < 24 * 60:
+            return f"DELAYED (~{mins/60:.1f}h)"
+        return f"STALE (~{mins/1440:.1f}d)"
+    except Exception:
+        return "UNKNOWN"
+
+
+d = load()
+
+# KPI row
+vessels = open_ev = sst = chl = cong = wio = "—"
+if not d["ais_n"].empty:
+    vessels = int(d["ais_n"].iloc[0].get("vessels") or 0)
+if not d["events"].empty:
+    open_ev = len(d["events"])
+elif not d["alerts"].empty:
+    open_ev = len(d["alerts"])
+if not d["ocean"].empty:
+    o = d["ocean"].iloc[0]
+    if pd.notna(o.get("sst_celsius")):
+        sst = f"{float(o['sst_celsius']):.2f}"
+    if pd.notna(o.get("chlorophyll_mg_m3")):
+        chl = f"{float(o['chlorophyll_mg_m3']):.3f}"
+if not d["port"].empty:
+    cong = str(d["port"].iloc[0].get("congestion_level") or "—")
+if not d["wio"].empty and pd.notna(d["wio"].iloc[0].get("overall_score")):
+    wio = f"{float(d['wio'].iloc[0]['overall_score']):.1f}"
 
 c1, c2, c3, c4, c5, c6 = st.columns(6)
-with c1:
-    st.metric(
-        "Port congestion",
-        str(port.iloc[0]["congestion_level"]) if not port.empty else "â€”",
-    )
-with c2:
-    st.metric(
-        "Active vessels",
-        str(port.iloc[0]["active_vessels"]) if not port.empty else "â€”",
-    )
-with c3:
-    if not ocean_latest.empty and pd.notna(ocean_latest.iloc[0].get("sst_celsius")):
-        st.metric("SST ( deg C)", f"{float(ocean_latest.iloc[0]['sst_celsius']):.2f}")
-    else:
-        st.metric("SST ( deg C)", "â€”")
-with c4:
-    if not ocean_latest.empty and pd.notna(ocean_latest.iloc[0].get("chlorophyll_mg_m3")):
-        st.metric("CHL", f"{float(ocean_latest.iloc[0]['chlorophyll_mg_m3']):.3f}")
-    else:
-        st.metric("CHL", "â€”")
-with c5:
-    st.metric(
-        "WIO-OII",
-        f"{float(wio.iloc[0]['overall_score']):.1f}" if not wio.empty else "â€”",
-    )
-with c6:
-    st.metric(
-        "GFW hours (stored)",
-        f"{float(gfw.iloc[0]['hours']):.0f}" if not gfw.empty else "â€”",
-    )
+c1.metric("Vessels (stored AIS)", vessels)
+c2.metric("Priority events", open_ev)
+c3.metric("SST (C)", sst)
+c4.metric("CHL", chl)
+c5.metric("Port congestion", cong)
+c6.metric("WIO-OII", wio)
 
-st.markdown("#### Recent alerts")
-if alerts.empty:
-    st.write("No alerts in database.")
+st.subheader("Data health")
+h1, h2, h3, h4 = st.columns(4)
+ocean_ts = d["ocean"].iloc[0]["date_key"] if not d["ocean"].empty else None
+port_ts = d["port"].iloc[0]["metric_date"] if not d["port"].empty else None
+ais_ts = d["ais_n"].iloc[0]["last_ais"] if not d["ais_n"].empty else None
+gfw_ts = d["gfw"].iloc[0]["last_day"] if not d["gfw"].empty else None
+h1.write(f"**Ocean (SST/CHL)** · {freshness_label(ocean_ts)}")
+h2.write(f"**Port metrics** · {freshness_label(port_ts)}")
+h3.write(f"**AIS** · {freshness_label(ais_ts)}")
+h4.write(f"**GFW** · {freshness_label(gfw_ts)}")
+
+st.subheader("Priority intelligence")
+if not d["events"].empty:
+    st.dataframe(d["events"], width="stretch")
+elif not d["alerts"].empty:
+    st.caption("Events table empty — showing OPEN alerts.")
+    st.dataframe(d["alerts"], width="stretch")
 else:
-    st.dataframe(alerts, width="stretch")
+    st.caption("No priority events. Run detect_events.py after pipeline.")
 
-left, right = st.columns(2)
-with left:
-    st.markdown("#### Port snapshot")
-    if port.empty:
-        st.write("No port metrics yet.")
-    else:
-        p = port.iloc[0]
-        st.write(
-            f"- Date: **{p.get('metric_date')}**\n"
-            f"- Arrivals: **{p.get('arrivals')}** Â· Departures: **{p.get('departures')}**\n"
-            f"- Avg wait (h): **{p.get('avg_waiting_hours')}**\n"
-            f"- vs 30d baseline: **{p.get('vs_30d_baseline_pct')}%**"
-        )
-        st.caption("May include modelled/sample activity â€” check System Health.")
-
-with right:
-    st.markdown("#### WIO-OII drivers")
-    if wio.empty:
-        st.write("No index row yet.")
-    else:
-        w = wio.iloc[0]
-        st.write(
-            f"- Region: **{w.get('region_id')}** Â· Confidence: **{w.get('confidence_score')}**\n"
-            f"- Method: **{w.get('methodology_version')}**"
-        )
-        st.code(str(w.get("drivers") or ""), language=None)
-
-# Charts vs low-bandwidth
-st.markdown("#### Ocean trend (recent)")
-if ocean_hist.empty:
-    st.write("No SST history.")
-elif is_low_bandwidth():
-    st.dataframe(
-        ocean_hist.sort_values("date_key"),
-        width="stretch",
-    )
+st.subheader("Risk scores (unified frame)")
+if not d["risks"].empty:
+    st.dataframe(d["risks"], width="stretch")
 else:
-    hist = ocean_hist.sort_values("date_key")
-    st.line_chart(hist.set_index("date_key")[["sst_celsius"]])
-    if hist["chlorophyll_mg_m3"].notna().any():
-        st.line_chart(hist.set_index("date_key")[["chlorophyll_mg_m3"]])
+    st.caption("No risk_scores rows yet.")
 
-st.markdown("#### Data quality")
-if quality.empty:
-    st.write("Run compute_data_quality.py to populate scores.")
+st.subheader("Forecast — next days (SST)")
+if not d["forecast"].empty:
+    st.dataframe(d["forecast"], width="stretch")
 else:
-    st.dataframe(quality, width="stretch")
+    st.caption("No SST forecast rows.")
 
-st.markdown("#### Weekly Ocean Brief")
-briefs = list_briefs()
-if not briefs:
-    st.warning(
-        "No PDF in `reports/` yet. Run Airflow task `generate_weekly_brief` "
-        "or: `python ingestion/generate_weekly_brief.py`"
-    )
-else:
-    latest = briefs[0]
-    st.write(f"Latest: **{latest.name}**")
-    st.download_button(
-        label="Download latest Weekly Ocean Brief (PDF)",
-        data=latest.read_bytes(),
-        file_name=latest.name,
-        mime="application/pdf",
-    )
-    if len(briefs) > 1 and not is_low_bandwidth():
-        with st.expander("Older briefs"):
-            for b in briefs[1:6]:
-                st.download_button(
-                    label=b.name,
-                    data=b.read_bytes(),
-                    file_name=b.name,
-                    mime="application/pdf",
-                    key=f"brief_{b.name}",
-                )
-
-st.caption("GFW hours are stored aggregates â€” attribute Global Fishing Watch; check licence for your use.")
-attribution_footer()
+st.info(
+    "Human review required for vessel flags. "
+    "Scores include confidence and freshness where available. "
+    "Not a legal or official government product."
+)
