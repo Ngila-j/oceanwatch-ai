@@ -105,6 +105,11 @@ habitat = (
     or page("pages/13_Habitat_Suitability.py", "Habitat Suitability", ":material/forest:")
     or page("pages/12_Habitat_Suitability.py", "Habitat Suitability", ":material/forest:")
 )
+ocean_intel = page(
+    "pages/28_Ocean_Intelligence.py",
+    "Ocean Intelligence",
+    ":material/tsunami:",
+)
 ai_forecasts = (
     page("pages/6_AI_Forecasts.py", "AI Forecasts", ":material/trending_up:")
     or page("pages/AI_Forecasts.py", "AI Forecasts", ":material/trending_up:")
@@ -145,6 +150,11 @@ port = page(
 port_risk = (
     page("pages/12_Port_Risk.py", "Port Risk", ":material/analytics:")
     or page("pages/11_Port_Risk.py", "Port Risk", ":material/analytics:")
+)
+port_adv = page(
+    "pages/29_Port_Intelligence_Advanced.py",
+    "Port Intelligence Advanced",
+    ":material/anchor:",
 )
 
 alerts = page(
@@ -218,6 +228,7 @@ nav_dict = {
         fish_clim,
         bloom,
         habitat,
+        ocean_intel,
         ai_forecasts,
     ),
     "Maritime & Vessels": keep(
@@ -232,6 +243,7 @@ nav_dict = {
     "Ports & Infrastructure": keep(
         port,
         port_risk,
+        port_adv,
     ),
     "Risks & Alerts": keep(
         alerts,
