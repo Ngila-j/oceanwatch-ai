@@ -58,7 +58,6 @@ with st.sidebar:
     st.caption("Western Indian Ocean Intelligence")
     st.markdown("---")
 
-# --- Pages ---
 home = page("Home.py", "Home", ":material/home:", default=True)
 
 kenya = (
@@ -218,6 +217,11 @@ health = page(
     "System Health",
     ":material/settings:",
 )
+platform_ops = page(
+    "pages/31_Platform_Operations.py",
+    "Platform Operations",
+    ":material/dns:",
+)
 
 nav_dict = {
     "Overview & Intelligence": keep(
@@ -266,6 +270,7 @@ nav_dict = {
     "Platform & System": keep(
         onboard,
         health,
+        platform_ops,
     ),
 }
 nav_dict = {k: v for k, v in nav_dict.items() if v}

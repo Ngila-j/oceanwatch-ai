@@ -15,20 +15,19 @@ with DAG(
     dag_id="oceanwatch_full_pipeline",
     default_args=default_args,
     description=(
-        "OceanWatch: Ingest → dbt → Ops → ML → "
-        "Phase11–15 → Alerts → WIO → Digest"
+        "OceanWatch: Ingest → dbt → Ops → ML → Phase11–16 → Alerts → WIO → Digest"
     ),
     schedule_interval="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     tags=[
         "oceanwatch",
-        "ml",
         "phase11",
         "phase12",
         "phase13",
         "phase14",
         "phase15",
+        "phase16",
     ],
 ) as dag:
 
@@ -133,6 +132,10 @@ with DAG(
         task_id="phase15_fisheries",
         bash_command="python /opt/airflow/ingestion/run_phase15_fisheries.py",
     )
+    phase16 = BashOperator(
+        task_id="phase16_ops",
+        bash_command="python /opt/airflow/ingestion/run_phase16_ops.py",
+    )
     compute_anomalies = BashOperator(
         task_id="compute_anomalies",
         bash_command="python /opt/airflow/ingestion/compute_anomalies.py",
@@ -173,3 +176,6 @@ with DAG(
 
     [enrich_alerts, ml_port_risk, ml_bloom, ml_habitat, ml_sst, phase15] >> compute_wio
     [enrich_alerts, compute_wio] >> deliver_alerts
+
+    # Platform ops last (health + report + delivery dry-run)
+    [deliver_alerts, phase15, compute_wio] >> phase16
