@@ -83,11 +83,21 @@ intel_map = (
     page("pages/2_Intelligence_Map.py", "Intelligence Map", ":material/map:")
     or page("pages/Intelligence_Map.py", "Intelligence Map", ":material/map:")
 )
+unified_risk = page(
+    "pages/36_Unified_Risk.py",
+    "Unified Risk",
+    ":material/shield:",
+)
 
 ocean = page(
     "pages/3_Ocean_Conditions.py",
     "Ocean Conditions",
     ":material/waves:",
+)
+ocean_state = page(
+    "pages/35_Ocean_State.py",
+    "Ocean State",
+    ":material/water:",
 )
 fish_clim = page(
     "pages/5_Fisheries_and_Climate.py",
@@ -128,6 +138,11 @@ vessel_intel = page(
     "pages/27_Vessel_Intelligence.py",
     "Vessel Intelligence",
     ":material/sailing:",
+)
+maritime_events = page(
+    "pages/34_Maritime_Events.py",
+    "Maritime Events",
+    ":material/radar:",
 )
 
 fishing = page(
@@ -181,6 +196,16 @@ research = page(
     "Research Data",
     ":material/menu_book:",
 )
+data_catalog = page(
+    "pages/32_Data_Catalog.py",
+    "Data Catalog",
+    ":material/library_books:",
+)
+regional = page(
+    "pages/33_Regional_Coverage.py",
+    "Regional Coverage",
+    ":material/public:",
+)
 quality = page(
     "pages/25_Quality_and_Provenance.py",
     "Quality & Provenance",
@@ -231,9 +256,11 @@ nav_dict = {
         wio,
         brief,
         intel_map,
+        unified_risk,
     ),
     "Ocean & Environment": keep(
         ocean,
+        ocean_state,
         fish_clim,
         bloom,
         habitat,
@@ -244,6 +271,7 @@ nav_dict = {
         vessel,
         ais,
         vessel_intel,
+        maritime_events,
     ),
     "Fisheries & Activity": keep(
         fishing,
@@ -262,6 +290,8 @@ nav_dict = {
     ),
     "Data, Research & Analytics": keep(
         research,
+        data_catalog,
+        regional,
         quality,
         methodology,
         api_access,

@@ -15,20 +15,12 @@ with DAG(
     dag_id="oceanwatch_full_pipeline",
     default_args=default_args,
     description=(
-        "OceanWatch: Ingest → dbt → Ops → ML → Phase11–16 → Alerts → WIO → Digest"
+        "OceanWatch: Ingest → dbt → Ops → ML → Phase11–20 → Phase21 unified risk"
     ),
     schedule_interval="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=[
-        "oceanwatch",
-        "phase11",
-        "phase12",
-        "phase13",
-        "phase14",
-        "phase15",
-        "phase16",
-    ],
+    tags=["oceanwatch", "phase20", "phase21"],
 ) as dag:
 
     fetch_noaa = BashOperator(
@@ -136,6 +128,26 @@ with DAG(
         task_id="phase16_ops",
         bash_command="python /opt/airflow/ingestion/run_phase16_ops.py",
     )
+    phase17 = BashOperator(
+        task_id="phase17_trust",
+        bash_command="python /opt/airflow/ingestion/run_phase17_trust.py",
+    )
+    phase18 = BashOperator(
+        task_id="phase18_regions",
+        bash_command="python /opt/airflow/ingestion/run_phase18_regions.py",
+    )
+    phase19 = BashOperator(
+        task_id="phase19_events",
+        bash_command="python /opt/airflow/ingestion/run_phase19_maritime_events.py",
+    )
+    phase20 = BashOperator(
+        task_id="phase20_ocean_state",
+        bash_command="python /opt/airflow/ingestion/run_phase20_ocean_state.py",
+    )
+    phase21 = BashOperator(
+        task_id="phase21_risk",
+        bash_command="python /opt/airflow/ingestion/run_phase21_risk_engine.py",
+    )
     compute_anomalies = BashOperator(
         task_id="compute_anomalies",
         bash_command="python /opt/airflow/ingestion/compute_anomalies.py",
@@ -177,5 +189,10 @@ with DAG(
     [enrich_alerts, ml_port_risk, ml_bloom, ml_habitat, ml_sst, phase15] >> compute_wio
     [enrich_alerts, compute_wio] >> deliver_alerts
 
-    # Platform ops last (health + report + delivery dry-run)
     [deliver_alerts, phase15, compute_wio] >> phase16
+    phase16 >> phase17 >> phase18
+    [phase12, phase18, seed_ais, fetch_ais_live, ml_vessel] >> phase19
+    [phase13, ml_bloom, ml_habitat, run_dbt] >> phase20
+
+    # Unified risk after domain products exist
+    [phase14, phase15, phase19, phase20, ml_vessel] >> phase21
