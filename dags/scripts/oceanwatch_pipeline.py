@@ -16,12 +16,20 @@ with DAG(
     default_args=default_args,
     description=(
         "OceanWatch: Ingest → dbt → Ops → ML → "
-        "Phase11 → Phase12 → Phase13 → Phase14 → Alerts → WIO → Digest"
+        "Phase11–15 → Alerts → WIO → Digest"
     ),
     schedule_interval="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=["oceanwatch", "ml", "phase11", "phase12", "phase13", "phase14"],
+    tags=[
+        "oceanwatch",
+        "ml",
+        "phase11",
+        "phase12",
+        "phase13",
+        "phase14",
+        "phase15",
+    ],
 ) as dag:
 
     fetch_noaa = BashOperator(
@@ -121,6 +129,10 @@ with DAG(
         task_id="phase14_port",
         bash_command="python /opt/airflow/ingestion/run_phase14_port.py",
     )
+    phase15 = BashOperator(
+        task_id="phase15_fisheries",
+        bash_command="python /opt/airflow/ingestion/run_phase15_fisheries.py",
+    )
     compute_anomalies = BashOperator(
         task_id="compute_anomalies",
         bash_command="python /opt/airflow/ingestion/compute_anomalies.py",
@@ -142,28 +154,22 @@ with DAG(
         bash_command="python /opt/airflow/ingestion/deliver_alerts.py",
     )
 
-    # Ingest → stage → dbt
     [fetch_noaa, fetch_copernicus] >> stage_with_duckdb >> dbt_deps >> run_dbt >> test_dbt
 
-    # Seeds / AIS / GFW
     run_dbt >> init_schema >> [seed_port, seed_fishing, seed_ais] >> fetch_ais_live
     run_dbt >> fetch_gfw
     [fetch_ais_live, fetch_gfw, seed_fishing] >> run_intelligence
 
-    # ML
     run_dbt >> ml_sst
     [seed_ais, fetch_ais_live] >> ml_vessel
     run_intelligence >> [ml_port_risk, ml_bloom, ml_habitat]
 
-    # Phase 11 → 12 → 13 → 14
     [run_intelligence, ml_vessel, ml_port_risk, ml_bloom, ml_habitat, fetch_gfw] >> phase11
-    phase11 >> phase12 >> phase13 >> phase14
+    phase11 >> phase12 >> phase13 >> phase14 >> phase15
 
-    # Alerts
     [run_intelligence, ml_vessel, fetch_gfw] >> compute_anomalies
     compute_anomalies >> generate_alerts >> enrich_alerts
-    phase14 >> enrich_alerts
+    phase15 >> enrich_alerts
 
-    # WIO + digest
-    [enrich_alerts, ml_port_risk, ml_bloom, ml_habitat, ml_sst, phase14] >> compute_wio
+    [enrich_alerts, ml_port_risk, ml_bloom, ml_habitat, ml_sst, phase15] >> compute_wio
     [enrich_alerts, compute_wio] >> deliver_alerts

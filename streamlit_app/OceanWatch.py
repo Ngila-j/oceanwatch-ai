@@ -141,6 +141,11 @@ gfw = page(
     "GFW Fishing Effort",
     ":material/map:",
 )
+fish_intel = page(
+    "pages/30_Fisheries_Intelligence.py",
+    "Fisheries Intelligence",
+    ":material/phishing:",
+)
 
 port = page(
     "pages/8_Port_Intelligence.py",
@@ -239,6 +244,7 @@ nav_dict = {
     "Fisheries & Activity": keep(
         fishing,
         gfw,
+        fish_intel,
     ),
     "Ports & Infrastructure": keep(
         port,

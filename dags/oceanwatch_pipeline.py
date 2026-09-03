@@ -14,11 +14,22 @@ default_args = {
 with DAG(
     dag_id="oceanwatch_full_pipeline",
     default_args=default_args,
-    description="OceanWatch: Ingest → dbt → Ops → ML → Events → Alerts → WIO → Digest",
+    description=(
+        "OceanWatch: Ingest → dbt → Ops → ML → "
+        "Phase11–15 → Alerts → WIO → Digest"
+    ),
     schedule_interval="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=["oceanwatch", "ml", "events"],
+    tags=[
+        "oceanwatch",
+        "ml",
+        "phase11",
+        "phase12",
+        "phase13",
+        "phase14",
+        "phase15",
+    ],
 ) as dag:
 
     fetch_noaa = BashOperator(
@@ -102,9 +113,25 @@ with DAG(
         task_id="ml_habitat_suitability",
         bash_command="python /opt/airflow/ingestion/ml_habitat_suitability.py",
     )
-    detect_events = BashOperator(
-        task_id="detect_events",
-        bash_command="python /opt/airflow/ingestion/detect_events.py",
+    phase11 = BashOperator(
+        task_id="phase11_intelligence",
+        bash_command="python /opt/airflow/ingestion/run_phase11_intelligence.py",
+    )
+    phase12 = BashOperator(
+        task_id="phase12_maritime",
+        bash_command="python /opt/airflow/ingestion/run_phase12_maritime.py",
+    )
+    phase13 = BashOperator(
+        task_id="phase13_ocean",
+        bash_command="python /opt/airflow/ingestion/run_phase13_ocean.py",
+    )
+    phase14 = BashOperator(
+        task_id="phase14_port",
+        bash_command="python /opt/airflow/ingestion/run_phase14_port.py",
+    )
+    phase15 = BashOperator(
+        task_id="phase15_fisheries",
+        bash_command="python /opt/airflow/ingestion/run_phase15_fisheries.py",
     )
     compute_anomalies = BashOperator(
         task_id="compute_anomalies",
@@ -128,19 +155,21 @@ with DAG(
     )
 
     [fetch_noaa, fetch_copernicus] >> stage_with_duckdb >> dbt_deps >> run_dbt >> test_dbt
+
     run_dbt >> init_schema >> [seed_port, seed_fishing, seed_ais] >> fetch_ais_live
     run_dbt >> fetch_gfw
     [fetch_ais_live, fetch_gfw, seed_fishing] >> run_intelligence
+
     run_dbt >> ml_sst
     [seed_ais, fetch_ais_live] >> ml_vessel
     run_intelligence >> [ml_port_risk, ml_bloom, ml_habitat]
 
-    # Events after ML + intelligence
-    [run_intelligence, ml_vessel, ml_port_risk, ml_bloom, ml_habitat, fetch_gfw] >> detect_events
+    [run_intelligence, ml_vessel, ml_port_risk, ml_bloom, ml_habitat, fetch_gfw] >> phase11
+    phase11 >> phase12 >> phase13 >> phase14 >> phase15
 
     [run_intelligence, ml_vessel, fetch_gfw] >> compute_anomalies
     compute_anomalies >> generate_alerts >> enrich_alerts
-    detect_events >> enrich_alerts
+    phase15 >> enrich_alerts
 
-    [enrich_alerts, ml_port_risk, ml_bloom, ml_habitat, ml_sst] >> compute_wio
+    [enrich_alerts, ml_port_risk, ml_bloom, ml_habitat, ml_sst, phase15] >> compute_wio
     [enrich_alerts, compute_wio] >> deliver_alerts
