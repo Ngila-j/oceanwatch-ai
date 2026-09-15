@@ -79,6 +79,11 @@ brief = page(
     "Weekly Ocean Brief",
     ":material/newspaper:",
 )
+reports = page(
+    "pages/39_Intelligence_Reports.py",
+    "Intelligence Reports",
+    ":material/description:",
+)
 intel_map = (
     page("pages/2_Intelligence_Map.py", "Intelligence Map", ":material/map:")
     or page("pages/Intelligence_Map.py", "Intelligence Map", ":material/map:")
@@ -190,6 +195,11 @@ anomaly_engine = (
     page("pages/23_Anomaly_Engine.py", "Anomaly Engine", ":material/psychology:")
     or page("pages/Anomaly_Engine.py", "Anomaly Engine", ":material/psychology:")
 )
+notifications = page(
+    "pages/38_Notifications.py",
+    "Notifications",
+    ":material/notifications_active:",
+)
 
 research = page(
     "pages/16_Research_Data.py",
@@ -227,6 +237,11 @@ methodology = (
 api_access = page("pages/22_API_Access.py", "API Access", ":material/api:") or page(
     "pages/API_Access.py", "API Access", ":material/api:"
 )
+partner_access = page(
+    "pages/40_Partner_Access.py",
+    "Partner Access",
+    ":material/vpn_key:",
+)
 playback = (
     page("pages/24_Historical_Playback.py", "Historical Playback", ":material/history:")
     or page("pages/Historical_Playback.py", "Historical Playback", ":material/history:")
@@ -247,6 +262,11 @@ platform_ops = page(
     "Platform Operations",
     ":material/dns:",
 )
+event_bus = page(
+    "pages/37_Event_Bus.py",
+    "Event Bus",
+    ":material/hub:",
+)
 
 nav_dict = {
     "Overview & Intelligence": keep(
@@ -255,6 +275,7 @@ nav_dict = {
         exec_sum,
         wio,
         brief,
+        reports,
         intel_map,
         unified_risk,
     ),
@@ -287,6 +308,7 @@ nav_dict = {
         alerts,
         subs,
         anomaly_engine,
+        notifications,
     ),
     "Data, Research & Analytics": keep(
         research,
@@ -295,12 +317,14 @@ nav_dict = {
         quality,
         methodology,
         api_access,
+        partner_access,
         playback,
     ),
     "Platform & System": keep(
         onboard,
         health,
         platform_ops,
+        event_bus,
     ),
 }
 nav_dict = {k: v for k, v in nav_dict.items() if v}

@@ -15,12 +15,12 @@ with DAG(
     dag_id="oceanwatch_full_pipeline",
     default_args=default_args,
     description=(
-        "OceanWatch: Ingest → dbt → Ops → ML → Phase11–20 → Phase21 unified risk"
+        "OceanWatch: Ingest → dbt → Ops → ML → Phase11–24 → Phase25 access/audit"
     ),
     schedule_interval="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=["oceanwatch", "phase20", "phase21"],
+    tags=["oceanwatch", "phase24", "phase25"],
 ) as dag:
 
     fetch_noaa = BashOperator(
@@ -148,6 +148,22 @@ with DAG(
         task_id="phase21_risk",
         bash_command="python /opt/airflow/ingestion/run_phase21_risk_engine.py",
     )
+    phase22 = BashOperator(
+        task_id="phase22_event_bus",
+        bash_command="python /opt/airflow/ingestion/run_phase22_event_bus.py",
+    )
+    phase23 = BashOperator(
+        task_id="phase23_notifications",
+        bash_command="python /opt/airflow/ingestion/run_phase23_notifications.py",
+    )
+    phase24 = BashOperator(
+        task_id="phase24_reports",
+        bash_command="python /opt/airflow/ingestion/run_phase24_reports.py",
+    )
+    phase25 = BashOperator(
+        task_id="phase25_access",
+        bash_command="python /opt/airflow/ingestion/run_phase25_access.py",
+    )
     compute_anomalies = BashOperator(
         task_id="compute_anomalies",
         bash_command="python /opt/airflow/ingestion/compute_anomalies.py",
@@ -193,6 +209,8 @@ with DAG(
     phase16 >> phase17 >> phase18
     [phase12, phase18, seed_ais, fetch_ais_live, ml_vessel] >> phase19
     [phase13, ml_bloom, ml_habitat, run_dbt] >> phase20
-
-    # Unified risk after domain products exist
     [phase14, phase15, phase19, phase20, ml_vessel] >> phase21
+    [phase19, phase20, phase21, enrich_alerts, deliver_alerts] >> phase22
+    phase22 >> phase23
+    [phase23, compute_wio, phase20, phase21] >> phase24
+    phase24 >> phase25
