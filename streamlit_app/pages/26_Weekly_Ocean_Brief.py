@@ -6,6 +6,13 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
 
+try:
+    from db_config import get_db_uri
+except ImportError:
+    def get_db_uri():
+        import os
+        return os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL") or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+
 st.set_page_config(page_title="Weekly Ocean Brief", page_icon=":material/newspaper:", layout="wide")
 
 try:
@@ -16,9 +23,7 @@ except Exception:
 st.title("Weekly Ocean Brief")
 st.caption("Auto-generated summary for Kenya EEZ / Mombasa. Not an official bulletin.")
 
-DB = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
-
-
+DB = get_db_uri()
 @st.cache_data(ttl=120)
 def load_brief_inputs():
     eng = create_engine(DB, pool_pre_ping=True)

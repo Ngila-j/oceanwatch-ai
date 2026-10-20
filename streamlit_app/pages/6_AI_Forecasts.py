@@ -4,6 +4,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 from sqlalchemy import create_engine
 
+try:
+    from db_config import get_db_uri
+except ImportError:
+    def get_db_uri():
+        import os
+        return os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL") or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+
 st.set_page_config(page_title="AI Forecasts", page_icon="ðŸ¤–", layout="wide")
 
 try:
@@ -16,7 +23,7 @@ st.caption("7-day Sea Surface Temperature forecast for the Kenya EEZ monitoring 
 
 @st.cache_data(ttl=180)
 def load_data():
-    engine = create_engine("postgresql://postgres:password@localhost:5433/oceanwatch_db")
+    engine = create_engine(get_db_uri())
     hist = pd.read_sql("""
         SELECT date_key AS date, sst_celsius AS mean_sst
         FROM fact_ocean_conditions

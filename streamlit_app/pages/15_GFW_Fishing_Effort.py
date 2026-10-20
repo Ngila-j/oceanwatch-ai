@@ -5,6 +5,13 @@ from streamlit_folium import st_folium
 from sqlalchemy import create_engine
 import plotly.express as px
 
+try:
+    from db_config import get_db_uri
+except ImportError:
+    def get_db_uri():
+        import os
+        return os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL") or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+
 st.set_page_config(page_title="GFW Fishing Effort", page_icon="ðŸŽ£", layout="wide")
 
 try:
@@ -21,7 +28,7 @@ st.caption(
 
 @st.cache_data(ttl=180)
 def load_gfw():
-    engine = create_engine("postgresql://postgres:password@localhost:5433/oceanwatch_db")
+    engine = create_engine(get_db_uri())
     try:
         return pd.read_sql(
             """

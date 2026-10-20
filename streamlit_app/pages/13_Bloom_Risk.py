@@ -2,6 +2,13 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine
 
+try:
+    from db_config import get_db_uri
+except ImportError:
+    def get_db_uri():
+        import os
+        return os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL") or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+
 st.set_page_config(page_title="Bloom Risk", page_icon="ðŸŒŠ", layout="wide")
 
 try:
@@ -14,7 +21,7 @@ st.caption("Bloom-risk indicator â€” not a confirmed harmful algal bloom di
 
 @st.cache_data(ttl=120)
 def load():
-    engine = create_engine("postgresql://postgres:password@localhost:5433/oceanwatch_db")
+    engine = create_engine(get_db_uri())
     return pd.read_sql("SELECT * FROM fact_bloom_risk ORDER BY risk_date DESC LIMIT 10", engine)
 
 df = load()

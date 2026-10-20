@@ -1,56 +1,23 @@
-"""Streamlit app configuration (env-overridable)."""
-
+"""Streamlit app configuration (env / secrets overridable)."""
 from __future__ import annotations
-
 import os
+import sys
+from pathlib import Path
 
-DB_URI = (
-    os.getenv("OCEANWATCH_DB_URI")
-    or os.getenv("DATABASE_URL")
-    or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
-)
-API_BASE = os.getenv("OCEANWATCH_API_BASE", "http://localhost:8000")
+_APP_ROOT = Path(__file__).resolve().parents[1]
+if str(_APP_ROOT) not in sys.path:
+    sys.path.insert(0, str(_APP_ROOT))
 
-ROLES = [
-    "admin",
-    "port_operator",
-    "fisheries_user",
-    "maritime_user",
-    "environment_user",
-    "researcher",
-    "public",
-]
+from db_config import get_db_uri
 
-ACCESS_LEVELS = {
-    "public": "PUBLIC",
-    "researcher": "PUBLIC",
-    "environment_user": "RESTRICTED",
-    "fisheries_user": "RESTRICTED",
-    "port_operator": "RESTRICTED",
-    "maritime_user": "SENSITIVE",
-    "admin": "SENSITIVE",
-}
+def get_settings_db_uri() -> str:
+    return get_db_uri()
 
-PUBLIC_DATASETS = [
-    "fact_ocean_conditions",
-    "fact_sst_forecast",
-    "fact_gfw_fishing_effort",
-    "ml_model_metrics",
-]
+# Prefer get_db_uri() at engine creation; this is a snapshot for simple imports
+DB_URI = get_db_uri()
 
-RESTRICTED_DATASETS = [
-    "fact_port_metrics",
-    "fact_port_risk",
-    "fact_bloom_risk",
-    "fact_habitat_suitability",
-    "fact_alerts",
-]
-
-SENSITIVE_DATASETS = [
-    "fact_ais_positions",
-    "fact_vessel_anomalies",
-]
-
-# Event bus defaults used by the Streamlit viewer
-EVENT_BUS_PAGE_SIZE = 500
+APP_NAME = "OceanWatch AI"
+DEFAULT_TZ = "Africa/Nairobi"
+PAGE_SIZE = 500
 EVENT_BUS_CACHE_TTL_SEC = 45
+DEMO_MODE = os.getenv("OCEANWATCH_DEMO_MODE", "").lower() in {"1", "true", "yes"}

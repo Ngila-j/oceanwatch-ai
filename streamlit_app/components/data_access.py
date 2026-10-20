@@ -11,15 +11,26 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 
-_DEFAULT_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+def get_db_uri_safe() -> str:
+    try:
+        from db_config import get_db_uri
+        return get_db_uri()
+    except Exception:
+        return (
+            os.getenv("OCEANWATCH_DB_URI")
+            or os.getenv("DATABASE_URL")
+            or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+        )
 
-DB_URI = os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL") or _DEFAULT_URI
+
+# Back-compat for `from components.data_access import DB_URI`
+DB_URI = get_db_uri_safe()
 
 
 @lru_cache(maxsize=1)
 def get_engine() -> Engine:
     """Process-level engine (pool_pre_ping for stale connections)."""
-    return create_engine(DB_URI, pool_pre_ping=True)
+    return create_engine(get_db_uri_safe(), pool_pre_ping=True)
 
 
 def qdf(sql: str, params: Optional[dict[str, Any]] = None) -> pd.DataFrame:

@@ -3,6 +3,13 @@ import pandas as pd
 from sqlalchemy import create_engine
 from datetime import datetime
 
+try:
+    from db_config import get_db_uri
+except ImportError:
+    def get_db_uri():
+        import os
+        return os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL") or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+
 st.set_page_config(page_title="Executive Summary", page_icon="ðŸ“Š", layout="wide")
 
 try:
@@ -14,7 +21,7 @@ st.caption(f"Last refreshed: {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC"
 
 @st.cache_data(ttl=120)
 def load_summary():
-    engine = create_engine("postgresql://postgres:password@localhost:5433/oceanwatch_db")
+    engine = create_engine(get_db_uri())
     alerts = pd.read_sql("""
         SELECT category, severity, title, risk_score, status, created_at
         FROM fact_alerts

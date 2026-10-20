@@ -11,6 +11,13 @@ from sqlalchemy import create_engine, text
 
 from components.branding import attribution_footer, bandwidth_toggle, is_low_bandwidth
 
+try:
+    from db_config import get_db_uri
+except ImportError:
+    def get_db_uri():
+        import os
+        return os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL") or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+
 st.set_page_config(page_title="Intelligence Map", page_icon="🗺️", layout="wide")
 
 try:
@@ -23,8 +30,7 @@ bandwidth_toggle()
 st.title("OceanWatch Intelligence Map")
 st.caption("Kenya EEZ / Mombasa — toggle layers. Decision-support only.")
 
-DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
-
+DB_URI = get_db_uri()
 MIN_LON, MAX_LON = 39.0, 45.0
 MIN_LAT, MAX_LAT = -5.0, 2.0
 CENTER = [-1.5, 42.0]

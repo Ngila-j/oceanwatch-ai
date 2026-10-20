@@ -5,6 +5,13 @@ import pandas as pd
 import plotly.express as px
 from sqlalchemy import create_engine, text
 
+try:
+    from db_config import get_db_uri
+except ImportError:
+    def get_db_uri():
+        import os
+        return os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL") or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+
 st.set_page_config(
     page_title="Unified Risk",
     page_icon=":material/shield:",
@@ -20,9 +27,7 @@ st.caption(
     "Composite risk with domain scores, driver contributions, confidence and freshness"
 )
 
-DB = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
-
-
+DB = get_db_uri()
 @st.cache_data(ttl=45)
 def load():
     eng = create_engine(DB, pool_pre_ping=True)

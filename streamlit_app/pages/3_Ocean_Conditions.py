@@ -3,6 +3,13 @@ import pandas as pd
 import plotly.express as px
 from sqlalchemy import create_engine
 
+try:
+    from db_config import get_db_uri
+except ImportError:
+    def get_db_uri():
+        import os
+        return os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL") or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+
 st.set_page_config(page_title="Ocean Conditions", page_icon="ðŸŒŠ", layout="wide")
 
 try:
@@ -14,7 +21,7 @@ st.title("Ocean Conditions Trends")
 
 @st.cache_data(ttl=300)
 def load_data():
-    engine = create_engine("postgresql://postgres:password@localhost:5433/oceanwatch_db")
+    engine = create_engine(get_db_uri())
     df = pd.read_sql("""
         SELECT date_key, sst_celsius, chlorophyll_mg_m3,
                tide_mean_m, tide_min_m, tide_max_m

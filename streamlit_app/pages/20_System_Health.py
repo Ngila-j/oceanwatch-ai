@@ -6,6 +6,13 @@ from sqlalchemy import create_engine, text
 from datetime import datetime
 
 try:
+    from db_config import get_db_uri
+except ImportError:
+    def get_db_uri():
+        import os
+        return os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL") or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+
+try:
     import requests
 except ImportError:
     requests = None
@@ -19,7 +26,7 @@ except Exception:
     pass
 st.caption("Prototype posture checks · not a production SRE console")
 
-DB = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+DB = get_db_uri()
 API = "http://localhost:8000"
 
 

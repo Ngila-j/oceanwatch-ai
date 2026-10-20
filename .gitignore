@@ -1,8 +1,10 @@
-﻿# Secrets
+# Secrets
 .env
 *.env
 ingestion/.env
 .streamlit/secrets.toml
+streamlit_app/.streamlit/secrets.toml
+**/.streamlit/secrets.toml
 
 # Python
 __pycache__/
