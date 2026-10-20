@@ -3,6 +3,12 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 st.set_page_config(page_title="Habitat Suitability", page_icon="ðŸª¸", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Predicted Habitat Suitability")
 st.caption("Based on available SST and chlorophyll features â€” not a prediction of where fish are")
 

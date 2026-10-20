@@ -10,6 +10,12 @@ st.set_page_config(
     page_icon=":material/radar:",
     layout="wide",
 )
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Maritime Events")
 st.caption(
     "Vessel state · movements · detected events — patterns for review only, "

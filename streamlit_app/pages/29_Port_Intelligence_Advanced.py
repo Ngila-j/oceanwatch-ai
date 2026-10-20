@@ -10,6 +10,12 @@ st.set_page_config(
     page_icon=":material/anchor:",
     layout="wide",
 )
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Port Intelligence — Mombasa")
 st.caption(
     "Performance · congestion & arrival forecasts · berth pressure · operational risk"

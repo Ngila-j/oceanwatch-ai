@@ -9,6 +9,12 @@ st.set_page_config(
     page_icon=":material/vpn_key:",
     layout="wide",
 )
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Partner Access & Audit")
 st.caption(
     "API clients, hashed keys, usage samples, and platform audit log. "

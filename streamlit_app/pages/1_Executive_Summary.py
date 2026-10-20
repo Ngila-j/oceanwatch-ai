@@ -4,7 +4,12 @@ from sqlalchemy import create_engine
 from datetime import datetime
 
 st.set_page_config(page_title="Executive Summary", page_icon="ðŸ“Š", layout="wide")
-st.title("OceanWatch Executive Summary")
+
+try:
+    from components.pagekit import boot, close_page
+    boot('Executive Summary', 'Board-ready posture for Kenya EEZ / WIO operations.', kicker='Command center')
+except Exception:
+    pass
 st.caption(f"Last refreshed: {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC")
 
 @st.cache_data(ttl=120)
@@ -68,3 +73,8 @@ if not anomalies.empty:
     )
 else:
     st.caption("No anomaly records yet.")
+
+try:
+    close_page()
+except Exception:
+    pass

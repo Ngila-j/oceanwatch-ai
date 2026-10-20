@@ -1,0 +1,22 @@
+[theme]
+# OceanWatch design tokens — WCAG-minded light theme
+primaryColor = "#0B6E99"
+backgroundColor = "#F5F7FA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#0F172A"
+font = "sans serif"
+
+[server]
+headless = true
+enableCORS = false
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = true
+
+[runner]
+fastReruns = true

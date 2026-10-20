@@ -9,6 +9,12 @@ st.set_page_config(
     page_icon=":material/dns:",
     layout="wide",
 )
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Platform Operations")
 st.caption("System reliability · report runs · alert delivery dry-run · API surface")
 

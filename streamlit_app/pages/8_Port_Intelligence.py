@@ -3,6 +3,12 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Port Intelligence", page_icon="âš“", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Mombasa Port Intelligence")
 st.caption("Operational snapshot Â· Kenya-first Â· decision-support only")
 

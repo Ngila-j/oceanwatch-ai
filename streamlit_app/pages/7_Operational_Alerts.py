@@ -5,6 +5,12 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Operational Alerts", page_icon=":material/warning:", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Operational Alerts")
 st.caption(
     "Priority signals for Kenya EEZ / Mombasa. "

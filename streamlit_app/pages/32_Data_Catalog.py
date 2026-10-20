@@ -9,6 +9,12 @@ st.set_page_config(
     page_icon=":material/library_books:",
     layout="wide",
 )
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Data Catalog & Trust")
 st.caption(
     "Sources · products · licenses · quality · lineage · ingestion runs — "

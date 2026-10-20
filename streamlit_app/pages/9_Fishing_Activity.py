@@ -3,6 +3,12 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Fishing Activity", page_icon="ðŸŸ", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Fishing Activity Intelligence")
 st.caption("Kenya EEZ Â· effort, behaviour flags, decision-support only")
 

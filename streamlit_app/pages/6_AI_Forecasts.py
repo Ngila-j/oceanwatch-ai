@@ -5,6 +5,12 @@ import plotly.graph_objects as go
 from sqlalchemy import create_engine
 
 st.set_page_config(page_title="AI Forecasts", page_icon="ðŸ¤–", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("OceanWatch AI  SST Forecast")
 st.caption("7-day Sea Surface Temperature forecast for the Kenya EEZ monitoring area")
 

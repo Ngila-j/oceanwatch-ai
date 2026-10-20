@@ -1,18 +1,27 @@
+"""Weekly Ocean Brief — auto narrative from latest warehouse facts."""
+
+from datetime import datetime
+
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
-from datetime import date
 
-st.set_page_config(page_title="Weekly Ocean Brief", page_icon="ðŸ“ deg ", layout="wide")
+st.set_page_config(page_title="Weekly Ocean Brief", page_icon=":material/newspaper:", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Weekly Ocean Brief")
-st.caption(f"Kenya EEZ Â· generated {date.today().isoformat()}")
+st.caption("Auto-generated summary for Kenya EEZ / Mombasa. Not an official bulletin.")
 
-DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+DB = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
 
 
-@st.cache_data(ttl=60)
-def load_brief():
-    eng = create_engine(DB_URI, pool_pre_ping=True)
+@st.cache_data(ttl=120)
+def load_brief_inputs():
+    eng = create_engine(DB, pool_pre_ping=True)
 
     def q(sql):
         try:
@@ -21,129 +30,130 @@ def load_brief():
             return pd.DataFrame()
 
     return {
-        "idx": q(
-            """
-            SELECT overall_score, confidence_score, index_date, drivers,
-                   methodology_version, ocean_health_score, maritime_activity_score,
-                   fishing_pressure_score, port_risk_score, environmental_risk_score
-            FROM fact_wio_intelligence_index
-            ORDER BY index_date DESC LIMIT 1
-            """
-        ),
-        "sst": q(
+        "ocean": q(
             """
             SELECT date_key, sst_celsius, chlorophyll_mg_m3
             FROM fact_ocean_conditions
             WHERE sst_celsius IS NOT NULL
-            ORDER BY date_key DESC LIMIT 7
+            ORDER BY date_key DESC
+            LIMIT 14
             """
         ),
-        "anoms": q(
+        "port": q(
             """
-            SELECT metric_name, status, anomaly_pct, explanation, as_of_date
-            FROM fact_oceanwatch_anomalies
-            ORDER BY as_of_date DESC LIMIT 15
+            SELECT metric_date, congestion_level, active_vessels, congestion_index, avg_waiting_hours
+            FROM fact_port_metrics
+            ORDER BY metric_date DESC
+            LIMIT 1
+            """
+        ),
+        "wio": q(
+            """
+            SELECT index_date, overall_score, confidence_score, drivers
+            FROM fact_wio_intelligence_index
+            ORDER BY index_date DESC
+            LIMIT 1
+            """
+        ),
+        "gfw": q(
+            """
+            SELECT COALESCE(SUM(hours),0) AS hours, COUNT(*) AS cells,
+                   MIN(effort_date) AS start_d, MAX(effort_date) AS end_d
+            FROM fact_gfw_fishing_effort
             """
         ),
         "alerts": q(
             """
-            SELECT severity, category, title, description, why_it_matters, created_at
+            SELECT severity, title, category, risk_score
             FROM fact_alerts
             WHERE status = 'OPEN'
-            ORDER BY created_at DESC LIMIT 15
+            ORDER BY risk_score DESC NULLS LAST
+            LIMIT 8
             """
         ),
     }
 
 
-data = load_brief()
-idx, sst, anoms, alerts = data["idx"], data["sst"], data["anoms"], data["alerts"]
+d = load_brief_inputs()
+today = datetime.utcnow().strftime("%Y-%m-%d")
 
-st.markdown("### 1. Headline indicators")
-c1, c2, c3, c4 = st.columns(4)
-if not idx.empty:
-    r = idx.iloc[0]
-    c1.metric(
-        "WIO-OII",
-        f"{float(r['overall_score']):.1f}" if pd.notna(r.get("overall_score")) else "â€”",
+sst_line = "SST history limited."
+if not d["ocean"].empty:
+    latest = d["ocean"].iloc[0]
+    oldest = d["ocean"].iloc[-1]
+    sst_line = (
+        f"Latest SST {latest['sst_celsius']:.2f} C (as of {latest['date_key']}). "
+        f"Compared with earlier sample {oldest['sst_celsius']:.2f} C ({oldest['date_key']})."
     )
-    c2.metric(
-        "Confidence",
-        f"{float(r['confidence_score']):.0f}" if pd.notna(r.get("confidence_score")) else "â€”",
+
+port_line = "Port metrics not available."
+if not d["port"].empty:
+    p = d["port"].iloc[0]
+    port_line = (
+        f"Mombasa congestion {p.get('congestion_level')} "
+        f"(index {p.get('congestion_index')}), active vessels {p.get('active_vessels')}, "
+        f"avg wait {p.get('avg_waiting_hours')} h (metric date {p.get('metric_date')})."
     )
-    c3.metric("Index date", str(r.get("index_date") or "â€”"))
-    c4.metric("Method", str(r.get("methodology_version") or "â€”"))
-    if r.get("drivers"):
-        st.code(str(r["drivers"]), language=None)
-else:
-    st.info("No WIO-OII yet â€” run compute_wio_index.py")
 
-if not sst.empty:
-    st.markdown("### 2. Recent ocean conditions (up to 7 days)")
-    st.dataframe(sst, width="stretch")
-    if len(sst) and pd.notna(sst.iloc[0].get("sst_celsius")):
-        st.caption(f"Latest SST: **{float(sst.iloc[0]['sst_celsius']):.2f}  deg C**")
-
-st.markdown("### 3. Anomalies")
-elevated = (
-    anoms[anoms["status"].isin(["ELEVATED", "HIGH", "CRITICAL"])]
-    if not anoms.empty and "status" in anoms.columns
-    else anoms
-)
-st.dataframe(
-    elevated if elevated is not None and not elevated.empty else pd.DataFrame({"note": ["None elevated"]}),
-    width="stretch",
-)
-
-st.markdown("### 4. Open alerts")
-st.dataframe(
-    alerts if not alerts.empty else pd.DataFrame({"note": ["None open"]}),
-    width="stretch",
-)
-
-st.markdown("### 5. Share / download")
-lines = [
-    f"OceanWatch Weekly Ocean Brief â€” {date.today().isoformat()}",
-    "Region: Kenya EEZ / Western Indian Ocean monitoring box",
-    "",
-]
-if not idx.empty:
-    r = idx.iloc[0]
-    lines.append(
-        f"WIO-OII: {r.get('overall_score')} (confidence {r.get('confidence_score')}, "
-        f"as of {r.get('index_date')}, method {r.get('methodology_version')})"
+wio_line = "WIO-OII not computed yet."
+if not d["wio"].empty:
+    w = d["wio"].iloc[0]
+    wio_line = (
+        f"WIO-OII overall {w.get('overall_score')} "
+        f"(confidence {w.get('confidence_score')}) on {w.get('index_date')}."
     )
-    lines.append(f"Drivers: {r.get('drivers')}")
-    lines.append("")
-lines.append("Open alerts:")
-if alerts.empty:
-    lines.append("  (none)")
-else:
-    for _, a in alerts.head(10).iterrows():
-        lines.append(f"  - [{a.get('severity')}] {a.get('title')} ({a.get('category')})")
-lines.append("")
-lines.append("Elevated anomalies:")
-if elevated is None or elevated.empty:
-    lines.append("  (none)")
-else:
-    for _, a in elevated.head(10).iterrows():
-        lines.append(f"  - {a.get('metric_name')} {a.get('status')} ({a.get('as_of_date')})")
-lines.append("")
-lines.append(
-    "Disclaimer: Decision-support prototype only. Not official maritime, fisheries, "
-    "or environmental determinations. GFW data: Global Fishing Watch terms/attribution apply."
-)
-brief_text = "\n".join(lines)
 
+gfw_line = "No GFW effort rows stored."
+if not d["gfw"].empty:
+    g = d["gfw"].iloc[0]
+    gfw_line = (
+        f"Stored GFW effort ~{float(g.get('hours') or 0):.0f} hours "
+        f"across {int(g.get('cells') or 0)} cells "
+        f"({g.get('start_d')} to {g.get('end_d')}). "
+        "Powered by Global Fishing Watch where applicable."
+    )
+
+alert_lines = []
+if not d["alerts"].empty:
+    for _, r in d["alerts"].iterrows():
+        alert_lines.append(
+            f"- [{r.get('severity')}] {r.get('title')} ({r.get('category')}, risk={r.get('risk_score')})"
+        )
+else:
+    alert_lines = ["- No open alerts."]
+
+brief = f"""OceanWatch Weekly Ocean Brief
+Generated (UTC): {today}
+Region: Kenya EEZ / Mombasa focus
+
+1. Ocean conditions
+{sst_line}
+
+2. Port operations
+{port_line}
+
+3. Regional index
+{wio_line}
+
+4. Fishing effort (stored)
+{gfw_line}
+
+5. Open alerts
+{chr(10).join(alert_lines)}
+
+Disclaimer
+Decision-support prototype only. Not an official government or GFW product.
+Validate against primary sources before operational use.
+"""
+
+st.text_area("Brief", brief, height=420)
 st.download_button(
-    label="Download brief (.txt)",
-    data=brief_text,
-    file_name=f"oceanwatch_weekly_brief_{date.today().isoformat()}.txt",
+    "Download brief (.txt)",
+    data=brief,
+    file_name=f"oceanwatch_brief_{today}.txt",
     mime="text/plain",
 )
 
-st.info(
-    "For maps and day detail use **Historical Playback**, **Operational Alerts**, "
-    "and **WIO Intelligence Index**."
-)
-st.caption("OceanWatch AI Â· Kenya-first Â· transparent methods")
+st.subheader("Open alerts table")
+if not d["alerts"].empty:
+    st.dataframe(d["alerts"], width="stretch")

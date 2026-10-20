@@ -5,6 +5,12 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Kenya EEZ Today", page_icon=":material/public:", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Kenya EEZ — Today")
 st.caption("Phase 11 intelligence core · Kenya-first · Decision-support only")
 

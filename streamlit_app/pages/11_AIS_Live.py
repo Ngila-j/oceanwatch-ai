@@ -5,6 +5,12 @@ from streamlit_folium import st_folium
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="AIS Live", page_icon="ðŸ“¡", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("AIS Vessel Positions")
 st.caption(
     "Kenya EEZ monitoring box â€” SAMPLE enrichment + live AISSTREAM when coverage allows"

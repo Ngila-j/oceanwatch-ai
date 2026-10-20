@@ -6,6 +6,12 @@ from sqlalchemy import create_engine
 import plotly.express as px
 
 st.set_page_config(page_title="GFW Fishing Effort", page_icon="ðŸŽ£", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Apparent Fishing Effort (Global Fishing Watch)")
 
 st.caption(

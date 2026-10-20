@@ -3,6 +3,12 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 st.set_page_config(page_title="Port Risk", page_icon="âš“", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Mombasa Port Operational Risk")
 
 @st.cache_data(ttl=120)

@@ -6,6 +6,12 @@ import plotly.express as px
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Vessel Intelligence", page_icon=":material/sailing:", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Vessel Intelligence")
 st.caption("Profiles, behaviour, geofences · Kenya EEZ · Human review only — not legal findings")
 

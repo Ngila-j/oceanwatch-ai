@@ -1,6 +1,12 @@
 import streamlit as st
 
 st.set_page_config(page_title="Onboarding & Access", page_icon="📘", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Onboarding, Access & Monetization Framing")
 
 st.markdown(

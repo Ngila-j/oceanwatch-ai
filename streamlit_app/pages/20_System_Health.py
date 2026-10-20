@@ -11,7 +11,12 @@ except ImportError:
     requests = None
 
 st.set_page_config(page_title="System Health", page_icon=":material/settings:", layout="wide")
-st.title("System Health")
+
+try:
+    from components.pagekit import boot, close_page
+    boot('System Health', 'Pipeline freshness, quality, and platform readiness.', kicker='Data & trust')
+except Exception:
+    pass
 st.caption("Prototype posture checks · not a production SRE console")
 
 DB = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
@@ -99,3 +104,8 @@ st.info(
     "Decision-support prototype. Green checks mean local stack is reachable, "
     "not that operational SLAs are met."
 )
+
+try:
+    close_page()
+except Exception:
+    pass

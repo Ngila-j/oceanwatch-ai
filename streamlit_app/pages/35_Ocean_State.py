@@ -9,6 +9,12 @@ st.set_page_config(
     page_icon=":material/water:",
     layout="wide",
 )
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Ocean State Engine")
 st.caption(
     "Fused ocean state from SST · chlorophyll · bloom · habitat · climate risk — Kenya EEZ"

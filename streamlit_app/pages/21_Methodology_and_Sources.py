@@ -3,6 +3,12 @@ import streamlit as st
 from components.branding import attribution_footer
 
 st.set_page_config(page_title="Methodology & Sources", page_icon="📎", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Methodology & Sources")
 st.caption("Transparency for a free, open Western Indian Ocean intelligence prototype.")
 

@@ -4,6 +4,12 @@ import plotly.express as px
 from sqlalchemy import create_engine
 
 st.set_page_config(page_title="Ocean Conditions", page_icon="ðŸŒŠ", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Ocean Conditions Trends")
 
 @st.cache_data(ttl=300)

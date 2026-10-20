@@ -12,6 +12,12 @@ from sqlalchemy import create_engine, text
 from components.branding import attribution_footer, bandwidth_toggle, is_low_bandwidth
 
 st.set_page_config(page_title="Intelligence Map", page_icon="🗺️", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 bandwidth_toggle()
 
 st.title("OceanWatch Intelligence Map")

@@ -9,6 +9,12 @@ st.set_page_config(
     page_icon=":material/description:",
     layout="wide",
 )
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Intelligence Reports")
 st.caption(
     "Automated Daily Operational Brief and Weekly Ocean Brief — generated from live OceanWatch facts"

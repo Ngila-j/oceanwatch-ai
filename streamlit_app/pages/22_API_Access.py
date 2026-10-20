@@ -3,6 +3,12 @@ import streamlit as st
 from components.branding import attribution_footer, bandwidth_toggle
 
 st.set_page_config(page_title="API Access", page_icon="🔌", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 bandwidth_toggle()
 
 st.title("Partner API  free access (prototype)")

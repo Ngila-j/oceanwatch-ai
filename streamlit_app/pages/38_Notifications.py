@@ -9,33 +9,28 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(
-    page_title="Notifications",
-    page_icon=":material/notifications_active:",
-    layout="wide",
+from components.data_access import has_error, qdf_or_error
+from components.pagekit import boot, close_page
+from components.ui import banner, empty_state, kpi_row, section
+
+boot(
+    "Notifications",
+    "Delivery console for OceanWatch alerts. Events leave the bus, land in a "
+    "queue, and are dry-run delivered until real channels are wired.",
+    kicker="Operations fabric · Phase 23",
+    chips=[
+        ("Dry-run safe", "success"),
+        ("Not live SMS/email", "warning"),
+    ],
+    page_title="Notifications · OceanWatch",
+    icon="📥",
 )
 
-st.title("Notification Delivery")
-st.caption(
-    "Event Bus → queue → dry-run delivery. Email/WhatsApp are simulated until "
-    "credentials are configured. Not a live messaging service yet."
-)
-
-try:
-    from components.branding import attribution_footer, methodology_blurb
-except Exception:  # pragma: no cover
-    def attribution_footer():  # type: ignore
-        pass
-
-    def methodology_blurb():  # type: ignore
-        pass
-
-
-try:
-    from components.data_access import has_error, qdf_or_error
-except Exception as exc:  # pragma: no cover
-    st.error(f"Data access layer unavailable: {exc}")
-    st.stop()
+with st.sidebar:
+    st.markdown("### Notification tools")
+    if st.button("Refresh notifications", use_container_width=True, type="primary"):
+        st.cache_data.clear()
+        st.rerun()
 
 
 @st.cache_data(ttl=45, show_spinner="Loading notifications…")
@@ -73,13 +68,7 @@ def load() -> dict[str, pd.DataFrame]:
     }
 
 
-with st.sidebar:
-    if st.button("Refresh now", use_container_width=True):
-        load.clear()
-        st.rerun()
-
 d = load()
-
 channels = d["channels"]
 templates = d["templates"]
 queue = d["queue"]
@@ -93,19 +82,31 @@ for frame in (channels, templates, queue, deliveries):
         break
 
 if schema_error and any(
-    t in schema_error.lower()
-    for t in ("does not exist", "undefinedtable", "relation", "notification")
+    token in schema_error.lower()
+    for token in ("does not exist", "undefinedtable", "relation", "notification", "connect")
 ):
-    st.warning(
-        "No Phase 23 data yet. Initialise and run:\n\n"
-        "```bash\n"
-        "python ingestion/init_phase23_notifications.py\n"
-        "python ingestion/run_phase23_notifications.py\n"
-        "```"
+    banner(
+        "Notification tables not ready",
+        "Initialise Phase 23, drain the bus, then refresh.",
+        tone="warning",
+        icon="⚠️",
     )
-    with st.expander("Diagnostics"):
+    st.code(
+        "python ingestion/init_phase23_notifications.py\n"
+        "python ingestion/run_phase23_notifications.py",
+        language="bash",
+    )
+    with st.expander("Diagnostics", expanded=False):
         st.code(schema_error)
+    close_page()
     st.stop()
+
+
+def _len(df: pd.DataFrame) -> int:
+    if df is None or df.empty or has_error(df):
+        return 0
+    return int(len(df))
+
 
 pending = None
 if pending_df is not None and not pending_df.empty and not has_error(pending_df):
@@ -115,69 +116,121 @@ if pending_df is not None and not pending_df.empty and not has_error(pending_df)
         except Exception:
             pending = None
 
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Channels", 0 if channels is None or has_error(channels) else len(channels))
-c2.metric("Queue rows", 0 if queue is None or has_error(queue) else len(queue))
-c3.metric("Deliveries", 0 if deliveries is None or has_error(deliveries) else len(deliveries))
-c4.metric("Bus PENDING left", pending if pending is not None else "—")
+kpi_row(
+    [
+        {
+            "label": "Channels",
+            "value": f"{_len(channels):,}",
+            "hint": "Configured delivery channels",
+            "tone": "primary",
+        },
+        {
+            "label": "Queue rows",
+            "value": f"{_len(queue):,}",
+            "hint": "Recent notification queue",
+            "tone": "info",
+        },
+        {
+            "label": "Deliveries",
+            "value": f"{_len(deliveries):,}",
+            "hint": "Logged send attempts",
+            "tone": "success",
+        },
+        {
+            "label": "Bus still PENDING",
+            "value": f"{pending:,}" if pending is not None else "—",
+            "hint": "Events not yet drained",
+            "tone": "warning" if (pending or 0) else "success",
+        },
+    ]
+)
+
+if pending is not None and pending > 200:
+    banner(
+        f"{pending} PENDING events remain on the bus",
+        "Re-run `python ingestion/run_phase23_notifications.py` to drain.",
+        tone="warning",
+        icon="⏳",
+    )
 
 tab_q, tab_d, tab_cfg = st.tabs(["Queue", "Deliveries", "Channels & templates"])
 
 with tab_q:
+    section("Notification queue", "Filter by channel or status when columns exist.")
     if queue is None or queue.empty or has_error(queue):
-        st.caption("No queue items (events may be below severity threshold or already drained).")
+        empty_state(
+            "Queue is empty",
+            "Events may be below severity threshold or already drained.",
+            icon="📥",
+        )
         if has_error(queue):
             st.code(str(queue.iloc[0].get("error")))
     else:
-        if "channel_id" in queue.columns:
-            sel = st.multiselect(
-                "Channel filter",
-                sorted(queue["channel_id"].dropna().astype(str).unique().tolist()),
-                default=None,
+        filters = st.columns(2)
+        view = queue.copy()
+        with filters[0]:
+            if "channel_id" in view.columns:
+                opts = sorted(view["channel_id"].dropna().astype(str).unique().tolist())
+                sel = st.multiselect("Channel", opts)
+                if sel:
+                    view = view[view["channel_id"].astype(str).isin(sel)]
+        with filters[1]:
+            status_col = next(
+                (c for c in ("status", "queue_status", "state") if c in view.columns),
+                None,
             )
-            view = queue[queue["channel_id"].astype(str).isin(sel)] if sel else queue
-        else:
-            view = queue
-        st.dataframe(view, width="stretch", hide_index=True)
-        if "channel_id" in view.columns and not view.empty:
-            st.bar_chart(view["channel_id"].value_counts())
+            if status_col:
+                opts = sorted(view[status_col].dropna().astype(str).unique().tolist())
+                sel = st.multiselect("Status", opts)
+                if sel:
+                    view = view[view[status_col].astype(str).isin(sel)]
+
+        st.caption(f"**{len(view):,}** queue rows")
+        st.dataframe(view, use_container_width=True, hide_index=True)
+        if "channel_id" in view.columns and not view.empty and not st.session_state.get(
+            "low_bandwidth"
+        ):
+            st.bar_chart(view["channel_id"].astype(str).value_counts())
 
 with tab_d:
+    section("Delivery log", "DRY_RUN_OK / LOGGED means the pipeline completed without external APIs.")
     if deliveries is None or deliveries.empty or has_error(deliveries):
-        st.caption("No deliveries yet.")
+        empty_state("No deliveries yet", "Run the Phase 23 job after events exist.", icon="📨")
         if has_error(deliveries):
             st.code(str(deliveries.iloc[0].get("error")))
     else:
-        st.dataframe(deliveries, width="stretch", hide_index=True)
-        if "delivery_status" in deliveries.columns:
-            st.bar_chart(deliveries["delivery_status"].value_counts())
+        st.dataframe(deliveries, use_container_width=True, hide_index=True)
+        status_col = next(
+            (
+                c
+                for c in ("delivery_status", "status", "result")
+                if c in deliveries.columns
+            ),
+            None,
+        )
+        if status_col and not st.session_state.get("low_bandwidth"):
+            st.bar_chart(deliveries[status_col].astype(str).value_counts())
 
 with tab_cfg:
-    st.subheader("Channels")
+    section("Channels", "DRY_RUN channels are safe defaults until SMTP / WhatsApp credentials exist.")
     if channels is None or channels.empty or has_error(channels):
-        st.caption("No channels")
+        empty_state("No channels configured", icon="📡")
     else:
-        st.dataframe(channels, width="stretch", hide_index=True)
+        st.dataframe(channels, use_container_width=True, hide_index=True)
 
-    st.subheader("Templates")
+    section("Templates", "Message shapes bound to channels.")
     if templates is None or templates.empty or has_error(templates):
-        st.caption("No templates")
+        empty_state("No templates", icon="📝")
     else:
-        st.dataframe(templates, width="stretch", hide_index=True)
+        st.dataframe(templates, use_container_width=True, hide_index=True)
 
-st.info(
-    "DRY_RUN_OK / LOGGED means the pipeline worked end-to-end without calling external APIs. "
-    "Wire SMTP or WhatsApp credentials later to flip channels from DRY_RUN to ACTIVE."
+banner(
+    "Dry-run is intentional",
+    "DRY_RUN_OK / LOGGED means the pipeline worked end-to-end without calling "
+    "external APIs. Wire SMTP or WhatsApp credentials later to flip channels "
+    "from DRY_RUN to ACTIVE.",
+    tone="info",
+    icon="ℹ️",
 )
 
-if pending is not None and pending > 200:
-    st.warning(
-        f"{pending} PENDING events remain on the bus — re-run "
-        "`python ingestion/run_phase23_notifications.py`."
-    )
-
-try:
-    methodology_blurb()
-    attribution_footer()
-except Exception:
-    pass
+close_page()

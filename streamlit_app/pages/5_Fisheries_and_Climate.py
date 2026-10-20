@@ -4,6 +4,12 @@ import plotly.express as px
 from sqlalchemy import create_engine
 
 st.set_page_config(page_title="Fisheries & Climate", page_icon="ðŸŸ", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Fisheries & Climate Indicators")
 
 @st.cache_data(ttl=300)

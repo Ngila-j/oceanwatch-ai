@@ -3,6 +3,12 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Alert Subscriptions", page_icon="ðŸ“§", layout="wide")
+
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+    init_a11y_defaults(); apply_theme()
+except Exception:
+    pass
 st.title("Alert Subscriptions")
 st.caption(
     "Phase 8 foundation: store preferences in PostgreSQL. "

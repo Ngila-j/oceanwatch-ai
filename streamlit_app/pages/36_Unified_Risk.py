@@ -10,7 +10,12 @@ st.set_page_config(
     page_icon=":material/shield:",
     layout="wide",
 )
-st.title("OceanWatch Risk Engine")
+
+try:
+    from components.pagekit import boot, close_page
+    boot('Unified Risk', 'Cross-domain risk rollup for watch officers and executives.', kicker='Command center')
+except Exception:
+    pass
 st.caption(
     "Composite risk with domain scores, driver contributions, confidence and freshness"
 )
@@ -110,3 +115,8 @@ st.info(
     "Composite risk is decision support only. Fisheries domain uses activity heuristics, "
     "not legal determinations. See Data Catalog for lineage and licenses."
 )
+
+try:
+    close_page()
+except Exception:
+    pass

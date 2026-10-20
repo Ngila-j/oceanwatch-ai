@@ -1,63 +1,78 @@
 """
-OceanWatch AI — main shell
-Sidebar groups match product canvas.
-Theme: light canvas + deep navy chrome (ow_theme).
+OceanWatch AI — application shell
+=================================
+Sidebar groups match the product canvas.
+Theme: light maritime cockpit + deep navy chrome (ow_theme).
+Accessibility: skip link, large text, high contrast, dark mode, reduced motion.
 Material icons only. Each page registered once.
 """
+
+from __future__ import annotations
 
 from pathlib import Path
 
 import streamlit as st
 
+from components.ui import a11y_sidebar_controls, persona_selector, sidebar_brand
+from ow_theme import apply_theme, init_a11y_defaults
+
+BASE = Path(__file__).resolve().parent
+
+
+def page(path: str, title: str, icon: str, default: bool = False, url_path: str | None = None):
+    """Register a Streamlit page if the file exists (try absolute under streamlit_app)."""
+    full = BASE / path
+    if not full.exists():
+        # tolerate alternate roots
+        alt = BASE / Path(path).name
+        if alt.exists():
+            full = alt
+        else:
+            return None
+    kwargs = {"title": title, "icon": icon, "default": default}
+    if url_path:
+        kwargs["url_path"] = url_path
+    return st.Page(str(full), **kwargs)
+
+
+def keep(*pages):
+    return [p for p in pages if p is not None]
+
+
 st.set_page_config(
     page_title="OceanWatch AI",
-    page_icon=":material/waves:",
+    page_icon="🌊",
     layout="wide",
     initial_sidebar_state="expanded",
+    menu_items={
+        "Get Help": None,
+        "Report a bug": None,
+        "About": (
+            "OceanWatch AI — Kenya EEZ / Western Indian Ocean maritime intelligence. "
+            "Decision-support only; not an official authority product."
+        ),
+    },
 )
 
-try:
-    from ow_theme import apply
-
-    apply()
-except Exception:
-    pass
-
-ROOT = Path(__file__).resolve().parent
-PAGES = ROOT / "pages"
-
-
-def page(
-    rel: str,
-    title: str,
-    icon: str = ":material/description:",
-    default: bool = False,
-    url_path: str = None,
-):
-    candidates = [
-        ROOT / rel,
-        PAGES / Path(rel).name,
-        ROOT / "pages" / Path(rel).name,
-    ]
-    for path in candidates:
-        if path.is_file():
-            rel_path = path.relative_to(ROOT).as_posix()
-            kwargs = {"title": title, "icon": icon, "default": default}
-            if url_path:
-                kwargs["url_path"] = url_path
-            return st.Page(rel_path, **kwargs)
-    return None
-
-
-def keep(*items):
-    return [p for p in items if p is not None]
-
+init_a11y_defaults()
+apply_theme()
 
 with st.sidebar:
-    st.markdown("### OceanWatch AI")
-    st.caption("Western Indian Ocean Intelligence")
-    st.markdown("---")
+    sidebar_brand(
+        title="OceanWatch AI",
+        subtitle="Kenya EEZ · Western Indian Ocean",
+        mark="OW",
+    )
+    persona_selector()
+    st.divider()
+    a11y_sidebar_controls()
+    st.divider()
+    st.caption(
+        "Accessibility: Tab / Shift+Tab to move · Enter to activate · "
+        "Skip to content on first Tab. Preferences apply instantly."
+    )
 
+# ── Page registry (product canvas) ──────────────────────────────────────────
 home = page("Home.py", "Home", ":material/home:", default=True)
 
 kenya = (
@@ -268,6 +283,7 @@ event_bus = page(
     ":material/hub:",
 )
 
+
 nav_dict = {
     "Overview & Intelligence": keep(
         home,
@@ -328,6 +344,10 @@ nav_dict = {
     ),
 }
 nav_dict = {k: v for k, v in nav_dict.items() if v}
+
+if not nav_dict:
+    st.error("No OceanWatch pages found. Check streamlit_app/pages.")
+    st.stop()
 
 nav = st.navigation(nav_dict, position="sidebar")
 nav.run()
