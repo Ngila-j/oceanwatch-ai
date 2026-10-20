@@ -1,91 +1,113 @@
-"""Phase 23 — notification / delivery engine schema."""
+"""
+Phase 23 — notification / delivery engine schema.
+
+Idempotent DDL (does not drop existing queue/delivery history).
+"""
+
+from __future__ import annotations
 
 import logging
-import duckdb
+import sys
+from pathlib import Path
+
+_INGESTION_DIR = Path(__file__).resolve().parent
+if str(_INGESTION_DIR) not in sys.path:
+    sys.path.insert(0, str(_INGESTION_DIR))
+
+from db_utils import pg_connection
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def get_db_uri():
-    import os
+DDL = [
+    """
+    CREATE TABLE IF NOT EXISTS pg.public.dim_notification_channels (
+        channel_id VARCHAR PRIMARY KEY,
+        channel_name VARCHAR,
+        channel_type VARCHAR,
+        status VARCHAR DEFAULT 'DRY_RUN',
+        notes VARCHAR
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS pg.public.dim_notification_templates (
+        template_id VARCHAR PRIMARY KEY,
+        topic VARCHAR,
+        severity_min VARCHAR,
+        subject_template VARCHAR,
+        body_template VARCHAR,
+        status VARCHAR DEFAULT 'ACTIVE'
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS pg.public.fact_notification_queue (
+        queue_id BIGINT PRIMARY KEY,
+        event_id BIGINT,
+        topic VARCHAR,
+        event_type VARCHAR,
+        severity VARCHAR,
+        channel_id VARCHAR,
+        recipient VARCHAR,
+        subject VARCHAR,
+        body VARCHAR,
+        status VARCHAR,
+        created_at TIMESTAMP,
+        model_version VARCHAR
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS pg.public.fact_notification_deliveries (
+        delivery_id BIGINT PRIMARY KEY,
+        queue_id BIGINT,
+        event_id BIGINT,
+        channel_id VARCHAR,
+        recipient VARCHAR,
+        delivery_status VARCHAR,
+        attempt INTEGER,
+        response_code VARCHAR,
+        response_message VARCHAR,
+        delivered_at TIMESTAMP,
+        model_version VARCHAR
+    )
+    """,
+]
 
-    if os.path.exists("/.dockerenv") or os.getenv("AIRFLOW_HOME"):
-        return "postgresql://postgres:password@postgres:5432/oceanwatch_db"
-    return "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+
+def _ensure_index(con, sql: str) -> None:
+    try:
+        con.execute(sql)
+    except Exception as exc:
+        logger.debug("index: %s", exc)
 
 
-def main():
+def main() -> None:
     logger.info("=== Phase 23 notifications schema ===")
-    con = duckdb.connect()
-    con.execute(f"ATTACH '{get_db_uri()}' AS pg (TYPE POSTGRES)")
+    with pg_connection() as con:
+        for stmt in DDL:
+            con.execute(stmt)
 
-    for t in (
-        "dim_notification_channels",
-        "dim_notification_templates",
-        "fact_notification_queue",
-        "fact_notification_deliveries",
-    ):
-        con.execute(f"DROP TABLE IF EXISTS pg.public.{t} CASCADE")
-
-    con.execute(
-        """
-        CREATE TABLE pg.public.dim_notification_channels (
-            channel_id VARCHAR PRIMARY KEY,
-            channel_name VARCHAR,
-            channel_type VARCHAR,
-            status VARCHAR,
-            notes VARCHAR
+        _ensure_index(
+            con,
+            """
+            CREATE INDEX IF NOT EXISTS idx_notif_queue_event
+            ON pg.public.fact_notification_queue (event_id)
+            """,
         )
-        """
-    )
-    con.execute(
-        """
-        CREATE TABLE pg.public.dim_notification_templates (
-            template_id VARCHAR PRIMARY KEY,
-            topic VARCHAR,
-            severity_min VARCHAR,
-            subject_template VARCHAR,
-            body_template VARCHAR,
-            status VARCHAR
+        _ensure_index(
+            con,
+            """
+            CREATE INDEX IF NOT EXISTS idx_notif_queue_status
+            ON pg.public.fact_notification_queue (status, created_at DESC)
+            """,
         )
-        """
-    )
-    con.execute(
-        """
-        CREATE TABLE pg.public.fact_notification_queue (
-            queue_id BIGINT,
-            event_id BIGINT,
-            topic VARCHAR,
-            event_type VARCHAR,
-            severity VARCHAR,
-            channel_id VARCHAR,
-            recipient VARCHAR,
-            subject VARCHAR,
-            body VARCHAR,
-            status VARCHAR,
-            created_at TIMESTAMP,
-            model_version VARCHAR
+        _ensure_index(
+            con,
+            """
+            CREATE INDEX IF NOT EXISTS idx_notif_deliveries_event
+            ON pg.public.fact_notification_deliveries (event_id, delivered_at DESC)
+            """,
         )
-        """
-    )
-    con.execute(
-        """
-        CREATE TABLE pg.public.fact_notification_deliveries (
-            delivery_id BIGINT,
-            queue_id BIGINT,
-            event_id BIGINT,
-            channel_id VARCHAR,
-            recipient VARCHAR,
-            delivery_status VARCHAR,
-            attempt INTEGER,
-            response_code VARCHAR,
-            response_message VARCHAR,
-            delivered_at TIMESTAMP,
-            model_version VARCHAR
-        )
-        """
-    )
     logger.info("=== Phase 23 schema ready ===")
 
 

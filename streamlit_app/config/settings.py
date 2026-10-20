@@ -1,5 +1,15 @@
-DB_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
-API_BASE = "http://localhost:8000"
+"""Streamlit app configuration (env-overridable)."""
+
+from __future__ import annotations
+
+import os
+
+DB_URI = (
+    os.getenv("OCEANWATCH_DB_URI")
+    or os.getenv("DATABASE_URL")
+    or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+)
+API_BASE = os.getenv("OCEANWATCH_API_BASE", "http://localhost:8000")
 
 ROLES = [
     "admin",
@@ -40,3 +50,7 @@ SENSITIVE_DATASETS = [
     "fact_ais_positions",
     "fact_vessel_anomalies",
 ]
+
+# Event bus defaults used by the Streamlit viewer
+EVENT_BUS_PAGE_SIZE = 500
+EVENT_BUS_CACHE_TTL_SEC = 45
