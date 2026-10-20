@@ -262,6 +262,7 @@ def a11y_sidebar_controls() -> None:
             key="low_bandwidth",
             help="Prefer lighter tables over heavy charts when pages support it.",
         )
+    st.session_state["_ow_bw_widget"] = True
     st.caption(
         "Tip: use **Tab** / **Shift+Tab** to move, **Enter** to activate. "
         "Skip link appears on first Tab."

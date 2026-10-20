@@ -71,19 +71,28 @@ def footer() -> None:
 
 
 def bandwidth_toggle() -> bool:
-    """Sidebar control for low-bandwidth mode. Returns current value.
+    """Return low-bandwidth flag without duplicating the sidebar checkbox.
 
-    Kept for pages that still call branding.bandwidth_toggle() directly.
-    Prefer a11y_sidebar_controls() / sidebar_controls() for new pages.
+    OceanWatch shell already creates key="low_bandwidth" via a11y_sidebar_controls().
+    Creating it again raises StreamlitDuplicateElementKey.
     """
     if "low_bandwidth" not in st.session_state:
         st.session_state.low_bandwidth = False
-    st.sidebar.checkbox(
-        "Low-bandwidth mode",
-        key="low_bandwidth",
-        help="Hide heavy map layers and large charts when on slow links.",
-    )
+    # If shell (or prior call) already registered the widget, only read state
+    if st.session_state.get("_ow_bw_widget"):
+        return bool(st.session_state.low_bandwidth)
+    try:
+        st.sidebar.checkbox(
+            "Low-bandwidth mode",
+            key="low_bandwidth",
+            help="Hide heavy map layers and large charts when on slow links.",
+        )
+        st.session_state["_ow_bw_widget"] = True
+    except Exception:
+        # Duplicate key or no sidebar — keep existing session value
+        st.session_state["_ow_bw_widget"] = True
     return bool(st.session_state.low_bandwidth)
+
 
 
 def is_low_bandwidth() -> bool:

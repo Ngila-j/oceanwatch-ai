@@ -66,6 +66,7 @@ with st.sidebar:
     persona_selector()
     st.divider()
     a11y_sidebar_controls()
+    st.session_state["_ow_bw_widget"] = True  # pages must not re-create low_bandwidth checkbox
     st.divider()
     st.caption(
         "Accessibility: Tab / Shift+Tab to move · Enter to activate · "
