@@ -1,0 +1,2 @@
+# Fallback if Cloud reads repo root (main file is streamlit_app/OceanWatch.py)
+python-3.12

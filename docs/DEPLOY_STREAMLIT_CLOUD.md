@@ -108,6 +108,7 @@ With Docker Postgres on `localhost:5433`, no secrets file is required (dev defau
 | Symptom | Fix |
 | --- | --- |
 | Build fails on `rasterio` / GDAL | Use `streamlit_app/requirements.txt` only (lean). Do not point Cloud at full ML requirements. |
+| Build fails on `pyarrow` / `cmake` | Cloud defaulted to Python 3.14. Ensure `streamlit_app/runtime.txt` is `python-3.12` and redeploy. |
 | `ModuleNotFoundError: ow_theme` | Main file must be `streamlit_app/OceanWatch.py` so that folder is on `sys.path`. |
 | DB connection refused / timeout | DB not public, wrong host/port, or firewall. |
 | SSL error | Add `?sslmode=require` to the URI. |

@@ -1,0 +1,3 @@
+# Streamlit Community Cloud Python version
+# 3.14 has no prebuilt pyarrow wheels (build needs cmake).
+python-3.12
