@@ -33,18 +33,20 @@ git push origin main
 
 ## 2. Provision a cloud database
 
-Use any hosted Postgres. Examples: [Neon](https://neon.tech), [Supabase](https://supabase.com), AWS RDS.
+**Recommended:** [Supabase](https://supabase.com) free tier (~500 MB).  
+This repo targets project **`yigpktdypxstwnebvlpj`** — step-by-step in **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)**.
 
-1. Create a database (e.g. `oceanwatch_db`).
-2. Apply your schema / load tables the pages query (same as local `init-db.sql` + transformations).
-3. Copy the connection string. Prefer SSL:
+Other options: Neon, AWS RDS, Railway, Render, ElephantSQL.
+
+1. Create a project (Supabase default DB name is `postgres`).
+2. Apply your schema / load tables the pages query (same as local `init-db.sql` + `ingestion/init_phase*.py`).
+3. Copy the connection string. Prefer **Transaction pooler + SSL** for Streamlit Cloud:
 
 ```text
-postgresql://USER:PASSWORD@HOST:5432/oceanwatch_db?sslmode=require
+postgresql://postgres.yigpktdypxstwnebvlpj:PASSWORD@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?sslmode=require
 ```
 
-Allow inbound connections from the internet (or Streamlit’s egress if your host supports allowlists).  
-Streamlit Cloud does **not** publish a fixed IP on the free tier — use `0.0.0.0/0` + strong password + SSL, or a vendor that supports Streamlit.
+Supabase allows public SSL connections (no fixed Streamlit egress IP needed). Confirm host in the dashboard if it differs.
 
 Without a populated cloud DB, the site still **boots**, but most pages show empty / connection errors.
 
@@ -74,8 +76,14 @@ Without a populated cloud DB, the site still **boots**, but most pages show empt
 2. Paste TOML (same format as `streamlit_app/.streamlit/secrets.toml.example`):
 
 ```toml
-OCEANWATCH_DB_URI = "postgresql://USER:PASSWORD@HOST:5432/oceanwatch_db?sslmode=require"
+OCEANWATCH_DB_URI = "postgresql://postgres.yigpktdypxstwnebvlpj:YOUR_DB_PASSWORD@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?sslmode=require"
 ```
+
+- Replace `YOUR_DB_PASSWORD` (URL-encode `@` → `%40`).
+- Host for this project is **`aws-0-eu-west-1.pooler.supabase.com`** (confirm in Supabase).
+- `db_config.get_db_uri()` rewrites the URI to `postgresql+psycopg2://` so Cloud uses `psycopg2-binary`.
+
+See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md).
 
 3. **Save**. The app restarts and picks up the URI via `db_config.get_db_uri()`.
 
@@ -110,7 +118,8 @@ With Docker Postgres on `localhost:5433`, no secrets file is required (dev defau
 | Build fails on `rasterio` / GDAL | Use `streamlit_app/requirements.txt` only (lean). Do not point Cloud at full ML requirements. |
 | Build fails on `pyarrow` / `cmake` | Cloud may ignore `runtime.txt` and use Python 3.14 (no pyarrow wheel). Keep pyarrow out of `streamlit_app/requirements.txt`. Optionally set Python 3.12 in Cloud **Settings → Advanced**. |
 | `ModuleNotFoundError: ow_theme` | Main file must be `streamlit_app/OceanWatch.py` so that folder is on `sys.path`. |
-| DB connection refused / timeout | DB not public, wrong host/port, or firewall. |
+| DB connection refused / timeout | DB paused, wrong host/port, or use pooler `:6543` on Cloud. See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md). |
+| `ModuleNotFoundError: No module named 'psycopg'` | SQLAlchemy 2.1 defaults to psycopg v3. Fixed in `db_config.py` (`+psycopg2`). Redeploy latest `main`. |
 | SSL error | Add `?sslmode=require` to the URI. |
 | Empty charts | Cloud DB has no rows — run migrations/loads against that instance. |
 | App sleeps | Free tier sleeps when idle; first load after sleep is slow. |
@@ -127,6 +136,7 @@ With Docker Postgres on `localhost:5433`, no secrets file is required (dev defau
 | `streamlit_app/.streamlit/config.toml` | Theme |
 | `streamlit_app/.streamlit/secrets.toml.example` | Secrets template (no real passwords) |
 | `docs/DEPLOY_STREAMLIT_CLOUD.md` | This guide |
+| `docs/SUPABASE_SETUP.md` | Supabase project `yigpktdypxstwnebvlpj` + pooler URI |
 
 ---
 
