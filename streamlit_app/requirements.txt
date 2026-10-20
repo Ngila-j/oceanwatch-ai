@@ -1,14 +1,13 @@
-# Streamlit Community Cloud — next to entrypoint OceanWatch.py
-# Pin Python via runtime.txt (python-3.12). Do not use 3.14: pyarrow has no wheels.
+# Streamlit Community Cloud (often Python 3.14 — need prebuilt wheels, no source builds)
+# Do NOT pin pyarrow: no cp314 wheel → cmake build fails on Cloud.
 
-streamlit>=1.40.0,<1.46
-pandas>=2.1.0,<2.3
-numpy>=1.26.0,<2.1
-SQLAlchemy>=2.0.25,<2.1
+streamlit>=1.40.0,<2
+pandas>=2.2.0,<3
+numpy>=1.26.0,<3
+SQLAlchemy>=2.0.25,<3
 psycopg2-binary>=2.9.9,<3
 plotly>=5.18.0,<6
 folium>=0.15.0,<0.20
 streamlit-folium>=0.18.0,<0.25
 requests>=2.31.0,<3
 python-dateutil>=2.8.2
-# pyarrow: optional; Streamlit may pull a wheel on 3.12. Do not pin on 3.14.
