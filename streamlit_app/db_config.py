@@ -6,6 +6,9 @@ Order:
   2. st.secrets["db"]["uri"] (or host/user/password/database/port)
   3. env OCEANWATCH_DB_URI / DATABASE_URL
   4. local docker-compose default (dev only)
+
+Always returns a postgresql+psycopg2:// URI so SQLAlchemy 2.1+ uses
+psycopg2-binary (installed) instead of the default psycopg (v3) driver.
 """
 
 from __future__ import annotations
@@ -14,7 +17,21 @@ import os
 from functools import lru_cache
 from urllib.parse import quote_plus
 
-_LOCAL_DEFAULT = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+_LOCAL_DEFAULT = "postgresql+psycopg2://postgres:password@localhost:5433/oceanwatch_db"
+
+
+def _as_psycopg2(uri: str) -> str:
+    """Force psycopg2 dialect (SQLAlchemy 2.1 defaults bare postgresql:// to psycopg v3)."""
+    u = (uri or "").strip()
+    if not u:
+        return u
+    if u.startswith("postgresql+psycopg2://"):
+        return u
+    if u.startswith("postgres://"):
+        return "postgresql+psycopg2://" + u[len("postgres://") :]
+    if u.startswith("postgresql://"):
+        return "postgresql+psycopg2://" + u[len("postgresql://") :]
+    return u
 
 
 def _from_streamlit_secrets() -> str | None:
@@ -54,14 +71,14 @@ def _from_streamlit_secrets() -> str | None:
 
 @lru_cache(maxsize=1)
 def get_db_uri() -> str:
-    """Return the active Postgres URI (cached per process)."""
+    """Return the active Postgres URI (cached per process), dialect-pinned to psycopg2."""
     secret_uri = _from_streamlit_secrets()
     if secret_uri:
-        return secret_uri
+        return _as_psycopg2(secret_uri)
 
     env_uri = os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL")
     if env_uri:
-        return env_uri.strip()
+        return _as_psycopg2(env_uri.strip())
 
     return _LOCAL_DEFAULT
 

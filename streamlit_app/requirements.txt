@@ -4,6 +4,7 @@
 streamlit>=1.40.0,<2
 pandas>=2.2.0,<3
 numpy>=1.26.0,<3
+# Pin <2.1 optional; db_config forces +psycopg2 so 2.1+ still works with psycopg2-binary
 SQLAlchemy>=2.0.25,<3
 psycopg2-binary>=2.9.9,<3
 plotly>=5.18.0,<6
