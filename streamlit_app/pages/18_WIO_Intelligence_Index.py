@@ -1,5 +1,5 @@
 """
-WIO Ocean Intelligence Index â€” Kenya EEZ
+WIO Ocean Intelligence Index — Kenya EEZ
 Matches fact_wio_intelligence_index columns.
 """
 
@@ -26,7 +26,7 @@ except Exception:
 bandwidth_toggle()
 
 st.title("WIO Ocean Intelligence Index")
-st.caption("Kenya EEZ signature index â€” history builds as daily runs accumulate.")
+st.caption("Kenya EEZ signature index — history builds as daily runs accumulate.")
 
 DB_URI = get_db_uri()
 @st.cache_data(ttl=60)
@@ -73,7 +73,7 @@ c1, c2, c3, c4 = st.columns(4)
 c1.metric("Overall", f"{float(latest.get('overall_score') or 0):.1f}")
 c2.metric("Confidence", f"{float(latest.get('confidence_score') or 0):.1f}")
 c3.metric("As of", str(latest.get("index_date")))
-c4.metric("Method", str(latest.get("methodology_version") or "â€”"))
+c4.metric("Method", str(latest.get("methodology_version") or "—"))
 
 st.write(f"Region: **{latest.get('region_id')}**")
 st.code(str(latest.get("drivers") or ""), language=None)
@@ -120,7 +120,7 @@ else:
     st.dataframe(hist, width="stretch")
 
 st.caption(
-    "Prototype decision-support index â€” not an official government statistic. "
+    "Prototype decision-support index — not an official government statistic. "
     "Port and environmental scores are risk-style (higher can mean more stress)."
 )
 attribution_footer()

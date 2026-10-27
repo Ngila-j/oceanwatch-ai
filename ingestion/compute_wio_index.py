@@ -11,7 +11,19 @@ logger = logging.getLogger(__name__)
 
 def get_db_uri() -> str:
     import os
+    from pathlib import Path
 
+    env = Path(__file__).resolve().parent / ".env"
+    if env.exists():
+        for line in env.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+    uri = (os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL") or "").strip()
+    if uri:
+        return uri.replace("postgresql+psycopg2://", "postgresql://")
     if os.path.exists("/.dockerenv") or os.getenv("AIRFLOW_HOME"):
         return "postgresql://postgres:password@postgres:5432/oceanwatch_db"
     return "postgresql://postgres:password@localhost:5433/oceanwatch_db"
