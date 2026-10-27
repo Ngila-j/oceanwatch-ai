@@ -44,7 +44,11 @@ def _load_env_file() -> None:
 
 
 def get_db_uri() -> str:
-    """Resolve DB URI: OCEANWATCH_DB_URI → DATABASE_URL → local Docker default."""
+    """Resolve DB URI: OCEANWATCH_DB_URI → DATABASE_URL → local Docker default.
+
+    Supabase transaction pooler (:6543) is often read-only for DDL/DML from
+    external clients; prefer session-mode pooler on :5432 for writes.
+    """
     _load_env_file()
     uri = (
         os.getenv("OCEANWATCH_DB_URI")
@@ -59,6 +63,18 @@ def get_db_uri() -> str:
             uri = "postgresql://postgres:password@localhost:5433/oceanwatch_db"
     if uri.startswith("postgres://"):
         uri = "postgresql://" + uri[len("postgres://") :]
+    # Writable session pooler for Supabase (transaction mode 6543 → session 5432)
+    try:
+        parsed = urlparse(uri)
+        host = (parsed.hostname or "").lower()
+        if parsed.port == 6543 and "pooler.supabase" in host and parsed.username and parsed.password:
+            uri = urlunparse(
+                parsed._replace(
+                    netloc=f"{parsed.username}:{parsed.password}@{parsed.hostname}:5432"
+                )
+            )
+    except Exception:
+        pass
     return uri
 
 
