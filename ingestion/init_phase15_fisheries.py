@@ -1,92 +1,92 @@
-"""Phase 15 — fisheries intelligence schema (Kenya EEZ)."""
+"""Phase 15 — fisheries intelligence schema (SQLAlchemy / Supabase-safe)."""
+
+from __future__ import annotations
 
 import logging
-import duckdb
+
+from sqlalchemy import create_engine, text
+
+from db_utils import get_db_uri
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def get_db_uri():
-    import os
-    if os.path.exists("/.dockerenv") or os.getenv("AIRFLOW_HOME"):
-        return "postgresql://postgres:password@postgres:5432/oceanwatch_db"
-    return "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+def sa_uri() -> str:
+    uri = get_db_uri()
+    if uri.startswith("postgresql://"):
+        return "postgresql+psycopg2://" + uri[len("postgresql://") :]
+    if uri.startswith("postgres://"):
+        return "postgresql+psycopg2://" + uri[len("postgres://") :]
+    return uri
 
 
 def main():
     logger.info("=== Phase 15 fisheries schema ===")
-    con = duckdb.connect()
-    con.execute(f"ATTACH '{get_db_uri()}' AS pg (TYPE POSTGRES)")
+    uri = sa_uri()
+    logger.info("Schema → ...@%s", uri.split("@")[-1] if "@" in uri else uri)
+    eng = create_engine(uri, pool_pre_ping=True, connect_args={"connect_timeout": 30})
 
-    con.execute(
+    ddls = [
         """
-        CREATE TABLE IF NOT EXISTS pg.public.fact_fishing_effort_grid (
+        CREATE TABLE IF NOT EXISTS fact_fishing_effort_grid (
             cell_id VARCHAR,
             effort_date DATE,
-            lat DOUBLE,
-            lon DOUBLE,
-            hours DOUBLE,
+            lat DOUBLE PRECISION,
+            lon DOUBLE PRECISION,
+            hours DOUBLE PRECISION,
             source VARCHAR,
             region_id VARCHAR,
             model_version VARCHAR,
             created_at TIMESTAMP
         )
+        """,
         """
-    )
-    con.execute(
-        """
-        CREATE TABLE IF NOT EXISTS pg.public.fact_fishing_hotspots (
+        CREATE TABLE IF NOT EXISTS fact_fishing_hotspots (
             hotspot_id BIGINT,
             as_of_date DATE,
-            lat DOUBLE,
-            lon DOUBLE,
-            total_hours DOUBLE,
+            lat DOUBLE PRECISION,
+            lon DOUBLE PRECISION,
+            total_hours DOUBLE PRECISION,
             cell_count INTEGER,
-            intensity_score DOUBLE,
+            intensity_score DOUBLE PRECISION,
             hotspot_rank INTEGER,
             region_id VARCHAR,
             model_version VARCHAR,
             created_at TIMESTAMP
         )
+        """,
         """
-    )
-    con.execute(
-        """
-        CREATE TABLE IF NOT EXISTS pg.public.fact_fisheries_seasonality (
+        CREATE TABLE IF NOT EXISTS fact_fisheries_seasonality (
             month_num INTEGER,
             month_name VARCHAR,
-            total_hours DOUBLE,
-            avg_daily_hours DOUBLE,
+            total_hours DOUBLE PRECISION,
+            avg_daily_hours DOUBLE PRECISION,
             observation_days INTEGER,
             region_id VARCHAR,
             model_version VARCHAR,
             created_at TIMESTAMP
         )
+        """,
         """
-    )
-    con.execute(
-        """
-        CREATE TABLE IF NOT EXISTS pg.public.fact_illegal_fishing_risk (
+        CREATE TABLE IF NOT EXISTS fact_illegal_fishing_risk (
             as_of_date DATE,
             region_id VARCHAR,
-            gfw_hours DOUBLE,
+            gfw_hours DOUBLE PRECISION,
             fishing_vessel_ais INTEGER,
-            hotspot_intensity DOUBLE,
-            anomaly_pressure DOUBLE,
-            risk_score DOUBLE,
+            hotspot_intensity DOUBLE PRECISION,
+            anomaly_pressure DOUBLE PRECISION,
+            risk_score DOUBLE PRECISION,
             risk_level VARCHAR,
-            confidence_score DOUBLE,
+            confidence_score DOUBLE PRECISION,
             drivers VARCHAR,
             disclaimer VARCHAR,
             model_version VARCHAR,
             created_at TIMESTAMP
         )
+        """,
         """
-    )
-    con.execute(
-        """
-        CREATE TABLE IF NOT EXISTS pg.public.fact_fisheries_alerts (
+        CREATE TABLE IF NOT EXISTS fact_fisheries_alerts (
             alert_id BIGINT,
             as_of_date DATE,
             region_id VARCHAR,
@@ -94,16 +94,21 @@ def main():
             severity VARCHAR,
             title VARCHAR,
             message VARCHAR,
-            metric_value DOUBLE,
+            metric_value DOUBLE PRECISION,
             status VARCHAR,
             model_version VARCHAR,
             created_at TIMESTAMP
         )
-        """
-    )
+        """,
+    ]
+
+    with eng.begin() as conn:
+        for ddl in ddls:
+            conn.execute(text(ddl))
+
     logger.info("=== Phase 15 schema ready ===")
+    eng.dispose()
 
 
 if __name__ == "__main__":
     main()
-    
