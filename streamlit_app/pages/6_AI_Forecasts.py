@@ -1,97 +1,197 @@
+"""OceanWatch AI — 7-day SST forecast for Kenya EEZ."""
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 try:
     from db_config import get_db_uri
 except ImportError:
+
     def get_db_uri():
         import os
-        return os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL") or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
 
-st.set_page_config(page_title="AI Forecasts", page_icon="ðŸ¤–", layout="wide")
+        return os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL")
 
-try:
-    from ow_theme import apply_theme, init_a11y_defaults
-    init_a11y_defaults(); apply_theme()
-except Exception:
-    pass
-st.title("OceanWatch AI  SST Forecast")
+
+st.set_page_config(page_title="AI SST Forecast", page_icon="📈", layout="wide")
+st.title("OceanWatch AI SST Forecast")
 st.caption("7-day Sea Surface Temperature forecast for the Kenya EEZ monitoring area")
 
-@st.cache_data(ttl=180)
+
+def _sa_uri(uri: str) -> str:
+    if not uri:
+        return uri
+    if uri.startswith("postgresql://"):
+        return "postgresql+psycopg2://" + uri[len("postgresql://") :]
+    if uri.startswith("postgres://"):
+        return "postgresql+psycopg2://" + uri[len("postgres://") :]
+    return uri
+
+
+@st.cache_data(ttl=120)
 def load_data():
-    engine = create_engine(get_db_uri())
-    hist = pd.read_sql("""
-        SELECT date_key AS date, sst_celsius AS mean_sst
-        FROM fact_ocean_conditions
-        WHERE sst_celsius IS NOT NULL
-        ORDER BY date_key
-    """, engine)
-    fc = pd.read_sql("""
-        SELECT forecast_for_date, horizon_day, predicted_sst, lower_bound, upper_bound,
-               model_name, mae, rmse
-        FROM fact_sst_forecast
-        ORDER BY horizon_day
-    """, engine)
-    metrics = pd.read_sql("SELECT * FROM ml_model_metrics ORDER BY mae", engine)
-    return hist, fc, metrics
+    uri = get_db_uri()
+    if not uri:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), "No database URI configured."
+    engine = create_engine(_sa_uri(uri), pool_pre_ping=True)
+    try:
+        hist = pd.read_sql(
+            text(
+                """
+                SELECT date_key::date AS date, sst_celsius AS mean_sst
+                FROM fact_ocean_conditions
+                WHERE sst_celsius IS NOT NULL
+                ORDER BY date_key
+                """
+            ),
+            engine,
+        )
+    except Exception as e:  # noqa: BLE001
+        hist = pd.DataFrame()
+        hist_err = str(e)
+    else:
+        hist_err = None
 
-hist, fc, metrics = load_data()
+    try:
+        fc = pd.read_sql(
+            text(
+                """
+                SELECT forecast_for_date, horizon_day, predicted_sst, lower_bound, upper_bound,
+                       model_name, model_version, mae, rmse, forecast_date
+                FROM fact_sst_forecast
+                ORDER BY horizon_day
+                """
+            ),
+            engine,
+        )
+        metrics = pd.read_sql(
+            text(
+                """
+                SELECT model_name, target, mae, rmse, train_rows, test_rows, is_best, trained_at
+                FROM ml_model_metrics
+                ORDER BY mae
+                """
+            ),
+            engine,
+        )
+        return hist, fc, metrics, None
+    except Exception as e:  # noqa: BLE001
+        msg = str(e)
+        if "fact_sst_forecast" in msg or "UndefinedTable" in msg or "does not exist" in msg:
+            return (
+                hist,
+                pd.DataFrame(),
+                pd.DataFrame(),
+                "No SST forecast data yet. Run `python ingestion/ml_sst_forecast.py` "
+                "(creates `fact_sst_forecast` + `ml_model_metrics` and seeds a 7-day outlook).",
+            )
+        return hist, pd.DataFrame(), pd.DataFrame(), f"Could not load forecast: {msg}" + (
+            f" | hist: {hist_err}" if hist_err else ""
+        )
 
-if fc.empty:
-    st.warning("No forecast available. Run the ML pipeline first.")
-    st.code("docker exec -it oceanwatch_airflow_web python /opt/airflow/ingestion/ml_sst_forecast.py")
-else:
-    latest_hist = hist["mean_sst"].iloc[-1] if not hist.empty else None
-    day7 = fc[fc["horizon_day"] == 7]["predicted_sst"].values
-    day7_val = day7[0] if len(day7) else None
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Current SST", f"{latest_hist:.2f}  deg C" if latest_hist is not None else "N/A")
-    c2.metric("7-Day Forecast", f"{day7_val:.2f}  deg C" if day7_val is not None else "N/A")
-    c3.metric("Model MAE", f"{fc.iloc[0]['mae']:.3f}  deg C")
-    c4.metric("Best Model", fc.iloc[0]["model_name"])
+hist, fc, metrics, err = load_data()
+if err:
+    st.warning(err)
+    st.stop()
 
-    # Chart with uncertainty band
-    fig = go.Figure()
-    if not hist.empty:
-        fig.add_trace(go.Scatter(
-            x=hist["date"], y=hist["mean_sst"],
-            name="Observed", mode="lines+markers", line=dict(color="#1f77b4")
-        ))
-    fig.add_trace(go.Scatter(
-        x=fc["forecast_for_date"], y=fc["upper_bound"],
-        mode="lines", line=dict(width=0), showlegend=False
-    ))
-    fig.add_trace(go.Scatter(
-        x=fc["forecast_for_date"], y=fc["lower_bound"],
-        mode="lines", line=dict(width=0), fill="tonexty",
-        fillcolor="rgba(255,127,14,0.2)", name="Uncertainty"
-    ))
-    fig.add_trace(go.Scatter(
-        x=fc["forecast_for_date"], y=fc["predicted_sst"],
-        name="Forecast", mode="lines+markers", line=dict(color="#ff7f0e")
-    ))
-    fig.update_layout(title="SST Observed vs 7-day Forecast", yaxis_title=" deg C")
-    st.plotly_chart(fig, width="stretch")
+if fc is None or fc.empty:
+    st.info(
+        "No forecast rows. Run `python ingestion/ml_sst_forecast.py` to seed "
+        "`fact_sst_forecast`."
+    )
+    st.stop()
 
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.subheader("Forecast Table")
-        st.dataframe(fc[["forecast_for_date", "horizon_day", "predicted_sst", "lower_bound", "upper_bound"]],
-                     width="stretch")
-    with col_b:
-        st.subheader("Model Comparison")
-        if not metrics.empty:
-            st.dataframe(metrics[["model_name", "mae", "rmse", "is_best", "train_rows", "test_rows"]],
-                         width="stretch")
-            best = metrics[metrics["is_best"] == True]
-            if not best.empty:
-                st.success(f"Selected model: **{best.iloc[0]['model_name']}** (lowest MAE)")
-        else:
-            st.caption("No metrics table yet.")
+model_name = fc["model_name"].iloc[0] if "model_name" in fc.columns else "—"
+mae_v = fc["mae"].iloc[0] if "mae" in fc.columns else None
+rmse_v = fc["rmse"].iloc[0] if "rmse" in fc.columns else None
+as_of = fc["forecast_date"].iloc[0] if "forecast_date" in fc.columns else None
 
-    st.info("Validation uses a temporal split (no future leakage). Naive persistence is the baseline; Ridge uses lag/rolling/calendar features.")
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Model", str(model_name))
+c2.metric("MAE (°C)", f"{float(mae_v):.3f}" if mae_v is not None and pd.notna(mae_v) else "—")
+c3.metric("RMSE (°C)", f"{float(rmse_v):.3f}" if rmse_v is not None and pd.notna(rmse_v) else "—")
+c4.metric("Forecast as-of", str(as_of) if as_of is not None else "—")
+
+# Chart: history + forecast bands
+fig = go.Figure()
+if hist is not None and not hist.empty and "date" in hist.columns and "mean_sst" in hist.columns:
+    h = hist.dropna(subset=["mean_sst"]).tail(60).copy()
+    h["date"] = pd.to_datetime(h["date"], errors="coerce")
+    fig.add_trace(
+        go.Scatter(
+            x=h["date"],
+            y=h["mean_sst"],
+            mode="lines",
+            name="Observed SST",
+            line=dict(color="#1f77b4"),
+        )
+    )
+
+fc_plot = fc.copy()
+fc_plot["forecast_for_date"] = pd.to_datetime(fc_plot["forecast_for_date"], errors="coerce")
+fig.add_trace(
+    go.Scatter(
+        x=fc_plot["forecast_for_date"],
+        y=fc_plot["predicted_sst"],
+        mode="lines+markers",
+        name="Predicted SST",
+        line=dict(color="#ff7f0e"),
+    )
+)
+if "upper_bound" in fc_plot.columns and "lower_bound" in fc_plot.columns:
+    fig.add_trace(
+        go.Scatter(
+            x=list(fc_plot["forecast_for_date"]) + list(fc_plot["forecast_for_date"][::-1]),
+            y=list(fc_plot["upper_bound"]) + list(fc_plot["lower_bound"][::-1]),
+            fill="toself",
+            fillcolor="rgba(255,127,14,0.15)",
+            line=dict(color="rgba(255,255,255,0)"),
+            name="Uncertainty band",
+            hoverinfo="skip",
+        )
+    )
+
+fig.update_layout(
+    title="7-day SST forecast",
+    xaxis_title="Date",
+    yaxis_title="SST (°C)",
+    hovermode="x unified",
+    height=420,
+)
+st.plotly_chart(fig, use_container_width=True)
+
+left, right = st.columns(2)
+with left:
+    st.subheader("Forecast table")
+    show = [
+        c
+        for c in (
+            "horizon_day",
+            "forecast_for_date",
+            "predicted_sst",
+            "lower_bound",
+            "upper_bound",
+            "model_name",
+        )
+        if c in fc.columns
+    ]
+    st.dataframe(fc[show], use_container_width=True, hide_index=True)
+
+with right:
+    st.subheader("Model comparison")
+    if metrics is not None and not metrics.empty:
+        st.dataframe(metrics, use_container_width=True, hide_index=True)
+        if "model_name" in metrics.columns and "mae" in metrics.columns:
+            bar = px.bar(metrics, x="model_name", y="mae", title="MAE by model (°C)")
+            st.plotly_chart(bar, use_container_width=True)
+    else:
+        st.info("No ml_model_metrics rows.")
+
+st.caption(
+    "Decision-support SST outlook for Kenya EEZ. "
+    "Naive persistence baseline; Ridge/GBR use lag/rolling/calendar features when history allows."
+)
