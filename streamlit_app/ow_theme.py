@@ -836,6 +836,172 @@ div[data-testid="stAppViewContainer"] {{
     )
 
 
+def animate_home_nav_item() -> None:
+    """
+    Professional, subtle motion for the sidebar **Home** nav item.
+    Injected only from Home.py so other pages stay still.
+    Honors prefers-reduced-motion and the in-app Reduced motion a11y flag.
+    """
+    st.markdown(
+        """
+<style>
+/* —— Home nav item (Home page only) —— */
+@keyframes ow-home-glow {
+  0%, 100% {
+    box-shadow:
+      inset 3px 0 0 #38BDF8,
+      0 0 0 0 rgba(56, 189, 248, 0.0);
+    background: rgba(56, 189, 248, 0.16) !important;
+  }
+  50% {
+    box-shadow:
+      inset 3px 0 0 #7DD3FC,
+      0 0 14px 0 rgba(56, 189, 248, 0.22);
+    background: rgba(56, 189, 248, 0.24) !important;
+  }
+}
+@keyframes ow-home-icon-breathe {
+  0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 0 rgba(125, 211, 252, 0)); }
+  50%      { transform: translateY(-1px) scale(1.06); filter: drop-shadow(0 0 4px rgba(125, 211, 252, 0.55)); }
+}
+@keyframes ow-home-sheen {
+  0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  35%  { opacity: 0.35; }
+  100% { transform: translateX(160%) skewX(-18deg); opacity: 0; }
+}
+@keyframes ow-home-enter {
+  from { opacity: 0.55; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+[data-testid="stSidebarNav"] a.ow-nav-home {
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: isolate;
+  animation:
+    ow-home-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both,
+    ow-home-glow 3.6s ease-in-out 0.45s infinite;
+  border: 1px solid rgba(56, 189, 248, 0.22) !important;
+  background: rgba(56, 189, 248, 0.16) !important;
+  box-shadow: inset 3px 0 0 #38BDF8;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease !important;
+}
+[data-testid="stSidebarNav"] a.ow-nav-home::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.14) 50%,
+    transparent 60%
+  );
+  animation: ow-home-sheen 4.8s ease-in-out 1.2s infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+[data-testid="stSidebarNav"] a.ow-nav-home > * {
+  position: relative;
+  z-index: 1;
+}
+/* Material / SVG icon inside the Home link */
+[data-testid="stSidebarNav"] a.ow-nav-home svg,
+[data-testid="stSidebarNav"] a.ow-nav-home img,
+[data-testid="stSidebarNav"] a.ow-nav-home span[data-testid="stIconMaterial"],
+[data-testid="stSidebarNav"] a.ow-nav-home [data-testid="stIconMaterial"] {
+  animation: ow-home-icon-breathe 3.2s ease-in-out infinite;
+  transform-origin: center center;
+  display: inline-flex !important;
+}
+[data-testid="stSidebarNav"] a.ow-nav-home:hover {
+  transform: translateX(2px);
+  border-color: rgba(125, 211, 252, 0.45) !important;
+  background: rgba(56, 189, 248, 0.28) !important;
+  box-shadow:
+    inset 3px 0 0 #7DD3FC,
+    0 4px 16px rgba(14, 165, 233, 0.18) !important;
+}
+[data-testid="stSidebarNav"] a.ow-nav-home:focus-visible {
+  outline: 2px solid #7DD3FC !important;
+  outline-offset: 2px !important;
+}
+
+/* Reduced motion: keep highlight, drop motion */
+.ow-rm [data-testid="stSidebarNav"] a.ow-nav-home,
+.ow-rm [data-testid="stSidebarNav"] a.ow-nav-home::before,
+.ow-rm [data-testid="stSidebarNav"] a.ow-nav-home svg,
+.ow-rm [data-testid="stSidebarNav"] a.ow-nav-home img,
+.ow-rm [data-testid="stSidebarNav"] a.ow-nav-home [data-testid="stIconMaterial"] {
+  animation: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-testid="stSidebarNav"] a.ow-nav-home,
+  [data-testid="stSidebarNav"] a.ow-nav-home::before,
+  [data-testid="stSidebarNav"] a.ow-nav-home svg,
+  [data-testid="stSidebarNav"] a.ow-nav-home img,
+  [data-testid="stSidebarNav"] a.ow-nav-home [data-testid="stIconMaterial"] {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+}
+</style>
+<script>
+(function () {
+  const HOME_RE = /^\\s*Home\\s*$/i;
+  function mark() {
+    const roots = [
+      document.querySelector('[data-testid="stSidebar"]'),
+      document,
+    ].filter(Boolean);
+    const seen = new Set();
+    roots.forEach(function (root) {
+      root.querySelectorAll('[data-testid="stSidebarNav"] a, [data-testid="stSidebarNavLink"]').forEach(function (a) {
+        if (seen.has(a)) return;
+        seen.add(a);
+        const label = (a.textContent || "").replace(/\\s+/g, " ").trim();
+        // Exact "Home" only — never other pages that contain the word
+        if (HOME_RE.test(label)) {
+          a.classList.add("ow-nav-home");
+          a.setAttribute("data-ow-home-nav", "1");
+        } else {
+          a.classList.remove("ow-nav-home");
+          a.removeAttribute("data-ow-home-nav");
+        }
+      });
+    });
+  }
+  mark();
+  // Streamlit re-renders the sidebar; keep the class applied
+  let tries = 0;
+  const tick = setInterval(function () {
+    mark();
+    tries += 1;
+    if (tries > 40) clearInterval(tick);
+  }, 250);
+  try {
+    const side = document.querySelector('[data-testid="stSidebar"]');
+    if (side && window.MutationObserver) {
+      const mo = new MutationObserver(function () { mark(); });
+      mo.observe(side, { childList: true, subtree: true });
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def plotly_layout(**overrides):
     """Return a copy of the shared Plotly layout with optional overrides."""
     layout = {**PLOTLY_LAYOUT}

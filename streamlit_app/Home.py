@@ -25,9 +25,11 @@ from components.ui import (
     status_bar,
     tile_grid,
 )
-from ow_theme import plotly_layout
+from ow_theme import animate_home_nav_item, plotly_layout
 
 ensure_theme()
+# Sidebar "Home" item only — subtle glow / icon breath (respects reduced motion)
+animate_home_nav_item()
 
 page_header(
     "Mission cockpit",
