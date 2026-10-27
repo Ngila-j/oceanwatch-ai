@@ -59,7 +59,7 @@ def load():
 d = load()
 
 if d["runs"] is None or d["runs"].empty or "error" in d["runs"].columns:
-    st.warning("No Phase 24 data. Run init_phase24_reports.py and run_phase24_reports.py")
+    st.warning("No Phase 24 data yet. With DB access run: `python ingestion/init_phase24_reports.py` then `python ingestion/run_phase24_reports.py`.")
     st.stop()
 
 st.subheader("Report types")

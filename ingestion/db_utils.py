@@ -2,15 +2,15 @@
 Shared DuckDB→Postgres helpers for OceanWatch ingestion jobs.
 
 Centralizes URI resolution, attach, safe writes, and query helpers so
-phase scripts stop duplicating hardcoded credentials and DELETE/INSERT logic.
+phase scripts stop duplicating hardcoded credentials and DELETE/INSERT paths.
 """
 
 from __future__ import annotations
 
 import logging
 import os
-from contextlib import contextmanager
-from typing import Iterable, Iterator, Optional, Sequence
+from pathlib import Path
+from typing import Iterable, Optional
 
 import duckdb
 import pandas as pd
@@ -21,106 +21,107 @@ _DEFAULT_HOST_URI = "postgresql://postgres:password@localhost:5433/oceanwatch_db
 _DEFAULT_DOCKER_URI = "postgresql://postgres:password@postgres:5432/oceanwatch_db"
 
 
+def _load_ingestion_dotenv() -> None:
+    """Load ingestion/.env into os.environ (setdefault — does not override)."""
+    env_path = Path(__file__).resolve().parent / ".env"
+    if not env_path.exists():
+        return
+    try:
+        for raw in env_path.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+    except OSError:
+        pass
+
+
 def get_db_uri() -> str:
-    """Resolve Postgres URI from env, with host vs container defaults."""
-    explicit = os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL")
-    if explicit:
-        return explicit
+    """
+    Prefer OCEANWATCH_DB_URI / DATABASE_URL (Supabase, managed Postgres, local).
+    Loads ingestion/.env when present. Fall back to Docker / localhost:5433.
+    """
+    _load_ingestion_dotenv()
+    for key in ("OCEANWATCH_DB_URI", "DATABASE_URL"):
+        raw = (os.getenv(key) or "").strip()
+        if raw:
+            # DuckDB postgres scanner wants postgresql:// not SQLAlchemy dialect URLs
+            return raw.replace("postgresql+psycopg2://", "postgresql://").replace(
+                "postgres://", "postgresql://"
+            )
     if os.path.exists("/.dockerenv") or os.getenv("AIRFLOW_HOME"):
-        return os.getenv("OCEANWATCH_DB_URI_DOCKER", _DEFAULT_DOCKER_URI)
+        return _DEFAULT_DOCKER_URI
     return _DEFAULT_HOST_URI
 
 
-@contextmanager
-def pg_connection() -> Iterator["duckdb.DuckDBPyConnection"]:
-    """Attach Postgres as `pg` and always close the DuckDB handle."""
-    con = duckdb.connect()
+def attach_postgres(con: Optional[duckdb.DuckDBPyConnection] = None, alias: str = "pg"):
+    """Return a DuckDB connection with Postgres attached as `alias`."""
+    uri = get_db_uri()
+    if con is None:
+        con = duckdb.connect()
+    con.execute("INSTALL postgres; LOAD postgres;")
+    # DETACH if re-attaching
     try:
-        con.execute(f"ATTACH '{get_db_uri()}' AS pg (TYPE POSTGRES)")
-        yield con
-    finally:
-        try:
-            con.close()
-        except Exception:  # pragma: no cover - best-effort cleanup
-            pass
+        con.execute(f"DETACH {alias}")
+    except Exception:  # noqa: BLE001 — no cover - best-effort cleanup
+        pass
+    con.execute(f"ATTACH '{uri}' AS {alias} (TYPE POSTGRES)")
+    return con
 
 
-def table_columns(con, table: str, schema: str = "public") -> list[str]:
+def table_columns(con, table: str, schema: str = "public", catalog: str = "pg") -> list[str]:
     try:
         rows = con.execute(
-            """
+            f"""
             SELECT column_name
-            FROM pg.information_schema.columns
+            FROM {catalog}.information_schema.columns
             WHERE table_schema = ? AND table_name = ?
             ORDER BY ordinal_position
             """,
             [schema, table],
         ).fetchall()
         return [r[0] for r in rows]
-    except Exception as exc:
-        logger.warning("Could not list columns for %s.%s: %s", schema, table, exc)
+    except Exception:  # noqa: BLE001
         return []
 
 
-def qdf(con, sql: str, params: Optional[Sequence] = None) -> pd.DataFrame:
+def qdf(con, sql: str) -> pd.DataFrame:
     try:
-        if params is None:
-            return con.execute(sql).fetchdf()
-        return con.execute(sql, list(params)).fetchdf()
-    except Exception as exc:
-        logger.warning("Query failed: %s | sql=%s", exc, sql[:180])
+        return con.execute(sql).fetchdf()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Query failed: %s", e)
         return pd.DataFrame()
 
 
-def write_frame(
+def write_df(
     con,
     table: str,
     df: pd.DataFrame,
     *,
     replace: bool = False,
     schema: str = "public",
+    catalog: str = "pg",
 ) -> int:
-    """
-    Insert a DataFrame into pg.<schema>.<table>.
-
-    replace=True deletes all rows first (use only for small dim/registry tables).
-    Returns number of rows written.
-    """
+    """Insert DataFrame into Postgres table (optionally DELETE all first)."""
     if df is None or df.empty:
         logger.info("%s: 0 rows", table)
         return 0
-
-    available = set(table_columns(con, table, schema=schema))
-    if not available:
-        logger.warning("No columns for %s — skip write", table)
-        return 0
-
-    use = [c for c in df.columns if c in available]
+    cols = table_columns(con, table, schema=schema, catalog=catalog)
+    use = [c for c in df.columns if c in cols]
     if not use:
-        logger.warning("No overlapping columns for %s", table)
+        logger.warning("No matching columns for %s (df=%s table=%s)", table, list(df.columns), cols)
         return 0
-
-    fq = f"pg.{schema}.{table}"
+    fq = f"{catalog}.{schema}.{table}"
     if replace:
         con.execute(f"DELETE FROM {fq}")
-
-    tmp = f"_ow_tmp_{table}"
-    con.register(tmp, df[use].copy())
-    cols_sql = ", ".join(use)
-    con.execute(f"INSERT INTO {fq} ({cols_sql}) SELECT {cols_sql} FROM {tmp}")
-    try:
-        con.unregister(tmp)
-    except Exception:
-        pass
-    logger.info("%s: %s rows (replace=%s)", table, len(df), replace)
-    return len(df)
+    con.register("_ow_write_df", df[use])
+    col_list = ", ".join(use)
+    con.execute(f"INSERT INTO {fq} ({col_list}) SELECT {col_list} FROM _ow_write_df")
+    n = len(df)
+    logger.info("%s: %s rows", table, n)
+    return n
 
 
-def upsert_topics(con, rows: Iterable[dict]) -> None:
-    """Replace topic registry (small static set)."""
-    write_frame(con, "event_bus_topics", pd.DataFrame(list(rows)), replace=True)
-
-
-def upsert_consumers(con, rows: Iterable[dict]) -> None:
-    """Replace consumer registry (small static set)."""
-    write_frame(con, "event_bus_consumers", pd.DataFrame(list(rows)), replace=True)
+def replace_rows(con, table: str, rows: Iterable[dict], **kwargs) -> int:
+    return write_df(con, table, pd.DataFrame(list(rows)), replace=True, **kwargs)

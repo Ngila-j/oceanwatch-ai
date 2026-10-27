@@ -1,15 +1,19 @@
 """
-Phase 24 complete — Automated Intelligence Report Engine.
-Builds Daily Operational Brief + Weekly Ocean Brief snapshots from live facts.
-Stored in Postgres for Streamlit / API / future PDF export.
+Phase 24 — Automated Intelligence Report Engine.
+Builds Daily Operational Brief + Weekly Ocean Brief from live facts.
+Uses ingestion/.env OCEANWATCH_DB_URI (via db_utils).
 """
+
+from __future__ import annotations
 
 import logging
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 
 import duckdb
 import pandas as pd
+
+from db_utils import get_db_uri
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -19,17 +23,12 @@ REGION = "kenya_eez"
 COUNTRY = "KE"
 
 
-def get_db_uri():
-    import os
-
-    if os.path.exists("/.dockerenv") or os.getenv("AIRFLOW_HOME"):
-        return "postgresql://postgres:password@postgres:5432/oceanwatch_db"
-    return "postgresql://postgres:password@localhost:5433/oceanwatch_db"
-
-
 def connect():
+    uri = get_db_uri()
+    logger.info("Phase 24 reports → ...@%s", uri.split("@")[-1] if "@" in uri else uri)
     con = duckdb.connect()
-    con.execute(f"ATTACH '{get_db_uri()}' AS pg (TYPE POSTGRES)")
+    con.execute("INSTALL postgres; LOAD postgres;")
+    con.execute(f"ATTACH '{uri}' AS pg (TYPE POSTGRES)")
     return con
 
 
@@ -94,7 +93,7 @@ def first_val(df, candidates, default=None):
     return default
 
 
-def section(run_id, order, code, title, status, value, label, narrative, evidence, now):
+def section(run_id, order, code, title, status, value, label, narrative, evidence):
     return dict(
         section_id=random.randint(10_000_000, 99_999_999),
         run_id=run_id,
@@ -112,7 +111,7 @@ def section(run_id, order, code, title, status, value, label, narrative, evidenc
 
 def run():
     logger.info("=== Phase 24 Intelligence Reports ===")
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     con = connect()
 
     types = pd.DataFrame(
@@ -137,236 +136,270 @@ def run():
     )
     write(con, "dim_report_types", types)
 
-    risk = qdf(
+    # Live signals (soft-fail)
+    ais = qdf(
         con,
-        "SELECT * FROM pg.public.fact_unified_risk_composite ORDER BY as_of_date DESC LIMIT 1",
+        """
+        SELECT COUNT(*) AS n,
+               AVG(sog) AS avg_sog,
+               COUNT(DISTINCT mmsi) AS vessels
+        FROM pg.public.fact_ais_positions
+        WHERE event_time > now() - INTERVAL '7 days'
+        """,
     )
     ocean = qdf(
         con,
-        "SELECT * FROM pg.public.fact_ocean_state ORDER BY as_of_date DESC LIMIT 1",
-    )
-    stress = qdf(
-        con,
-        "SELECT * FROM pg.public.fact_ecological_stress ORDER BY as_of_date DESC LIMIT 1",
-    )
-    fish = qdf(
-        con,
-        "SELECT * FROM pg.public.fact_fisheries_conditions ORDER BY as_of_date DESC LIMIT 1",
+        """
+        SELECT * FROM pg.public.fact_ocean_conditions
+        ORDER BY date_key DESC LIMIT 5
+        """,
     )
     port = qdf(
         con,
-        "SELECT * FROM pg.public.fact_port_ops_risk ORDER BY as_of_date DESC LIMIT 1",
-    )
-    if port.empty:
-        port = qdf(
-            con,
-            "SELECT * FROM pg.public.fact_port_risk ORDER BY risk_date DESC LIMIT 1",
-        )
-    metrics = qdf(
-        con,
-        "SELECT * FROM pg.public.fact_port_metrics ORDER BY metric_date DESC LIMIT 1",
+        """
+        SELECT * FROM pg.public.fact_port_metrics
+        ORDER BY metric_date DESC LIMIT 5
+        """,
     )
     wio = qdf(
         con,
-        "SELECT * FROM pg.public.fact_wio_intelligence_index ORDER BY index_date DESC LIMIT 1",
-    )
-    events = qdf(
-        con,
         """
-        SELECT event_type, severity, COUNT(*) AS n
-        FROM pg.public.fact_vessel_events
-        GROUP BY 1, 2
-        ORDER BY n DESC
-        LIMIT 10
+        SELECT * FROM pg.public.fact_wio_intelligence_index
+        WHERE region_id = 'kenya_eez'
+        ORDER BY index_date DESC LIMIT 5
         """,
     )
     alerts = qdf(
         con,
         """
-        SELECT COUNT(*) AS n
-        FROM pg.public.fact_alerts
-        WHERE UPPER(COALESCE(status, 'OPEN')) = 'OPEN'
+        SELECT COUNT(*) AS n FROM pg.public.fact_alerts
+        WHERE created_at > now() - INTERVAL '7 days'
         """,
     )
-    notif = qdf(
+    gfw = qdf(
         con,
-        "SELECT COUNT(*) AS n FROM pg.public.fact_notification_deliveries",
+        """
+        SELECT AVG(hours) AS avg_hours, SUM(hours) AS sum_hours, COUNT(*) AS cells
+        FROM pg.public.fact_gfw_fishing_effort
+        """,
     )
 
-    composite = fnum(first_val(risk, ["composite_score"]), None)
-    composite_level = str(first_val(risk, ["composite_level"], "UNKNOWN"))
-    port_score = fnum(first_val(risk, ["port_score"], first_val(port, ["composite_ops_risk", "composite_risk"])), None)
-    maritime_score = fnum(first_val(risk, ["maritime_score"]), None)
-    ocean_score = fnum(first_val(ocean, ["ocean_state_score"]), None)
-    ocean_label = str(first_val(ocean, ["ocean_state_label"], "UNKNOWN"))
-    ecology = fnum(first_val(stress, ["stress_score"]), None)
-    fish_score = fnum(first_val(fish, ["condition_score"]), None)
-    fish_label = str(first_val(fish, ["condition_label"], "UNKNOWN"))
-    wio_score = fnum(first_val(wio, ["overall_score", "overall_index"]), None)
-    open_alerts = int(first_val(alerts, ["n"], 0) or 0)
-    deliveries = int(first_val(notif, ["n"], 0) or 0)
-    congestion = fnum(first_val(metrics, ["congestion_index"]), None)
-    active_vessels = fnum(first_val(metrics, ["active_vessels"]), None)
+    vessels = int(fnum(first_val(ais, ["vessels"]), 0) or 0)
+    ais_n = int(fnum(first_val(ais, ["n"]), 0) or 0)
+    avg_sog = fnum(first_val(ais, ["avg_sog"]), None)
+    sst = fnum(first_val(ocean, ["sst_celsius", "sst", "sea_surface_temp"]), None)
+    chl = fnum(first_val(ocean, ["chlorophyll", "chl_mg_m3", "chlorophyll_a"]), None)
+    cong = fnum(first_val(port, ["congestion_index", "congestion"]), None)
+    arrivals = fnum(first_val(port, ["arrivals", "vessel_arrivals"]), None)
+    overall_wio = fnum(first_val(wio, ["overall_score"]), None)
+    ocean_h = fnum(first_val(wio, ["ocean_health_score"]), None)
+    fish_p = fnum(first_val(wio, ["fishing_pressure_score"]), None)
+    alert_n = int(fnum(first_val(alerts, ["n"]), 0) or 0)
+    gfw_hours = fnum(first_val(gfw, ["sum_hours"]), None)
 
-    conf = fnum(first_val(risk, ["confidence_score"]), 75.0)
+    # Status helpers
+    def band(score, high_bad=False):
+        if score is None:
+            return "INFO"
+        s = float(score)
+        if high_bad:
+            if s >= 70:
+                return "HIGH"
+            if s >= 40:
+                return "WATCH"
+            return "OK"
+        if s >= 70:
+            return "OK"
+        if s >= 40:
+            return "WATCH"
+        return "HIGH"
 
-    # --- Daily ops run ---
-    daily_run_id = random.randint(10_000_000, 99_999_999)
-    daily_summary = (
-        f"Kenya EEZ operational snapshot. Composite risk={composite} ({composite_level}). "
-        f"Ocean state={ocean_score} ({ocean_label}). Open alerts={open_alerts}. "
-        f"Notification deliveries logged={deliveries}."
-    )
-    overall = composite_level if composite is not None else ocean_label
+    port_status = band(cong, high_bad=True) if cong is not None else "INFO"
+    ocean_status = "OK"
+    if sst is not None and (sst < 24 or sst > 30):
+        ocean_status = "WATCH"
+    if sst is not None and (sst < 22 or sst > 31):
+        ocean_status = "HIGH"
+
+    overall = "OK"
+    for s in (port_status, ocean_status):
+        if s == "HIGH":
+            overall = "HIGH"
+            break
+        if s == "WATCH" and overall == "OK":
+            overall = "WATCH"
+
+    conf = 65.0
+    if vessels:
+        conf += 8
+    if sst is not None:
+        conf += 8
+    if overall_wio is not None:
+        conf += 6
+    conf = min(95.0, conf)
+
+    daily_run_id = int(now.strftime("%Y%m%d")) * 10 + 1
+    weekly_run_id = int(now.strftime("%Y%m%d")) * 10 + 2
 
     daily_sections = [
         section(
             daily_run_id,
             1,
-            "RISK",
-            "Unified risk",
-            composite_level,
-            composite,
-            composite_level,
-            f"Composite risk is {composite} ({composite_level}). Port domain remains the main driver when elevated.",
-            str(first_val(risk, ["drivers"], "")),
-            now,
+            "maritime_ais",
+            "Maritime / AIS picture",
+            "OK" if vessels else "INFO",
+            float(vessels),
+            "distinct vessels (7d)",
+            f"Kenya EEZ AIS sample shows {vessels} distinct vessels "
+            f"({ais_n} positions). "
+            + (f"Mean SOG {avg_sog:.1f} kn. " if avg_sog is not None else "")
+            + "Decision-support only — coverage is partial.",
+            "fact_ais_positions",
         ),
         section(
             daily_run_id,
             2,
-            "PORT",
-            "Port pressure",
-            "HIGH" if port_score and port_score >= 75 else "WATCH" if port_score and port_score >= 55 else "LOW",
-            port_score,
-            f"congestion={congestion}",
-            f"Port risk score={port_score}. Active vessels={active_vessels}, congestion_index={congestion}.",
-            "fact_port_ops_risk / fact_port_metrics",
-            now,
+            "port_congestion",
+            "Port congestion (Mombasa signal)",
+            port_status,
+            cong,
+            "congestion index" if cong is not None else "n/a",
+            (
+                f"Latest port congestion index ≈ {cong:.1f}. "
+                + (f"Arrivals signal: {arrivals}. " if arrivals is not None else "")
+                + "Monitor berth pressure and anchorage dwell."
+                if cong is not None
+                else "No fact_port_metrics row available — seed port metrics for live scores."
+            ),
+            "fact_port_metrics",
         ),
         section(
             daily_run_id,
             3,
-            "MARITIME",
-            "Maritime behaviour",
-            "WATCH" if maritime_score and maritime_score >= 55 else "LOW",
-            maritime_score,
-            "avg vessel risk",
-            f"Maritime domain score={maritime_score}. Review Maritime Events for geofence / route patterns.",
-            "fact_unified_risk + fact_vessel_events",
-            now,
+            "ocean_state",
+            "Nearshore ocean state",
+            ocean_status,
+            sst,
+            "SST °C" if sst is not None else "n/a",
+            (
+                f"Latest SST ≈ {sst:.2f} °C"
+                + (f"; chlorophyll proxy {chl:.3f}." if chl is not None else ".")
+                if sst is not None
+                else "No ocean conditions row — run ocean seed / Copernicus ingest."
+            ),
+            "fact_ocean_conditions",
         ),
         section(
             daily_run_id,
             4,
-            "OCEAN",
-            "Ocean state",
-            ocean_label,
-            ocean_score,
-            ocean_label,
-            f"Ocean state score={ocean_score} ({ocean_label}). Ecology stress={ecology}.",
-            str(first_val(ocean, ["drivers"], "fact_ocean_state")),
-            now,
+            "alerts",
+            "Open / recent alerts",
+            "WATCH" if alert_n else "OK",
+            float(alert_n),
+            "alerts (7d)",
+            f"{alert_n} alert row(s) in the last 7 days. Review Alert Center for triage.",
+            "fact_alerts",
         ),
         section(
             daily_run_id,
             5,
-            "ALERTS",
-            "Open operational alerts",
-            "WATCH" if open_alerts else "LOW",
-            float(open_alerts),
-            f"{open_alerts} open",
-            f"{open_alerts} open rows in fact_alerts. Notifications dry-run deliveries={deliveries}.",
-            "fact_alerts / fact_notification_deliveries",
-            now,
+            "wio_index",
+            "WIO Intelligence Index (latest)",
+            band(overall_wio) if overall_wio is not None else "INFO",
+            overall_wio,
+            "overall score" if overall_wio is not None else "n/a",
+            (
+                f"Latest Kenya EEZ overall WIO-OII ≈ {overall_wio:.1f} "
+                f"(ocean health {ocean_h}, fishing pressure {fish_p})."
+                if overall_wio is not None
+                else "WIO index not computed yet."
+            ),
+            "fact_wio_intelligence_index",
         ),
     ]
-    if not events.empty:
-        top = events.iloc[0]
-        daily_sections.append(
-            section(
-                daily_run_id,
-                6,
-                "EVENTS",
-                "Top vessel event type",
-                str(top.get("severity") or "INFO"),
-                float(top.get("n") or 0),
-                str(top.get("event_type")),
-                f"Most frequent vessel event: {top.get('event_type')} (n={top.get('n')}, severity={top.get('severity')}).",
-                "fact_vessel_events",
-                now,
-            )
-        )
 
-    # --- Weekly ocean run ---
-    weekly_run_id = random.randint(10_000_000, 99_999_999)
-    weekly_summary = (
-        f"Weekly ocean intelligence for Kenya EEZ. Ocean state={ocean_score} ({ocean_label}). "
-        f"Fisheries condition={fish_score} ({fish_label}). WIO-OII={wio_score}. "
-        f"Ecology stress={ecology}."
+    ocean_label = ocean_status if sst is not None else (
+        band(ocean_h) if ocean_h is not None else "INFO"
     )
+
     weekly_sections = [
         section(
             weekly_run_id,
             1,
-            "OCEAN_STATE",
-            "Ocean state",
-            ocean_label,
-            ocean_score,
-            ocean_label,
-            f"Ocean state remains {ocean_label} at {ocean_score}. Use Ocean State page for drivers.",
-            str(first_val(ocean, ["drivers"], "")),
-            now,
+            "sst_week",
+            "Sea surface temperature",
+            ocean_status,
+            sst,
+            "SST °C" if sst is not None else "n/a",
+            (
+                f"Weekly ocean brief: SST holding near {sst:.2f} °C for Kenya EEZ watch boxes."
+                if sst is not None
+                else "SST series unavailable this week."
+            ),
+            "fact_ocean_conditions",
         ),
         section(
             weekly_run_id,
             2,
-            "ECOLOGY",
-            "Ecological stress",
-            str(first_val(stress, ["stress_level"], "UNKNOWN")),
-            ecology,
-            str(first_val(stress, ["stress_level"], "")),
-            f"Ecological stress score={ecology}. Bloom/habitat fusion feeds this indicator.",
-            str(first_val(stress, ["drivers"], "fact_ecological_stress")),
-            now,
+            "fishing_effort",
+            "Fishing pressure / GFW effort",
+            band(fish_p) if fish_p is not None else "INFO",
+            gfw_hours if gfw_hours is not None else fish_p,
+            "GFW hours sum" if gfw_hours is not None else "fishing pressure score",
+            (
+                f"Aggregated GFW effort hours ≈ {gfw_hours:.1f} across demo/live cells. "
+                if gfw_hours is not None
+                else ""
+            )
+            + (
+                f"WIO fishing-pressure component ≈ {fish_p:.1f}."
+                if fish_p is not None
+                else "No fishing-pressure score yet."
+            ),
+            "fact_gfw_fishing_effort / WIO index",
         ),
         section(
             weekly_run_id,
             3,
-            "FISHERIES",
-            "Fisheries conditions",
-            fish_label,
-            fish_score,
-            fish_label,
-            f"Fisheries environmental condition={fish_score} ({fish_label}). Not a catch forecast.",
-            str(first_val(fish, ["drivers"], "fact_fisheries_conditions")),
-            now,
+            "ocean_health",
+            "Ocean health component",
+            band(ocean_h) if ocean_h is not None else "INFO",
+            ocean_h,
+            "ocean health score",
+            (
+                f"WIO ocean-health score ≈ {ocean_h:.1f}."
+                if ocean_h is not None
+                else "Ocean-health component missing."
+            ),
+            "fact_wio_intelligence_index",
         ),
         section(
             weekly_run_id,
             4,
-            "WIO_OII",
-            "WIO Intelligence Index",
-            "INFO",
-            wio_score,
-            "overall",
-            f"Western Indian Ocean Intelligence Index overall={wio_score} (methodology in drivers).",
-            str(first_val(wio, ["drivers", "methodology_version"], "fact_wio_intelligence_index")),
-            now,
-        ),
-        section(
-            weekly_run_id,
-            5,
-            "RISK",
-            "Regional composite risk",
-            composite_level,
-            composite,
-            composite_level,
-            f"Composite risk for the monitoring box={composite} ({composite_level}).",
-            str(first_val(risk, ["drivers"], "")),
-            now,
+            "composite",
+            "Composite weekly outlook",
+            overall,
+            overall_wio,
+            "WIO overall",
+            f"Composite outlook status **{overall}** for Kenya EEZ. "
+            "Use with AIS, port, and ecology layers — not a navigational product.",
+            "phase24 composite",
         ),
     ]
+
+    daily_summary = (
+        f"Daily Operational Brief for {now.date()} (Kenya EEZ). "
+        f"Status {overall}. Vessels≈{vessels}, alerts(7d)={alert_n}"
+        + (f", SST≈{sst:.1f}°C" if sst is not None else "")
+        + (f", congestion≈{cong:.0f}" if cong is not None else "")
+        + "."
+    )
+    weekly_summary = (
+        f"Weekly Ocean Brief — week of {now.date()}. "
+        f"Ocean label {ocean_label}. "
+        + (f"WIO overall≈{overall_wio:.1f}. " if overall_wio is not None else "")
+        + "Rollup of SST, fishing pressure, and index components."
+    )
 
     runs = pd.DataFrame(
         [
@@ -412,6 +445,7 @@ def run():
         ocean_label,
     )
     logger.info("=== Phase 24 complete ===")
+    con.close()
 
 
 if __name__ == "__main__":

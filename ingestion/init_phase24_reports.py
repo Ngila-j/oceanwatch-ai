@@ -1,24 +1,21 @@
 """Phase 24 — intelligence report engine schema."""
 
 import logging
+
 import duckdb
+
+from db_utils import get_db_uri
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def get_db_uri():
-    import os
-
-    if os.path.exists("/.dockerenv") or os.getenv("AIRFLOW_HOME"):
-        return "postgresql://postgres:password@postgres:5432/oceanwatch_db"
-    return "postgresql://postgres:password@localhost:5433/oceanwatch_db"
-
-
 def main():
-    logger.info("=== Phase 24 reports schema ===")
+    uri = get_db_uri()
+    logger.info("=== Phase 24 reports schema → %s ===", uri.split("@")[-1])
     con = duckdb.connect()
-    con.execute(f"ATTACH '{get_db_uri()}' AS pg (TYPE POSTGRES)")
+    con.execute("INSTALL postgres; LOAD postgres;")
+    con.execute(f"ATTACH '{uri}' AS pg (TYPE POSTGRES)")
 
     for t in (
         "dim_report_types",
@@ -74,6 +71,17 @@ def main():
         )
         """
     )
+    # Seed report type catalog (page joins this)
+    con.execute(
+        """
+        INSERT INTO pg.public.dim_report_types VALUES
+        ('daily_ops', 'Daily Operational Brief', 'daily', 'ops', 'active',
+         'Port, AIS, risk, and anomaly snapshot for Kenya EEZ'),
+        ('weekly_ocean', 'Weekly Ocean Brief', 'weekly', 'leadership', 'active',
+         'SST, fishing pressure, bloom, and WIO index rollup')
+        """
+    )
+    con.close()
     logger.info("=== Phase 24 schema ready ===")
 
 
