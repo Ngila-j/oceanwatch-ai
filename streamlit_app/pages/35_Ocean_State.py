@@ -57,7 +57,7 @@ def load():
 d = load()
 
 if d["state"] is None or d["state"].empty or "error" in d["state"].columns:
-    st.warning("No Phase 20 data. Run init_phase20_ocean_state.py and run_phase20_ocean_state.py")
+    st.warning("No Phase 20 data yet. With DB access run: `python ingestion/init_phase20_ocean_state.py` then `python ingestion/run_phase20_ocean_state.py`.")
     st.stop()
 
 r = d["state"].iloc[0]
