@@ -1,97 +1,87 @@
 """
-Phase 12 complete — vessel profiles, tracks, geofences, behaviour (Kenya).
+Phase 12 — vessel profiles, tracks, geofences, behaviour (Kenya).
 Uses fact_ais_positions (+ optional fact_vessel_anomalies).
 Writes dim_vessels_maritime (not legacy dim_vessels).
+
+SQLAlchemy + OCEANWATCH_DB_URI (Supabase-safe).
 """
+
+from __future__ import annotations
 
 import logging
 import random
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
-import duckdb
 import numpy as np
 import pandas as pd
+from sqlalchemy import create_engine, text
+
+from db_utils import get_db_uri
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-MODEL = "phase12_maritime_v1.0"
+MODEL = "phase12_maritime_v1.1"
 REGION = "kenya_eez"
-MIN_LAT, MAX_LAT = -6.0, 3.0
-MIN_LON, MAX_LON = 38.0, 46.0
+MIN_LAT, MAX_LAT = -4.8, -1.5
+MIN_LON, MAX_LON = 39.0, 44.0
 MOMBASA = (-4.05, 39.67)
 
 
-def get_db_uri():
-    import os
-
-    if os.path.exists("/.dockerenv") or os.getenv("AIRFLOW_HOME"):
-        return "postgresql://postgres:password@postgres:5432/oceanwatch_db"
-    return "postgresql://postgres:password@localhost:5433/oceanwatch_db"
-
-
-def connect():
-    con = duckdb.connect()
-    con.execute(f"ATTACH '{get_db_uri()}' AS pg (TYPE POSTGRES)")
-    return con
+def sa_uri() -> str:
+    uri = get_db_uri()
+    if uri.startswith("postgresql://"):
+        return "postgresql+psycopg2://" + uri[len("postgresql://") :]
+    if uri.startswith("postgres://"):
+        return "postgresql+psycopg2://" + uri[len("postgres://") :]
+    return uri
 
 
-def cols(con, table):
+def engine():
+    uri = sa_uri()
+    logger.info("Phase 12 → ...@%s", uri.split("@")[-1] if "@" in uri else uri)
+    return create_engine(uri, pool_pre_ping=True, connect_args={"connect_timeout": 30})
+
+
+def qdf(eng, sql: str) -> pd.DataFrame:
     try:
-        return [
-            r[0]
-            for r in con.execute(
-                """
-                SELECT column_name FROM pg.information_schema.columns
-                WHERE table_schema='public' AND table_name=?
-                """,
-                [table],
-            ).fetchall()
-        ]
-    except Exception:
-        return []
-
-
-def write(con, table, df, replace=True):
-    if df is None or df.empty:
-        logger.info("%s: 0 rows", table)
-        return
-    use = [c for c in df.columns if c in cols(con, table)]
-    if not use:
-        logger.warning("No columns for %s", table)
-        return
-    if replace:
-        con.execute(f"DELETE FROM pg.public.{table}")
-    con.register("_t", df[use])
-    con.execute(
-        f"INSERT INTO pg.public.{table} ({', '.join(use)}) SELECT {', '.join(use)} FROM _t"
-    )
-    logger.info("%s: %s rows", table, len(df))
-
-
-def qdf(con, sql):
-    try:
-        return con.execute(sql).fetchdf()
-    except Exception as e:
+        return pd.read_sql(text(sql), eng)
+    except Exception as e:  # noqa: BLE001
         logger.warning("Query failed: %s", e)
         return pd.DataFrame()
 
 
-def in_box(lat, lon, min_lat, max_lat, min_lon, max_lon):
-    return (lat >= min_lat) & (lat <= max_lat) & (lon >= min_lon) & (lon <= max_lon)
+def write(eng, table: str, df: pd.DataFrame) -> None:
+    if df is None or df.empty:
+        logger.info("%s: 0 rows", table)
+        return
+    with eng.begin() as conn:
+        conn.execute(text(f"DELETE FROM {table}"))
+        df.to_sql(table, conn, if_exists="append", index=False, method="multi")
+    logger.info("%s: %s rows", table, len(df))
 
 
-def load_ais(con):
-    df = qdf(
-        con,
-        """
-        SELECT *
-        FROM pg.public.fact_ais_positions
-        ORDER BY event_time
-        """,
+def in_box(lat, lon, min_lat, max_lat, min_lon, max_lon) -> bool:
+    try:
+        return min_lat <= float(lat) <= max_lat and min_lon <= float(lon) <= max_lon
+    except Exception:
+        return False
+
+
+def haversine_km(lat1, lon1, lat2, lon2) -> float:
+    r = 6371.0
+    p = np.radians(lat2 - lat1)
+    q = np.radians(lon2 - lon1)
+    a = (
+        np.sin(p / 2) ** 2
+        + np.cos(np.radians(lat1)) * np.cos(np.radians(lat2)) * np.sin(q / 2) ** 2
     )
-    if df.empty:
-        return df
+    return float(2 * r * np.arcsin(np.sqrt(a)))
+
+
+def normalize_ais(df: pd.DataFrame) -> pd.DataFrame:
+    if df is None or df.empty:
+        return pd.DataFrame()
     rename = {}
     for a, b in [
         ("lat", "latitude"),
@@ -111,21 +101,93 @@ def load_ais(con):
         return pd.DataFrame()
     df["mmsi"] = df["mmsi"].astype(str)
     if "latitude" not in df.columns or "longitude" not in df.columns:
+        logger.error("AIS missing lat/lon")
         return pd.DataFrame()
-    df["event_time"] = pd.to_datetime(df.get("event_time"), errors="coerce")
-    df["sog"] = pd.to_numeric(df["sog"], errors="coerce") if "sog" in df.columns else np.nan
-    df["cog"] = pd.to_numeric(df["cog"], errors="coerce") if "cog" in df.columns else np.nan
+    if "event_time" not in df.columns:
+        if "timestamp" in df.columns:
+            df["event_time"] = pd.to_datetime(df["timestamp"], errors="coerce")
+        else:
+            df["event_time"] = pd.Timestamp.utcnow()
+    else:
+        df["event_time"] = pd.to_datetime(df["event_time"], errors="coerce")
     if "vessel_name" not in df.columns:
-        df["vessel_name"] = "UNKNOWN"
+        df["vessel_name"] = df["mmsi"]
     if "vessel_type" not in df.columns:
         df["vessel_type"] = "UNKNOWN"
+    if "sog" not in df.columns:
+        df["sog"] = np.nan
+    if "cog" not in df.columns:
+        df["cog"] = np.nan
     if "source" not in df.columns:
         df["source"] = "UNKNOWN"
     df = df.dropna(subset=["latitude", "longitude", "event_time"])
+    return df.sort_values(["mmsi", "event_time"]).reset_index(drop=True)
+
+
+def synthetic_ais(now) -> pd.DataFrame:
+    """Fallback demo fleet when fact_ais_positions is empty."""
+    rng = np.random.default_rng(42)
+    vessels = [
+        ("625001001", "MV SAHARA STAR", "CARGO"),
+        ("625001002", "FV PATE RUNNER", "FISHING"),
+        ("625001003", "MT INDIAN TIDE", "TANKER"),
+        ("625001004", "FV LAMU BREEZE", "FISHING"),
+        ("625001005", "SV DHOW HORIZON", "OTHER"),
+        ("625001006", "MV MOMBASA LINK", "CARGO"),
+        ("625001007", "FV KIUNGA NET", "FISHING"),
+        ("625001008", "MT REEF GUARD", "TANKER"),
+    ]
+    rows = []
+    for mmsi, name, vtype in vessels:
+        base_lat = float(rng.uniform(-4.5, -2.0))
+        base_lon = float(rng.uniform(39.6, 42.5))
+        sog0 = float(rng.uniform(0.5, 14.0))
+        for h in range(24):
+            t = now - timedelta(hours=23 - h)
+            lat = base_lat + 0.02 * np.sin(h / 4) + float(rng.normal(0, 0.01))
+            lon = base_lon + 0.03 * (h / 24) + float(rng.normal(0, 0.01))
+            sog = max(0.0, sog0 + float(rng.normal(0, 1.5)))
+            # Force a few low-speed / MPA-ish samples for demo behaviour
+            if name.startswith("FV") and h % 5 == 0:
+                sog = float(rng.uniform(0.1, 1.2))
+            if name == "FV KIUNGA NET":
+                lat = -3.1 + 0.05 * np.sin(h / 3)
+                lon = 40.3 + 0.04 * np.cos(h / 3)
+            rows.append(
+                dict(
+                    mmsi=mmsi,
+                    vessel_name=name,
+                    vessel_type=vtype,
+                    latitude=lat,
+                    longitude=lon,
+                    sog=sog,
+                    cog=float(rng.uniform(0, 360)),
+                    event_time=t,
+                    source="DEMO_PHASE12",
+                )
+            )
+    return pd.DataFrame(rows)
+
+
+def load_ais(eng) -> pd.DataFrame:
+    df = qdf(
+        eng,
+        """
+        SELECT *
+        FROM fact_ais_positions
+        ORDER BY event_time DESC NULLS LAST
+        LIMIT 5000
+        """,
+    )
+    df = normalize_ais(df)
+    if df.empty:
+        logger.warning("No AIS rows — seeding synthetic demo fleet")
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        df = synthetic_ais(now)
     return df
 
 
-def build_dim_vessels(ais: pd.DataFrame, now):
+def build_dim_vessels(ais: pd.DataFrame, now) -> pd.DataFrame:
     if ais.empty:
         return pd.DataFrame()
     g = ais.groupby("mmsi", as_index=False).agg(
@@ -133,6 +195,7 @@ def build_dim_vessels(ais: pd.DataFrame, now):
         vessel_type=("vessel_type", "last"),
         first_seen=("event_time", "min"),
         last_seen=("event_time", "max"),
+        position_count=("event_time", "count"),
         source=("source", "last"),
     )
     g["flag"] = None
@@ -140,60 +203,41 @@ def build_dim_vessels(ais: pd.DataFrame, now):
     return g
 
 
-def build_track_points(ais: pd.DataFrame):
-    if ais.empty:
-        return pd.DataFrame()
-    out = ais[["mmsi", "event_time", "latitude", "longitude"]].copy()
-    out["sog"] = ais["sog"] if "sog" in ais.columns else np.nan
-    out["cog"] = ais["cog"] if "cog" in ais.columns else np.nan
-    out["source"] = ais["source"] if "source" in ais.columns else "UNKNOWN"
-    out["in_kenya_box"] = in_box(
-        out["latitude"], out["longitude"], MIN_LAT, MAX_LAT, MIN_LON, MAX_LON
-    )
-    out["near_mombasa"] = (
-        ((out["latitude"] - MOMBASA[0]).abs() < 0.35)
-        & ((out["longitude"] - MOMBASA[1]).abs() < 0.35)
-    )
-    return out
-
-
-def haversine_km(lat1, lon1, lat2, lon2):
-    r = 6371.0
-    p = np.radians(lat2 - lat1)
-    q = np.radians(lon2 - lon1)
-    a = (
-        np.sin(p / 2) ** 2
-        + np.cos(np.radians(lat1)) * np.cos(np.radians(lat2)) * np.sin(q / 2) ** 2
-    )
-    return 2 * r * np.arcsin(np.sqrt(a))
-
-
-def profile_one(g: pd.DataFrame, anomaly_map: dict, now):
+def profile_one(mmsi, g: pd.DataFrame, anomaly_map: dict, now) -> dict:
     g = g.sort_values("event_time")
-    mmsi = str(g["mmsi"].iloc[-1])
-    name = str(g["vessel_name"].iloc[-1])
-    vtype = str(g["vessel_type"].iloc[-1]) if "vessel_type" in g.columns else "UNKNOWN"
     last = g.iloc[-1]
     n = len(g)
-    hours = max(
-        (g["event_time"].max() - g["event_time"].min()).total_seconds() / 3600.0, 0.01
-    )
-    sog = g["sog"].dropna() if "sog" in g.columns else pd.Series(dtype=float)
-    speed_mean = float(sog.mean()) if len(sog) else 0.0
-    speed_max = float(sog.max()) if len(sog) else 0.0
-    low_ratio = float((sog < 2.0).mean()) if len(sog) else 0.0
+    name = str(last.get("vessel_name") or mmsi)
+    vtype = str(last.get("vessel_type") or "UNKNOWN")
 
-    cog = g["cog"].dropna() if "cog" in g.columns else pd.Series(dtype=float)
-    turn = float(cog.diff().abs().mean()) if len(cog) > 2 else 0.0
-
+    hours = 0.0
     if n >= 2:
-        dist = haversine_km(
-            g["latitude"].iloc[0],
-            g["longitude"].iloc[0],
-            g["latitude"].iloc[-1],
-            g["longitude"].iloc[-1],
+        hours = max(
+            0.0,
+            (g["event_time"].iloc[-1] - g["event_time"].iloc[0]).total_seconds() / 3600.0,
         )
-        path = 0.0
+
+    sog = pd.to_numeric(g.get("sog"), errors="coerce")
+    speed_mean = float(sog.mean()) if sog.notna().any() else 0.0
+    speed_max = float(sog.max()) if sog.notna().any() else 0.0
+    low_ratio = float((sog.fillna(0) < 2.0).mean()) if n else 0.0
+
+    turn = 0.0
+    if "cog" in g.columns and n >= 3:
+        cog = pd.to_numeric(g["cog"], errors="coerce").dropna()
+        if len(cog) >= 3:
+            d = np.abs(np.diff(cog.values))
+            d = np.minimum(d, 360 - d)
+            turn = float(np.mean(d))
+
+    dist = haversine_km(
+        g["latitude"].iloc[0],
+        g["longitude"].iloc[0],
+        g["latitude"].iloc[-1],
+        g["longitude"].iloc[-1],
+    )
+    path = 0.0
+    if n >= 2:
         for i in range(1, n):
             path += haversine_km(
                 g["latitude"].iloc[i - 1],
@@ -235,7 +279,7 @@ def profile_one(g: pd.DataFrame, anomaly_map: dict, now):
         score += 10
         evidence.append("near_mombasa_low_speed")
 
-    anom = anomaly_map.get(name) or anomaly_map.get(mmsi)
+    anom = anomaly_map.get(name) or anomaly_map.get(str(mmsi))
     risk = score
     conf = 70.0
     if anom:
@@ -244,27 +288,30 @@ def profile_one(g: pd.DataFrame, anomaly_map: dict, now):
         evidence.append("linked_vessel_anomaly")
 
     risk = min(100.0, risk)
-    level = (
-        "HIGH"
-        if risk >= 75
-        else "ELEVATED"
-        if risk >= 50
-        else "MONITOR"
-        if risk >= 30
-        else "LOW"
-    )
+    if risk >= 75:
+        level = "HIGH"
+    elif risk >= 50:
+        level = "ELEVATED"
+    elif risk >= 30:
+        level = "MONITOR"
+    else:
+        level = "LOW"
+
+    last_seen = last["event_time"]
+    if hasattr(last_seen, "to_pydatetime"):
+        last_seen = last_seen.to_pydatetime()
+    if getattr(last_seen, "tzinfo", None) is not None:
+        last_seen = last_seen.replace(tzinfo=None)
 
     return dict(
-        mmsi=mmsi,
+        mmsi=str(mmsi),
         vessel_name=name,
         vessel_type=vtype,
         last_lat=float(last["latitude"]),
         last_lon=float(last["longitude"]),
         last_sog=float(last["sog"]) if pd.notna(last.get("sog")) else None,
         last_cog=float(last["cog"]) if pd.notna(last.get("cog")) else None,
-        last_seen=last["event_time"].to_pydatetime()
-        if hasattr(last["event_time"], "to_pydatetime")
-        else last["event_time"],
+        last_seen=last_seen,
         position_count=int(n),
         track_hours=round(hours, 2),
         speed_mean=round(speed_mean, 2),
@@ -276,9 +323,9 @@ def profile_one(g: pd.DataFrame, anomaly_map: dict, now):
         behaviour_level=level,
         risk_score=round(risk, 1),
         confidence_score=round(conf, 1),
-        in_kenya_box=in_kenya,
-        near_mombasa=near,
-        mpa_interaction_flag=mpa,
+        in_kenya_box=bool(in_kenya),
+        near_mombasa=bool(near),
+        mpa_interaction_flag=bool(mpa),
         geofence_hits=0,
         evidence=" | ".join(evidence) if evidence else "nominal",
         model_version=MODEL,
@@ -287,35 +334,73 @@ def profile_one(g: pd.DataFrame, anomaly_map: dict, now):
     )
 
 
-def build_geofence_events(ais: pd.DataFrame, fences: pd.DataFrame, now):
+def build_profiles(ais: pd.DataFrame, anomaly_map: dict, now) -> pd.DataFrame:
+    if ais.empty:
+        return pd.DataFrame()
+    rows = []
+    for mmsi, g in ais.groupby("mmsi"):
+        rows.append(profile_one(mmsi, g, anomaly_map, now))
+    return pd.DataFrame(rows)
+
+
+def build_tracks(ais: pd.DataFrame, now) -> pd.DataFrame:
+    if ais.empty:
+        return pd.DataFrame()
+    # Keep last ~80 points per vessel for UI tracks
+    parts = []
+    for _, g in ais.groupby("mmsi"):
+        parts.append(g.sort_values("event_time").tail(80))
+    t = pd.concat(parts, ignore_index=True)
+    out = pd.DataFrame(
+        {
+            "mmsi": t["mmsi"].astype(str),
+            "event_time": pd.to_datetime(t["event_time"]).dt.tz_localize(None),
+            "latitude": t["latitude"].astype(float),
+            "longitude": t["longitude"].astype(float),
+            "sog": pd.to_numeric(t.get("sog"), errors="coerce"),
+            "cog": pd.to_numeric(t.get("cog"), errors="coerce"),
+            "vessel_name": t.get("vessel_name"),
+            "source": t.get("source"),
+            "created_at": now,
+        }
+    )
+    return out
+
+
+def build_geofence_events(ais: pd.DataFrame, fences: pd.DataFrame, now) -> pd.DataFrame:
     if ais.empty or fences.empty:
         return pd.DataFrame()
     rows = []
     for _, f in fences.iterrows():
-        mask = in_box(
-            ais["latitude"],
-            ais["longitude"],
-            float(f["min_lat"]),
-            float(f["max_lat"]),
-            float(f["min_lon"]),
-            float(f["max_lon"]),
+        mask = ais.apply(
+            lambda r: in_box(
+                r["latitude"],
+                r["longitude"],
+                float(f["min_lat"]),
+                float(f["max_lat"]),
+                float(f["min_lon"]),
+                float(f["max_lon"]),
+            ),
+            axis=1,
         )
         sub = ais.loc[mask]
         if sub.empty:
             continue
         for mmsi, g in sub.groupby("mmsi"):
             last = g.sort_values("event_time").iloc[-1]
+            et = last["event_time"]
+            if hasattr(et, "to_pydatetime"):
+                et = et.to_pydatetime()
+            if getattr(et, "tzinfo", None) is not None:
+                et = et.replace(tzinfo=None)
             rows.append(
                 dict(
                     event_id=random.randint(10_000_000, 99_999_999),
                     mmsi=str(mmsi),
                     vessel_name=str(last.get("vessel_name") or ""),
-                    fence_id=f["fence_id"],
-                    fence_name=f["fence_name"],
-                    event_kind="INSIDE",
-                    event_time=last["event_time"].to_pydatetime()
-                    if hasattr(last["event_time"], "to_pydatetime")
-                    else last["event_time"],
+                    fence_id=str(f.get("fence_id")),
+                    fence_name=str(f.get("fence_name")),
+                    event_time=et,
                     latitude=float(last["latitude"]),
                     longitude=float(last["longitude"]),
                     sog=float(last["sog"]) if pd.notna(last.get("sog")) else None,
@@ -327,53 +412,82 @@ def build_geofence_events(ais: pd.DataFrame, fences: pd.DataFrame, now):
     return pd.DataFrame(rows)
 
 
+def attach_geofence_hits(profiles: pd.DataFrame, events: pd.DataFrame) -> pd.DataFrame:
+    if profiles is None or profiles.empty:
+        return profiles
+    p = profiles.copy()
+    if events is None or events.empty:
+        p["geofence_hits"] = 0
+        return p
+    hits = events.groupby("mmsi").size().rename("geofence_hits")
+    p = p.drop(columns=["geofence_hits"], errors="ignore")
+    p = p.merge(hits, left_on="mmsi", right_index=True, how="left")
+    p["geofence_hits"] = p["geofence_hits"].fillna(0).astype(int)
+    return p
+
+
+def load_anomaly_map(eng) -> dict:
+    df = qdf(
+        eng,
+        """
+        SELECT * FROM fact_vessel_anomalies
+        ORDER BY created_at DESC NULLS LAST
+        LIMIT 500
+        """,
+    )
+    if df.empty:
+        return {}
+    out = {}
+    for _, r in df.iterrows():
+        key = str(r.get("vessel_name") or r.get("mmsi") or "")
+        if not key:
+            continue
+        out[key] = {
+            "risk_score": r.get("risk_score") or r.get("anomaly_score") or 0,
+            "confidence_score": r.get("confidence_score") or 70,
+        }
+    return out
+
+
 def run():
     logger.info("=== Phase 12 maritime intelligence ===")
-    now = datetime.utcnow()
-    con = connect()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
-    ais = load_ais(con)
-    logger.info("AIS rows loaded: %s", len(ais))
+    from init_phase12_maritime import main as ensure_schema
 
-    anom = qdf(con, "SELECT * FROM pg.public.fact_vessel_anomalies")
-    anomaly_map = {}
-    if not anom.empty:
-        for _, r in anom.iterrows():
-            key = str(r.get("vessel_name") or r.get("mmsi") or "")
-            anomaly_map[key] = r.to_dict()
+    ensure_schema()
+    eng = engine()
+
+    ais = load_ais(eng)
+    logger.info("AIS rows loaded: %s vessels=%s", len(ais), ais["mmsi"].nunique() if not ais.empty else 0)
+
+    anomaly_map = load_anomaly_map(eng)
+    logger.info("Anomaly map keys: %s", len(anomaly_map))
 
     dim = build_dim_vessels(ais, now)
-    # Dedicated table — avoids legacy dim_vessels.vessel_key NOT NULL
-    write(con, "dim_vessels_maritime", dim)
+    write(eng, "dim_vessels_maritime", dim)
 
-    tracks = build_track_points(ais)
-    if len(tracks) > 5000:
-        tracks = tracks.sort_values("event_time").tail(5000)
-    write(con, "fact_vessel_track_points", tracks)
+    profiles = build_profiles(ais, anomaly_map, now)
+    fences = qdf(eng, "SELECT * FROM dim_geofences")
+    events = build_geofence_events(ais, fences, now)
+    profiles = attach_geofence_hits(profiles, events)
+    write(eng, "fact_vessel_profiles", profiles)
 
-    profiles = []
-    if not ais.empty:
-        for mmsi, g in ais.groupby("mmsi"):
-            profiles.append(profile_one(g, anomaly_map, now))
-    prof_df = pd.DataFrame(profiles)
+    tracks = build_tracks(ais, now)
+    write(eng, "fact_vessel_track_points", tracks)
+    write(eng, "fact_geofence_events", events)
 
-    fences = qdf(con, "SELECT * FROM pg.public.dim_geofences")
-    ge = build_geofence_events(ais, fences, now)
-    write(con, "fact_geofence_events", ge)
-
-    if not prof_df.empty and not ge.empty:
-        hits = ge.groupby("mmsi").size().to_dict()
-        prof_df["geofence_hits"] = prof_df["mmsi"].map(lambda m: int(hits.get(m, 0)))
-    write(con, "fact_vessel_profiles", prof_df)
-
-    logger.info(
-        "Vessels=%s profiles=%s tracks=%s geofence_events=%s",
-        len(dim),
-        len(prof_df),
-        len(tracks),
-        len(ge),
-    )
+    if not profiles.empty:
+        logger.info(
+            "Profiles=%s elevated+=%s mpa=%s near_msa=%s",
+            len(profiles),
+            int((profiles["risk_score"] >= 50).sum()),
+            int(profiles["mpa_interaction_flag"].fillna(False).sum()),
+            int(profiles["near_mombasa"].fillna(False).sum()),
+        )
+    logger.info("Tracks=%s geofence_events=%s", len(tracks), len(events))
     logger.info("=== Phase 12 complete ===")
+    eng.dispose()
 
 
 if __name__ == "__main__":
