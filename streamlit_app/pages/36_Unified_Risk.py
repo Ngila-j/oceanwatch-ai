@@ -54,7 +54,7 @@ def load():
 d = load()
 
 if d["composite"] is None or d["composite"].empty or "error" in d["composite"].columns:
-    st.warning("No Phase 21 data. Run init_phase21_risk.py and run_phase21_risk_engine.py")
+    st.warning("No Phase 21 data yet. With DB access run: `python ingestion/init_phase21_risk.py` then `python ingestion/run_phase21_risk_engine.py`.")
     st.stop()
 
 r = d["composite"].iloc[0]

@@ -1,24 +1,21 @@
 """Phase 21 — unified risk engine schema."""
 
 import logging
+
 import duckdb
+
+from db_utils import get_db_uri
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def get_db_uri():
-    import os
-
-    if os.path.exists("/.dockerenv") or os.getenv("AIRFLOW_HOME"):
-        return "postgresql://postgres:password@postgres:5432/oceanwatch_db"
-    return "postgresql://postgres:password@localhost:5433/oceanwatch_db"
-
-
 def main():
-    logger.info("=== Phase 21 risk engine schema ===")
+    uri = get_db_uri()
+    logger.info("=== Phase 21 risk engine schema → %s ===", uri.split("@")[-1])
     con = duckdb.connect()
-    con.execute(f"ATTACH '{get_db_uri()}' AS pg (TYPE POSTGRES)")
+    con.execute("INSTALL postgres; LOAD postgres;")
+    con.execute(f"ATTACH '{uri}' AS pg (TYPE POSTGRES)")
 
     for t in (
         "fact_unified_risk_drivers",
@@ -83,6 +80,7 @@ def main():
         )
         """
     )
+    con.close()
     logger.info("=== Phase 21 schema ready ===")
 
 
