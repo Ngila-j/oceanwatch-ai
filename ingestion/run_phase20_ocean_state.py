@@ -3,7 +3,8 @@ Phase 20 — Ocean State Engine.
 Fuses SST · chlorophyll · bloom · habitat · climate into ocean state,
 ecological stress, fisheries conditions, and hazard flags (Kenya EEZ).
 
-Uses ingestion/.env OCEANWATCH_DB_URI via db_utils. Soft-fails missing facts.
+Uses SQLAlchemy + OCEANWATCH_DB_URI (via db_utils) for reliability on Supabase.
+Soft-fails missing source facts.
 """
 
 from __future__ import annotations
@@ -12,8 +13,8 @@ import logging
 import random
 from datetime import datetime, timezone
 
-import duckdb
 import pandas as pd
+from sqlalchemy import create_engine, text
 
 from db_utils import get_db_uri
 
@@ -25,51 +26,25 @@ REGION = "kenya_eez"
 COUNTRY = "KE"
 
 
-def connect():
+def sa_uri() -> str:
     uri = get_db_uri()
+    if uri.startswith("postgresql://"):
+        return "postgresql+psycopg2://" + uri[len("postgresql://") :]
+    if uri.startswith("postgres://"):
+        return "postgresql+psycopg2://" + uri[len("postgres://") :]
+    return uri
+
+
+def engine():
+    uri = sa_uri()
     logger.info("Phase 20 ocean state → ...@%s", uri.split("@")[-1] if "@" in uri else uri)
-    con = duckdb.connect()
-    con.execute("INSTALL postgres; LOAD postgres;")
-    con.execute(f"ATTACH '{uri}' AS pg (TYPE POSTGRES)")
-    return con
+    return create_engine(uri, pool_pre_ping=True, connect_args={"connect_timeout": 30})
 
 
-def cols(con, table):
+def qdf(eng, sql: str) -> pd.DataFrame:
     try:
-        return [
-            r[0]
-            for r in con.execute(
-                """
-                SELECT column_name FROM pg.information_schema.columns
-                WHERE table_schema = 'public' AND table_name = ?
-                """,
-                [table],
-            ).fetchall()
-        ]
-    except Exception:
-        return []
-
-
-def write(con, table, df):
-    if df is None or df.empty:
-        logger.info("%s: 0 rows", table)
-        return
-    use = [c for c in df.columns if c in cols(con, table)]
-    if not use:
-        logger.warning("No columns for %s", table)
-        return
-    con.execute(f"DELETE FROM pg.public.{table}")
-    con.register("_t", df[use])
-    con.execute(
-        f"INSERT INTO pg.public.{table} ({', '.join(use)}) SELECT {', '.join(use)} FROM _t"
-    )
-    logger.info("%s: %s rows", table, len(df))
-
-
-def qdf(con, sql):
-    try:
-        return con.execute(sql).fetchdf()
-    except Exception as e:
+        return pd.read_sql(text(sql), eng)
+    except Exception as e:  # noqa: BLE001
         logger.warning("Query failed: %s", e)
         return pd.DataFrame()
 
@@ -131,66 +106,76 @@ def label_fish(score):
     return "UNFAVOURABLE"
 
 
+def replace_table(eng, table: str, df: pd.DataFrame) -> None:
+    if df is None or df.empty:
+        logger.info("%s: 0 rows", table)
+        return
+    with eng.begin() as conn:
+        conn.execute(text(f"DELETE FROM {table}"))
+        df.to_sql(table, conn, if_exists="append", index=False, method="multi")
+    logger.info("%s: %s rows", table, len(df))
+
+
 def run():
     logger.info("=== Phase 20 Ocean State Engine ===")
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     as_of = now.date()
-    con = connect()
+    eng = engine()
 
     oc = qdf(
-        con,
+        eng,
         """
-        SELECT * FROM pg.public.fact_ocean_conditions
+        SELECT * FROM fact_ocean_conditions
         ORDER BY date_key DESC NULLS LAST
         LIMIT 10
         """,
     )
     fus = qdf(
-        con,
+        eng,
         """
-        SELECT * FROM pg.public.fact_ocean_risk_fusion
+        SELECT * FROM fact_ocean_risk_fusion
         ORDER BY as_of_date DESC NULLS LAST
         LIMIT 1
         """,
     )
     hab = qdf(
-        con,
+        eng,
         """
-        SELECT * FROM pg.public.fact_habitat_suitability
+        SELECT * FROM fact_habitat_suitability
         ORDER BY as_of_date DESC NULLS LAST
         LIMIT 1
         """,
     )
     bloom = qdf(
-        con,
+        eng,
         """
-        SELECT * FROM pg.public.fact_bloom_risk
+        SELECT * FROM fact_bloom_risk
         ORDER BY risk_date DESC NULLS LAST
         LIMIT 1
         """,
     )
     anom = qdf(
-        con,
+        eng,
         """
-        SELECT * FROM pg.public.fact_ocean_climate_anomalies
+        SELECT * FROM fact_ocean_climate_anomalies
         ORDER BY date_key DESC NULLS LAST
         LIMIT 5
         """,
     )
     wio = qdf(
-        con,
+        eng,
         """
-        SELECT * FROM pg.public.fact_wio_intelligence_index
+        SELECT * FROM fact_wio_intelligence_index
         WHERE region_id = 'kenya_eez'
         ORDER BY index_date DESC NULLS LAST
         LIMIT 3
         """,
     )
     gfw = qdf(
-        con,
+        eng,
         """
         SELECT SUM(hours) AS sum_hours, COUNT(*) AS cells
-        FROM pg.public.fact_gfw_fishing_effort
+        FROM fact_gfw_fishing_effort
         """,
     )
 
@@ -236,7 +221,6 @@ def run():
     conf = 40.0
     fresh = 45.0
 
-    # Thermal fit: Kenya nearshore ~26–28°C preferred
     thermal_fit = 55.0
     if sst is not None:
         sources += 1
@@ -250,7 +234,6 @@ def run():
         sources += 1
         conf += 10
         fresh = max(fresh, 75)
-        # moderate chl supports productivity; very high → bloom stress
         if chl < 0.2:
             productivity = 35.0
         elif chl < 1.0:
@@ -265,7 +248,6 @@ def run():
         conf += 8
         fresh = max(fresh, 70)
     else:
-        # proxy from chl
         if chl is not None:
             bloom_score = clamp(min(95, max(5, (chl - 0.5) * 25)))
         else:
@@ -293,16 +275,11 @@ def run():
         sources += 1
         conf += 5
 
-    # Ecological stress (higher = worse)
     sst_contrib = clamp(abs((sst or 27) - 27) * 15) if sst is not None else 15.0
     chl_contrib = clamp(max(0, (chl or 0.8) - 1.2) * 20) if chl is not None else 12.0
     bloom_contrib = clamp(bloom_score * 0.55)
     climate_contrib = clamp(climate_stress * 0.45)
-    if ocean_h is not None:
-        # low health raises stress
-        eco_from_wio = clamp(100 - ocean_h)
-    else:
-        eco_from_wio = None
+    eco_from_wio = clamp(100 - ocean_h) if ocean_h is not None else None
 
     stress_score = clamp(
         0.30 * sst_contrib
@@ -325,7 +302,6 @@ def run():
     if not stress_drivers:
         stress_drivers.append("baseline proxies")
 
-    # Fisheries condition (higher = better)
     pressure_penalty = 0.0
     if fish_p is not None:
         pressure_penalty = clamp(fish_p * 0.35)
@@ -343,7 +319,6 @@ def run():
         - 0.15 * (bloom_score * 0.3)
     )
 
-    # Ocean state score (higher = healthier/more stable)
     if ocean_h is not None:
         base_state = ocean_h
     elif overall_wio is not None:
@@ -430,7 +405,7 @@ def run():
                 thermal_fit=round(thermal_fit, 1),
                 productivity_proxy=round(productivity, 1),
                 pressure_penalty=round(pressure_penalty, 1),
-                confidence_score=round(conf - 5, 1),
+                confidence_score=round(max(25.0, conf - 5), 1),
                 notes=(
                     f"Thermal fit {thermal_fit:.0f}, habitat {habitat_score:.0f}, "
                     f"productivity {productivity:.0f}, pressure penalty {pressure_penalty:.0f}."
@@ -503,10 +478,10 @@ def run():
             "phase20",
         )
 
-    write(con, "fact_ocean_state", state_df)
-    write(con, "fact_ecological_stress", stress_df)
-    write(con, "fact_fisheries_conditions", fish_df)
-    write(con, "fact_marine_hazards", pd.DataFrame(hazards))
+    replace_table(eng, "fact_ocean_state", state_df)
+    replace_table(eng, "fact_ecological_stress", stress_df)
+    replace_table(eng, "fact_fisheries_conditions", fish_df)
+    replace_table(eng, "fact_marine_hazards", pd.DataFrame(hazards))
 
     logger.info(
         "State=%.1f (%s) stress=%.1f fish=%.1f hazards=%s sources=%s",
@@ -518,7 +493,7 @@ def run():
         sources,
     )
     logger.info("=== Phase 20 complete ===")
-    con.close()
+    eng.dispose()
 
 
 if __name__ == "__main__":

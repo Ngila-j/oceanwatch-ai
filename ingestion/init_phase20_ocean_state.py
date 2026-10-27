@@ -1,8 +1,8 @@
-"""Phase 20 — ocean state engine schema."""
+"""Phase 20 — ocean state engine schema (SQLAlchemy / Supabase-safe)."""
 
 import logging
 
-import duckdb
+from sqlalchemy import create_engine, text
 
 from db_utils import get_db_uri
 
@@ -10,104 +10,104 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-def main():
+def sa_uri() -> str:
     uri = get_db_uri()
+    if uri.startswith("postgresql://"):
+        return "postgresql+psycopg2://" + uri[len("postgresql://") :]
+    if uri.startswith("postgres://"):
+        return "postgresql+psycopg2://" + uri[len("postgres://") :]
+    return uri
+
+
+def main():
+    uri = sa_uri()
     logger.info("=== Phase 20 ocean state schema → %s ===", uri.split("@")[-1])
-    con = duckdb.connect()
-    con.execute("INSTALL postgres; LOAD postgres;")
-    con.execute(f"ATTACH '{uri}' AS pg (TYPE POSTGRES)")
+    eng = create_engine(uri, pool_pre_ping=True, connect_args={"connect_timeout": 30})
 
-    for t in (
-        "fact_marine_hazards",
-        "fact_fisheries_conditions",
-        "fact_ecological_stress",
-        "fact_ocean_state",
-    ):
-        con.execute(f"DROP TABLE IF EXISTS pg.public.{t} CASCADE")
-
-    con.execute(
+    ddl = [
+        "DROP TABLE IF EXISTS fact_marine_hazards CASCADE",
+        "DROP TABLE IF EXISTS fact_fisheries_conditions CASCADE",
+        "DROP TABLE IF EXISTS fact_ecological_stress CASCADE",
+        "DROP TABLE IF EXISTS fact_ocean_state CASCADE",
         """
-        CREATE TABLE pg.public.fact_ocean_state (
+        CREATE TABLE fact_ocean_state (
             as_of_date DATE,
             region_id VARCHAR,
             country_id VARCHAR,
-            ocean_state_score DOUBLE,
+            ocean_state_score DOUBLE PRECISION,
             ocean_state_label VARCHAR,
-            sst_c DOUBLE,
-            chl_mg_m3 DOUBLE,
-            tide_m DOUBLE,
-            ecology_risk DOUBLE,
-            fisheries_condition_score DOUBLE,
-            bloom_risk_score DOUBLE,
-            habitat_score DOUBLE,
-            climate_stress DOUBLE,
-            confidence_score DOUBLE,
-            freshness_pct DOUBLE,
+            sst_c DOUBLE PRECISION,
+            chl_mg_m3 DOUBLE PRECISION,
+            tide_m DOUBLE PRECISION,
+            ecology_risk DOUBLE PRECISION,
+            fisheries_condition_score DOUBLE PRECISION,
+            bloom_risk_score DOUBLE PRECISION,
+            habitat_score DOUBLE PRECISION,
+            climate_stress DOUBLE PRECISION,
+            confidence_score DOUBLE PRECISION,
+            freshness_pct DOUBLE PRECISION,
             data_sources_count INTEGER,
             summary VARCHAR,
             model_version VARCHAR,
             created_at TIMESTAMP
         )
+        """,
         """
-    )
-    con.execute(
-        """
-        CREATE TABLE pg.public.fact_ecological_stress (
+        CREATE TABLE fact_ecological_stress (
             as_of_date DATE,
             region_id VARCHAR,
             country_id VARCHAR,
-            stress_score DOUBLE,
+            stress_score DOUBLE PRECISION,
             stress_level VARCHAR,
             drivers VARCHAR,
-            sst_contrib DOUBLE,
-            chl_contrib DOUBLE,
-            bloom_contrib DOUBLE,
-            climate_contrib DOUBLE,
-            confidence_score DOUBLE,
+            sst_contrib DOUBLE PRECISION,
+            chl_contrib DOUBLE PRECISION,
+            bloom_contrib DOUBLE PRECISION,
+            climate_contrib DOUBLE PRECISION,
+            confidence_score DOUBLE PRECISION,
             model_version VARCHAR,
             created_at TIMESTAMP
         )
+        """,
         """
-    )
-    con.execute(
-        """
-        CREATE TABLE pg.public.fact_fisheries_conditions (
+        CREATE TABLE fact_fisheries_conditions (
             as_of_date DATE,
             region_id VARCHAR,
             country_id VARCHAR,
-            condition_score DOUBLE,
+            condition_score DOUBLE PRECISION,
             condition_label VARCHAR,
-            habitat_score DOUBLE,
-            thermal_fit DOUBLE,
-            productivity_proxy DOUBLE,
-            pressure_penalty DOUBLE,
-            confidence_score DOUBLE,
+            habitat_score DOUBLE PRECISION,
+            thermal_fit DOUBLE PRECISION,
+            productivity_proxy DOUBLE PRECISION,
+            pressure_penalty DOUBLE PRECISION,
+            confidence_score DOUBLE PRECISION,
             notes VARCHAR,
             model_version VARCHAR,
             created_at TIMESTAMP
         )
+        """,
         """
-    )
-    con.execute(
-        """
-        CREATE TABLE pg.public.fact_marine_hazards (
+        CREATE TABLE fact_marine_hazards (
             hazard_id BIGINT,
             as_of_date DATE,
             region_id VARCHAR,
             country_id VARCHAR,
             hazard_type VARCHAR,
             severity VARCHAR,
-            score DOUBLE,
-            lat DOUBLE,
-            lon DOUBLE,
+            score DOUBLE PRECISION,
+            lat DOUBLE PRECISION,
+            lon DOUBLE PRECISION,
             narrative VARCHAR,
             source_table VARCHAR,
             model_version VARCHAR,
             created_at TIMESTAMP
         )
-        """
-    )
-    con.close()
+        """,
+    ]
+    with eng.begin() as conn:
+        for stmt in ddl:
+            conn.execute(text(stmt))
+    eng.dispose()
     logger.info("=== Phase 20 schema ready ===")
 
 
