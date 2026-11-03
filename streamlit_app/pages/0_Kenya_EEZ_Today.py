@@ -1,125 +1,476 @@
 """Kenya EEZ Today — Phase 11 complete ops view."""
 
-import streamlit as st
+from __future__ import annotations
+
+import json
+
 import pandas as pd
-from sqlalchemy import create_engine, text
+import streamlit as st
 
-try:
-    from db_config import get_db_uri
-except ImportError:
-    def get_db_uri():
-        import os
-        return os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL") or "postgresql://postgres:password@localhost:5433/oceanwatch_db"
+from components.data_access import has_error, qdf_or_error
+from components.pagekit import banner, boot, close_page, kpi_row
+from components.ui import section
 
-st.set_page_config(page_title="Kenya EEZ Today", page_icon=":material/public:", layout="wide")
+boot(
+    "Kenya EEZ Today",
+    "Complete ops snapshot for Kenya’s exclusive economic zone — "
+    "spatial risk, events, freshness, and provenance.",
+    kicker="Kenya EEZ · Phase 11",
+    chips=(
+        ("Domain", "primary"),
+        ("Spatial risk", "info"),
+        ("Live warehouse", "success"),
+    ),
+    icon="🇰🇪",
+)
 
-try:
-    from ow_theme import apply_theme, init_a11y_defaults
-    init_a11y_defaults(); apply_theme()
-except Exception:
-    pass
-st.title("Kenya EEZ — Today")
-st.caption("Phase 11 intelligence core · Kenya-first · Decision-support only")
+if st.button("Refresh Kenya EEZ", type="primary", use_container_width=False):
+    st.cache_data.clear()
+    st.rerun()
 
-DB = get_db_uri()
-@st.cache_data(ttl=30)
-def load():
-    eng = create_engine(DB, pool_pre_ping=True)
 
-    def q(sql):
-        try:
-            return pd.read_sql(text(sql), eng)
-        except Exception:
-            return pd.DataFrame()
-
+@st.cache_data(ttl=120, show_spinner="Loading Kenya EEZ…")
+def _load_bundle() -> dict[str, pd.DataFrame]:
     return {
-        "fresh": q("SELECT * FROM data_freshness ORDER BY source_key"),
-        "spatial": q("SELECT * FROM spatial_intelligence ORDER BY metric_key"),
-        "events": q(
+        "fresh": qdf_or_error(
+            "SELECT * FROM data_freshness ORDER BY source_key"
+        ),
+        "spatial": qdf_or_error(
             """
-            SELECT severity, event_type, title, risk_score, confidence_score,
-                   evidence, source, model_version, created_at
-            FROM oceanwatch_events WHERE status='OPEN'
-            ORDER BY risk_score DESC NULLS LAST LIMIT 20
+            SELECT * FROM spatial_intelligence
+            ORDER BY as_of DESC NULLS LAST, risk_score DESC NULLS LAST
+            LIMIT 200
             """
         ),
-        "risks": q(
+        "events": qdf_or_error(
             """
-            SELECT domain, entity_id, risk_score, confidence_score, risk_level,
-                   reason, data_freshness_minutes, model_version
-            FROM risk_scores ORDER BY risk_score DESC LIMIT 20
-            """
-        ),
-        "prov": q("SELECT * FROM data_provenance ORDER BY metric_key"),
-        "forecast": q(
-            """
-            SELECT forecast_for_date, horizon_day, predicted_sst, model_name
-            FROM fact_sst_forecast ORDER BY horizon_day LIMIT 7
+            SELECT * FROM oceanwatch_events
+            ORDER BY COALESCE(detected_at, created_at) DESC NULLS LAST
+            LIMIT 300
             """
         ),
-        "ocean": q(
+        "risks": qdf_or_error(
             """
-            SELECT date_key, sst_celsius, chlorophyll_mg_m3 FROM fact_ocean_conditions
-            WHERE sst_celsius IS NOT NULL ORDER BY date_key DESC LIMIT 1
+            SELECT * FROM risk_scores
+            ORDER BY as_of DESC NULLS LAST, risk_score DESC NULLS LAST
+            LIMIT 200
             """
         ),
-        "port": q("SELECT * FROM fact_port_metrics ORDER BY metric_date DESC LIMIT 1"),
-        "wio": q("SELECT * FROM fact_wio_intelligence_index ORDER BY index_date DESC LIMIT 1"),
+        "prov": qdf_or_error(
+            "SELECT * FROM data_provenance ORDER BY dataset_key"
+        ),
+        "ocean": qdf_or_error(
+            """
+            SELECT * FROM fact_ocean_conditions
+            ORDER BY 1 DESC
+            LIMIT 50
+            """
+        ),
+        "ports": qdf_or_error(
+            """
+            SELECT * FROM fact_port_metrics
+            ORDER BY 1 DESC
+            LIMIT 50
+            """
+        ),
+        "wio": qdf_or_error(
+            """
+            SELECT * FROM fact_wio_intelligence_index
+            ORDER BY index_date DESC NULLS LAST
+            LIMIT 14
+            """
+        ),
     }
 
 
-d = load()
+def _ok(df: pd.DataFrame) -> bool:
+    return df is not None and not df.empty and not has_error(df)
 
-# KPIs
-sst = chl = cong = wio = ves = "—"
-if not d["ocean"].empty:
-    o = d["ocean"].iloc[0]
-    if pd.notna(o.get("sst_celsius")):
-        sst = f"{float(o['sst_celsius']):.2f}"
-    if pd.notna(o.get("chlorophyll_mg_m3")):
-        chl = f"{float(o['chlorophyll_mg_m3']):.3f}"
-if not d["port"].empty:
-    cong = str(d["port"].iloc[0].get("congestion_level") or "—")
-if not d["wio"].empty and pd.notna(d["wio"].iloc[0].get("overall_score")):
-    wio = f"{float(d['wio'].iloc[0]['overall_score']):.1f}"
-if not d["spatial"].empty:
-    m = d["spatial"][d["spatial"]["metric_key"] == "ais_vessels_in_kenya_box"]
-    if not m.empty:
-        ves = int(m.iloc[0]["metric_value"])
 
-a, b, c, e, f = st.columns(5)
-a.metric("SST (C)", sst)
-b.metric("CHL", chl)
-c.metric("Port", cong)
-e.metric("WIO-OII", wio)
-f.metric("Vessels in box", ves)
+def _err(df: pd.DataFrame) -> str | None:
+    if df is not None and has_error(df):
+        try:
+            return str(df["error"].iloc[0])
+        except Exception:  # noqa: BLE001
+            return "query error"
+    return None
 
-st.subheader("Data freshness")
-if not d["fresh"].empty:
-    st.dataframe(d["fresh"], width="stretch")
-else:
-    st.warning("Run run_phase11_intelligence.py")
 
-st.subheader("Spatial intelligence")
-if not d["spatial"].empty:
-    st.dataframe(d["spatial"], width="stretch")
+data = _load_bundle()
+fresh = data["fresh"]
+spatial = data["spatial"]
+events = data["events"]
+risks = data["risks"]
+prov = data["prov"]
+ocean = data["ocean"]
+ports = data["ports"]
+wio = data["wio"]
 
-st.subheader("Priority events")
-if not d["events"].empty:
-    st.dataframe(d["events"], width="stretch")
-else:
-    st.caption("No OPEN events")
+missing = []
+for label, frame in (
+    ("data_freshness", fresh),
+    ("spatial_intelligence", spatial),
+    ("oceanwatch_events", events),
+    ("risk_scores", risks),
+    ("data_provenance", prov),
+):
+    err = _err(frame)
+    if err and any(
+        t in err.lower()
+        for t in ("does not exist", "undefinedtable", "relation", "undefined table")
+    ):
+        missing.append(label)
 
-st.subheader("Unified risk scores")
-if not d["risks"].empty:
-    st.dataframe(d["risks"], width="stretch")
+if missing:
+    banner(
+        "Kenya EEZ tables not ready",
+        "Initialise Phase 11, then refresh.\n\n"
+        "`python ingestion/init_phase11_complete.py`\n"
+        "`python ingestion/run_phase11_intelligence.py`\n\n"
+        f"Missing: {', '.join(missing)}",
+        tone="warning",
+        icon="⚠️",
+    )
+    with st.expander("Diagnostics"):
+        for label, frame in (
+            ("fresh", fresh),
+            ("spatial", spatial),
+            ("events", events),
+            ("risks", risks),
+            ("prov", prov),
+        ):
+            e = _err(frame)
+            if e:
+                st.code(f"{label}: {e}")
+    close_page()
+    st.stop()
 
-st.subheader("Provenance")
-if not d["prov"].empty:
-    st.dataframe(d["prov"], width="stretch")
+# ── KPIs ────────────────────────────────────────────────────────────────────
+open_events = 0
+if _ok(events):
+    sc = next((c for c in events.columns if c.lower() == "status"), None)
+    if sc:
+        open_events = int(
+            events[sc].astype(str).str.upper().isin({"OPEN", "NEW", "ACTIVE"}).sum()
+        )
+    else:
+        open_events = len(events)
 
-st.subheader("SST forecast (7 day)")
-if not d["forecast"].empty:
-    st.dataframe(d["forecast"], width="stretch")
+high_zones = 0
+if _ok(spatial):
+    tc = next((c for c in spatial.columns if c.lower() == "risk_tier"), None)
+    if tc:
+        high_zones = int(
+            spatial[tc]
+            .astype(str)
+            .str.upper()
+            .isin({"HIGH", "CRITICAL"})
+            .sum()
+        )
 
-st.info("Vessel flags require human review. Not legal findings. GFW attribution where applicable.")
+fresh_ok = 0
+fresh_n = 0
+if _ok(fresh):
+    fresh_n = len(fresh)
+    sc = next((c for c in fresh.columns if c.lower() == "status"), None)
+    if sc:
+        fresh_ok = int(
+            fresh[sc].astype(str).str.upper().isin({"OK", "DAILY_OK", "FRESH"}).sum()
+        )
+
+avg_risk = "—"
+if _ok(risks):
+    rc = next((c for c in risks.columns if c.lower() == "risk_score"), None)
+    if rc is not None:
+        try:
+            avg_risk = f"{float(pd.to_numeric(risks[rc], errors='coerce').mean()):.0f}"
+        except Exception:  # noqa: BLE001
+            avg_risk = "—"
+
+wio_score = "—"
+if _ok(wio):
+    oc = next(
+        (c for c in wio.columns if c.lower() in ("overall_score", "score", "index_value")),
+        None,
+    )
+    if oc is not None:
+        try:
+            wio_score = f"{float(pd.to_numeric(wio[oc], errors='coerce').iloc[0]):.0f}"
+        except Exception:  # noqa: BLE001
+            wio_score = "—"
+
+kpi_row(
+    [
+        {
+            "label": "Open events",
+            "value": f"{open_events:,}",
+            "hint": "oceanwatch_events",
+            "tone": "danger" if open_events >= 5 else "primary",
+        },
+        {
+            "label": "High-risk zones",
+            "value": f"{high_zones:,}",
+            "hint": "spatial_intelligence",
+            "tone": "warning" if high_zones else "success",
+        },
+        {
+            "label": "Fresh sources",
+            "value": f"{fresh_ok}/{fresh_n}" if fresh_n else "—",
+            "hint": "data_freshness OK",
+            "tone": "success" if fresh_n and fresh_ok == fresh_n else "info",
+        },
+        {
+            "label": "Avg entity risk",
+            "value": str(avg_risk),
+            "hint": "risk_scores mean",
+            "tone": "primary",
+        },
+        {
+            "label": "WIO index",
+            "value": str(wio_score),
+            "hint": "latest overall",
+            "tone": "info",
+        },
+    ]
+)
+
+empty_bits = [
+    name
+    for name, df in (
+        ("spatial", spatial),
+        ("events", events),
+        ("risks", risks),
+        ("freshness", fresh),
+        ("provenance", prov),
+    )
+    if not _ok(df)
+]
+if empty_bits:
+    banner(
+        "Some Kenya EEZ panels are empty",
+        "Tables exist but have no rows yet: "
+        + ", ".join(empty_bits)
+        + ".\n\n`python ingestion/run_phase11_intelligence.py`",
+        tone="info",
+        icon="ℹ️",
+    )
+
+tab_sit, tab_evt, tab_risk, tab_fresh, tab_data = st.tabs(
+    ["Situation", "Events", "Risk", "Freshness", "Data & ports"]
+)
+
+with tab_sit:
+    section(
+        "Spatial intelligence",
+        "Zone-level composite for Kenya EEZ watch boxes.",
+    )
+    if _ok(spatial):
+        # latest as_of only if multiple days
+        view = spatial.copy()
+        if "as_of" in view.columns:
+            try:
+                latest = view["as_of"].max()
+                view = view[view["as_of"] == latest]
+            except Exception:  # noqa: BLE001
+                pass
+        prefer = [
+            c
+            for c in (
+                "zone_name",
+                "zone_id",
+                "risk_tier",
+                "risk_score",
+                "vessel_count",
+                "dark_count",
+                "fishing_hours",
+                "sst_c",
+                "bloom_risk",
+                "notes",
+                "as_of",
+            )
+            if c in view.columns
+        ]
+        st.dataframe(
+            view[prefer] if prefer else view,
+            use_container_width=True,
+            hide_index=True,
+            height=360,
+        )
+        if "risk_score" in view.columns and "zone_name" in view.columns:
+            chart_df = (
+                view[["zone_name", "risk_score"]]
+                .dropna()
+                .sort_values("risk_score", ascending=False)
+                .set_index("zone_name")
+            )
+            if not chart_df.empty:
+                st.bar_chart(chart_df)
+    else:
+        st.info("No spatial_intelligence rows. Run Phase 11 intelligence.")
+
+with tab_evt:
+    section("Domain events", "Detected cues across the Kenya EEZ.")
+    if _ok(events):
+        ev = events.copy()
+        c1, c2, c3 = st.columns(3)
+        sev_col = next((c for c in ev.columns if c.lower() == "severity"), None)
+        type_col = next((c for c in ev.columns if c.lower() == "event_type"), None)
+        status_col = next((c for c in ev.columns if c.lower() == "status"), None)
+        with c1:
+            sev_opts = (
+                sorted(ev[sev_col].dropna().astype(str).unique()) if sev_col else []
+            )
+            sev_sel = st.multiselect("Severity", sev_opts, default=[])
+        with c2:
+            type_opts = (
+                sorted(ev[type_col].dropna().astype(str).unique()) if type_col else []
+            )
+            type_sel = st.multiselect("Type", type_opts, default=[])
+        with c3:
+            st_opts = (
+                sorted(ev[status_col].dropna().astype(str).unique())
+                if status_col
+                else []
+            )
+            st_sel = st.multiselect("Status", st_opts, default=[])
+        if sev_col and sev_sel:
+            ev = ev[ev[sev_col].astype(str).isin(sev_sel)]
+        if type_col and type_sel:
+            ev = ev[ev[type_col].astype(str).isin(type_sel)]
+        if status_col and st_sel:
+            ev = ev[ev[status_col].astype(str).isin(st_sel)]
+
+        prefer = [
+            c
+            for c in (
+                "detected_at",
+                "severity",
+                "event_type",
+                "title",
+                "status",
+                "risk_score",
+                "region_id",
+                "lat",
+                "lon",
+                "event_id",
+            )
+            if c in ev.columns
+        ]
+        st.dataframe(
+            ev[prefer] if prefer else ev,
+            use_container_width=True,
+            hide_index=True,
+            height=380,
+        )
+        if {"lat", "lon"}.issubset(set(ev.columns)):
+            m = ev.dropna(subset=["lat", "lon"])
+            if not m.empty:
+                st.map(m.rename(columns={"lat": "latitude", "lon": "longitude"})[
+                    ["latitude", "longitude"]
+                ])
+    else:
+        st.info("No oceanwatch_events rows yet.")
+
+with tab_risk:
+    section("Entity risk scores", "Zones, ports, corridors, and fleet composites.")
+    if _ok(risks):
+        prefer = [
+            c
+            for c in (
+                "entity_type",
+                "entity_id",
+                "risk_tier",
+                "risk_score",
+                "drivers",
+                "as_of",
+                "computed_at",
+            )
+            if c in risks.columns
+        ]
+        st.dataframe(
+            risks[prefer] if prefer else risks,
+            use_container_width=True,
+            hide_index=True,
+            height=360,
+        )
+        if "risk_tier" in risks.columns:
+            tier_counts = (
+                risks["risk_tier"].astype(str).value_counts().rename_axis("tier").reset_index(name="n")
+            )
+            st.bar_chart(tier_counts.set_index("tier"))
+    else:
+        st.info("No risk_scores rows yet.")
+
+    if _ok(wio):
+        section("WIO intelligence index", "Latest regional composite.")
+        st.dataframe(wio, use_container_width=True, hide_index=True)
+        try:
+            drivers = wio.iloc[0].get("drivers")
+            if drivers:
+                st.caption("Drivers")
+                if isinstance(drivers, str):
+                    try:
+                        st.json(json.loads(drivers))
+                    except Exception:  # noqa: BLE001
+                        st.write(drivers)
+                else:
+                    st.write(drivers)
+        except Exception:  # noqa: BLE001
+            pass
+
+with tab_fresh:
+    section("Pipeline freshness", "Age and status of upstream sources.")
+    if _ok(fresh):
+        prefer = [
+            c
+            for c in (
+                "source_name",
+                "source_key",
+                "status",
+                "age_minutes",
+                "expected_cadence",
+                "last_success_at",
+                "notes",
+            )
+            if c in fresh.columns
+        ]
+        st.dataframe(
+            fresh[prefer] if prefer else fresh,
+            use_container_width=True,
+            hide_index=True,
+            height=360,
+        )
+    else:
+        st.info("No data_freshness rows.")
+
+    section("Provenance", "Who provides each dataset and on what terms.")
+    if _ok(prov):
+        st.dataframe(prov, use_container_width=True, hide_index=True, height=320)
+    else:
+        st.info("No data_provenance rows.")
+
+with tab_data:
+    section("Ocean conditions", "Recent SST / ocean rows for the EEZ.")
+    if _ok(ocean):
+        st.dataframe(ocean, use_container_width=True, hide_index=True, height=280)
+    else:
+        st.info(
+            "fact_ocean_conditions empty — run ocean ingest or Phase 11 seed fallback."
+        )
+
+    section("Port metrics", "Mombasa / Lamu style port snapshots.")
+    if _ok(ports):
+        st.dataframe(ports, use_container_width=True, hide_index=True, height=280)
+    else:
+        st.info("fact_port_metrics empty — run port metrics job or Phase 11 seed.")
+
+banner(
+    "Ops note",
+    "Kenya EEZ Today reads Phase 11 warehouse tables. Re-run "
+    "`python ingestion/run_phase11_intelligence.py` after AIS/ocean/port jobs "
+    "to refresh spatial risk and events from live facts.",
+    tone="info",
+    icon="ℹ️",
+)
+
+close_page()
