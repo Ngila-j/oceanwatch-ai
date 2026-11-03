@@ -143,7 +143,7 @@ def _existing_source_keys(con, keys: list[str]) -> set[str]:
     chunk_size = 400
     for i in range(0, len(keys), chunk_size):
         chunk = keys[i : i + chunk_size]
-        placeholders = ", ".join(["?"] * len(chunk))
+        placeholders = ", ".join(["%s"] * len(chunk))
         df = qdf(
             con,
             f"""
