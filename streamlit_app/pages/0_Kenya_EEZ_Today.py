@@ -14,11 +14,11 @@ from components.ui import section
 boot(
     "Kenya EEZ Today",
     "Complete ops snapshot for Kenya’s exclusive economic zone — "
-    "spatial risk, events, freshness, and provenance.",
+    "spatial risk, coastal tides, swim windows, events, and provenance.",
     kicker="Kenya EEZ · Phase 11",
     chips=(
         ("Domain", "primary"),
-        ("Spatial risk", "info"),
+        ("Tides & swim", "info"),
         ("Live warehouse", "success"),
     ),
     icon="🇰🇪",
@@ -80,6 +80,43 @@ def _load_bundle() -> dict[str, pd.DataFrame]:
             LIMIT 14
             """
         ),
+        "stations": qdf_or_error(
+            """
+            SELECT * FROM fact_coastal_stations
+            ORDER BY station_name
+            """
+        ),
+        "tides": qdf_or_error(
+            """
+            SELECT * FROM fact_tide_heights
+            WHERE ts_utc >= NOW() - INTERVAL '6 hours'
+              AND ts_utc <= NOW() + INTERVAL '72 hours'
+            ORDER BY ts_utc
+            LIMIT 5000
+            """
+        ),
+        "swim": qdf_or_error(
+            """
+            SELECT w.*, s.station_name, s.zone_id, s.lat, s.lon
+            FROM fact_swim_windows w
+            LEFT JOIN fact_coastal_stations s ON s.station_id = w.station_id
+            WHERE w.window_date >= CURRENT_DATE - 1
+            ORDER BY w.window_date, s.station_name
+            LIMIT 200
+            """
+        ),
+        "tide_now": qdf_or_error(
+            """
+            SELECT DISTINCT ON (t.station_id)
+              t.station_id, s.station_name, s.zone_id, s.lat, s.lon,
+              t.ts_utc, t.tide_height_m, t.tide_rate_m_per_h, t.stage,
+              t.swim_rating, t.swim_reason, t.is_daylight
+            FROM fact_tide_heights t
+            LEFT JOIN fact_coastal_stations s ON s.station_id = t.station_id
+            WHERE t.ts_utc <= NOW() + INTERVAL '30 minutes'
+            ORDER BY t.station_id, t.ts_utc DESC
+            """
+        ),
     }
 
 
@@ -105,6 +142,10 @@ prov = data["prov"]
 ocean = data["ocean"]
 ports = data["ports"]
 wio = data["wio"]
+stations = data["stations"]
+tides = data["tides"]
+swim = data["swim"]
+tide_now = data["tide_now"]
 
 missing = []
 for label, frame in (
@@ -199,6 +240,16 @@ if _ok(wio):
         except Exception:  # noqa: BLE001
             wio_score = "—"
 
+fav_now = 0
+tide_stations_n = 0
+if _ok(tide_now):
+    tide_stations_n = len(tide_now)
+    rc = next((c for c in tide_now.columns if c.lower() == "swim_rating"), None)
+    if rc:
+        fav_now = int(
+            tide_now[rc].astype(str).str.upper().eq("FAVOURABLE").sum()
+        )
+
 kpi_row(
     [
         {
@@ -214,16 +265,16 @@ kpi_row(
             "tone": "warning" if high_zones else "success",
         },
         {
+            "label": "Swim-favourable now",
+            "value": f"{fav_now}/{tide_stations_n}" if tide_stations_n else "—",
+            "hint": "coastal stations this hour",
+            "tone": "success" if fav_now else ("warning" if tide_stations_n else "info"),
+        },
+        {
             "label": "Fresh sources",
             "value": f"{fresh_ok}/{fresh_n}" if fresh_n else "—",
             "hint": "data_freshness OK",
             "tone": "success" if fresh_n and fresh_ok == fresh_n else "info",
-        },
-        {
-            "label": "Avg entity risk",
-            "value": str(avg_risk),
-            "hint": "risk_scores mean",
-            "tone": "primary",
         },
         {
             "label": "WIO index",
@@ -255,8 +306,8 @@ if empty_bits:
         icon="ℹ️",
     )
 
-tab_sit, tab_evt, tab_risk, tab_fresh, tab_data = st.tabs(
-    ["Situation", "Events", "Risk", "Freshness", "Data & ports"]
+tab_sit, tab_tides, tab_evt, tab_risk, tab_fresh, tab_data = st.tabs(
+    ["Situation", "Tides & swimming", "Events", "Risk", "Freshness", "Data & ports"]
 )
 
 with tab_sit:
@@ -280,6 +331,10 @@ with tab_sit:
                 "zone_id",
                 "risk_tier",
                 "risk_score",
+                "tide_height_m",
+                "tide_stage",
+                "swim_rating",
+                "next_favourable_start",
                 "vessel_count",
                 "dark_count",
                 "fishing_hours",
@@ -307,6 +362,204 @@ with tab_sit:
                 st.bar_chart(chart_df)
     else:
         st.info("No spatial_intelligence rows. Run Phase 11 intelligence.")
+
+with tab_tides:
+    section(
+        "Coastal tide heights & swim windows",
+        "Hourly tide forecast for Kenya coastal stations with recreational "
+        "swim ratings (FAVOURABLE / CAUTION / RISKY). Model is harmonic and "
+        "indicative — not a substitute for KMFRI tables or local lifeguards.",
+    )
+
+    if not _ok(tide_now) and not _ok(tides):
+        banner(
+            "Tide tables not loaded",
+            "Run `python ingestion/run_kenya_coastal_tides.py` then refresh.",
+            tone="warning",
+            icon="🌊",
+        )
+    else:
+        # Station picker
+        stn_opts: list[str] = []
+        label_by_id: dict[str, str] = {}
+        if _ok(stations):
+            for _, r in stations.iterrows():
+                sid = str(r.get("station_id", ""))
+                name = str(r.get("station_name", sid))
+                label_by_id[sid] = name
+                stn_opts.append(sid)
+        elif _ok(tide_now) and "station_id" in tide_now.columns:
+            stn_opts = sorted(tide_now["station_id"].astype(str).unique().tolist())
+            for sid in stn_opts:
+                label_by_id[sid] = sid
+
+        pick_labels = [f"{label_by_id.get(s, s)} ({s})" for s in stn_opts]
+        c_a, c_b = st.columns([2, 1])
+        with c_a:
+            chosen_label = st.selectbox(
+                "Coastal station",
+                pick_labels,
+                index=0 if pick_labels else None,
+            )
+        chosen_id = stn_opts[pick_labels.index(chosen_label)] if pick_labels else None
+        with c_b:
+            horizon = st.slider("Forecast hours", 12, 72, 36, step=6)
+
+        # Now strip across stations
+        if _ok(tide_now):
+            section("Right now — all stations", "Current hour height and swim rating.")
+            now_view = tide_now.copy()
+            prefer_now = [
+                c
+                for c in (
+                    "station_name",
+                    "zone_id",
+                    "ts_utc",
+                    "tide_height_m",
+                    "stage",
+                    "tide_rate_m_per_h",
+                    "swim_rating",
+                    "swim_reason",
+                    "is_daylight",
+                )
+                if c in now_view.columns
+            ]
+            st.dataframe(
+                now_view[prefer_now] if prefer_now else now_view,
+                use_container_width=True,
+                hide_index=True,
+                height=280,
+            )
+            # quick KPI for selection
+            if chosen_id and "station_id" in now_view.columns:
+                row = now_view[now_view["station_id"].astype(str) == chosen_id]
+                if not row.empty:
+                    r0 = row.iloc[0]
+                    k1, k2, k3, k4 = st.columns(4)
+                    k1.metric(
+                        "Tide height",
+                        f"{float(r0.get('tide_height_m', float('nan'))):.2f} m",
+                    )
+                    k2.metric("Stage", str(r0.get("stage", "—")))
+                    k3.metric("Swim", str(r0.get("swim_rating", "—")))
+                    rate = r0.get("tide_rate_m_per_h")
+                    k4.metric(
+                        "Rate",
+                        f"{float(rate):+.2f} m/h" if rate is not None else "—",
+                    )
+                    reason = r0.get("swim_reason")
+                    if reason:
+                        st.caption(str(reason))
+
+        # Chart + table for selected station
+        if chosen_id and _ok(tides) and "station_id" in tides.columns:
+            series = tides[tides["station_id"].astype(str) == str(chosen_id)].copy()
+            if "ts_utc" in series.columns:
+                series = series.sort_values("ts_utc")
+                try:
+                    cutoff = pd.Timestamp.utcnow() + pd.Timedelta(hours=int(horizon))
+                    # handle tz-aware/naive
+                    ts = pd.to_datetime(series["ts_utc"], utc=True)
+                    series = series.assign(_ts=ts)
+                    series = series[series["_ts"] <= cutoff]
+                except Exception:  # noqa: BLE001
+                    series = series.head(horizon)
+
+            if not series.empty and "tide_height_m" in series.columns:
+                chart = series.set_index(
+                    "ts_utc" if "ts_utc" in series.columns else series.index
+                )[["tide_height_m"]]
+                st.line_chart(chart)
+
+            # colour-ish table of hours
+            prefer_t = [
+                c
+                for c in (
+                    "ts_utc",
+                    "tide_height_m",
+                    "stage",
+                    "tide_rate_m_per_h",
+                    "swim_rating",
+                    "swim_reason",
+                    "is_daylight",
+                )
+                if c in series.columns
+            ]
+            st.dataframe(
+                series[prefer_t] if prefer_t else series,
+                use_container_width=True,
+                hide_index=True,
+                height=360,
+            )
+
+            # favourable hours list (daylight)
+            if "swim_rating" in series.columns:
+                fav_hours = series[
+                    series["swim_rating"].astype(str).str.upper() == "FAVOURABLE"
+                ]
+                if not fav_hours.empty:
+                    st.success(
+                        f"**{len(fav_hours)} favourable hour(s)** in the next "
+                        f"{horizon}h at {label_by_id.get(chosen_id, chosen_id)}."
+                    )
+                else:
+                    st.warning(
+                        "No FAVOURABLE swim hours in this horizon — "
+                        "see CAUTION windows and avoid low-tide / strong-stream slots."
+                    )
+
+        # Daily rollup
+        if _ok(swim):
+            section(
+                "Daily swim window summary",
+                "Favourable / caution / risky hour counts and next HW/LW.",
+            )
+            sw = swim.copy()
+            if chosen_id and "station_id" in sw.columns:
+                sw_show = sw[sw["station_id"].astype(str) == str(chosen_id)]
+                if sw_show.empty:
+                    sw_show = sw
+            else:
+                sw_show = sw
+            prefer_sw = [
+                c
+                for c in (
+                    "window_date",
+                    "station_name",
+                    "favourable_hours",
+                    "caution_hours",
+                    "risky_hours",
+                    "high_tide_today_m",
+                    "high_tide_at",
+                    "low_tide_today_m",
+                    "low_tide_at",
+                    "next_favourable_start",
+                    "next_favourable_end",
+                    "summary",
+                )
+                if c in sw_show.columns
+            ]
+            st.dataframe(
+                sw_show[prefer_sw] if prefer_sw else sw_show,
+                use_container_width=True,
+                hide_index=True,
+                height=280,
+            )
+
+        if _ok(stations) and {"lat", "lon"}.issubset(set(stations.columns)):
+            section("Station map", "Kenya coastal tide / swim stations.")
+            m = stations.dropna(subset=["lat", "lon"]).rename(
+                columns={"lat": "latitude", "lon": "longitude"}
+            )
+            if not m.empty:
+                st.map(m[["latitude", "longitude"]])
+
+    st.caption(
+        "Ratings: **FAVOURABLE** = mid–high tide near slack · "
+        "**CAUTION** = transitional or night · "
+        "**RISKY** = low tide (reef/rocks) or strong flood/ebb. "
+        "Always check local conditions, lifeguards, and weather."
+    )
 
 with tab_evt:
     section("Domain events", "Detected cues across the Kenya EEZ.")
@@ -468,7 +721,9 @@ banner(
     "Ops note",
     "Kenya EEZ Today reads Phase 11 warehouse tables. Re-run "
     "`python ingestion/run_phase11_intelligence.py` after AIS/ocean/port jobs "
-    "to refresh spatial risk and events from live facts.",
+    "and `python ingestion/run_kenya_coastal_tides.py` for tide/swim windows. "
+    "Tide heights are harmonic forecasts for ops planning — verify against "
+    "KMFRI / official tables for safety-critical use.",
     tone="info",
     icon="ℹ️",
 )

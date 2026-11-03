@@ -396,6 +396,16 @@ def seed_provenance(con, now: datetime) -> int:
             "last_refresh": now,
             "notes": "Zone and entity risk composites",
         },
+        {
+            "dataset_key": "kenya_tides",
+            "display_name": "Kenya coastal tides & swim windows",
+            "provider": "OceanWatch harmonic model (KMFRI-class ranges)",
+            "license": "Internal / indicative",
+            "url": "https://www.kmfri.go.ke/",
+            "refresh_cadence": "hourly",
+            "last_refresh": now,
+            "notes": "Not certified hydrographic tables — verify for safety-critical use",
+        },
     ]
     try:
         con.execute("DELETE FROM public.data_provenance")
@@ -578,6 +588,13 @@ def run() -> None:
             "fact_wio_intelligence_index",
         ):
             logger.info("COUNT %s=%s", t, _count(con, t))
+    # Coastal tides + swim windows (separate transaction)
+    try:
+        import run_kenya_coastal_tides as tides_mod
+
+        tides_mod.run()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("coastal tides skipped: %s", exc)
     logger.info("=== Phase 11 done ===")
 
 
