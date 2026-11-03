@@ -31,7 +31,7 @@ app = FastAPI(
         "and WIO-OII index summaries. "
         "Fishing effort data powered by Global Fishing Watch (non-commercial)."
     ),
-    version="0.10.0",
+    version="0.11.0",
 )
 
 app.add_middleware(
@@ -63,7 +63,7 @@ def health():
 def root():
     return {
         "service": "OceanWatch AI API",
-        "version": "0.10.0",
+        "version": "0.11.0",
         "docs": "/docs",
         "endpoints": [
             "/health",
@@ -77,6 +77,8 @@ def root():
             "/v1/bloom/risk",
             "/v1/habitat/suitability",
             "/v1/wio/index",
+            "/v1/situation",
+            "/v1/coverage/countries",
         ],
         "access_tiers": {
             "public": ["ocean conditions summaries", "health"],
@@ -265,3 +267,75 @@ def wio_index(limit: int = Query(5, ge=1, le=30)):
         "results": data,
         "note": "Prototype index with documented weights — not an official government score.",
     }
+
+
+@app.get("/v1/situation")
+def situation(
+    lookback_h: int = Query(24, ge=1, le=168),
+    region: str = Query("KE", min_length=2, max_length=8),
+):
+    """
+    Fused multi-domain situation snapshot for partners / dashboards.
+    Best-effort counts; missing tables yield zeros.
+    """
+    def _count(sql: str) -> int:
+        try:
+            with engine.connect() as conn:
+                return int(conn.execute(text(sql)).scalar() or 0)
+        except Exception:
+            return 0
+
+    def _max(sql: str):
+        try:
+            with engine.connect() as conn:
+                v = conn.execute(text(sql)).scalar()
+                return v.isoformat() if hasattr(v, "isoformat") else (str(v) if v else None)
+        except Exception:
+            return None
+
+    metrics = {
+        "events": _count(
+            f"SELECT COUNT(*) FROM fact_events WHERE COALESCE(created_at, event_time, ts) >= NOW() - INTERVAL '{int(lookback_h)} hours'"
+        ),
+        "notifications_pending": _count(
+            "SELECT COUNT(*) FROM fact_notifications WHERE LOWER(COALESCE(status,'')) IN ('pending','queued','failed','retry')"
+        ),
+        "risk_elevated": _count(
+            "SELECT COUNT(*) FROM unified_risk WHERE LOWER(COALESCE(tier, risk_level, '')) IN ('high','critical','severe')"
+        ),
+        "anomalies": _count(
+            f"SELECT COUNT(*) FROM fact_vessel_anomalies WHERE COALESCE(detected_at, ts, created_at) >= NOW() - INTERVAL '{int(lookback_h)} hours'"
+        ),
+        "countries": _count("SELECT COUNT(*) FROM dim_countries"),
+        "sources": _count("SELECT COUNT(*) FROM dim_data_sources"),
+    }
+    elevated = metrics["risk_elevated"] + metrics["notifications_pending"]
+    posture = "HEIGHTENED" if elevated >= 10 else ("WATCH" if elevated >= 1 else "CALM")
+    return {
+        "region": region,
+        "lookback_h": lookback_h,
+        "posture": posture,
+        "metrics": metrics,
+        "freshness": {
+            "events": _max("SELECT MAX(COALESCE(created_at, event_time, ts)) FROM fact_events"),
+            "ais": _max("SELECT MAX(COALESCE(ts, base_date_time, created_at)) FROM fact_ais_positions"),
+            "risk": _max("SELECT MAX(COALESCE(as_of, updated_at, created_at)) FROM unified_risk"),
+        },
+        "disclaimer": "Decision-support only — not an official authority product.",
+    }
+
+
+@app.get("/v1/coverage/countries")
+def coverage_countries():
+    """Regional coverage hierarchy countries (Phase 18)."""
+    try:
+        data = rows(
+            """
+            SELECT * FROM dim_countries
+            ORDER BY country_id
+            """
+        )
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"dim_countries unavailable: {e}")
+    return {"count": len(data), "results": data}
+

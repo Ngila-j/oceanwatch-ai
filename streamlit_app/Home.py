@@ -26,6 +26,15 @@ from components.ui import (
     tile_grid,
 )
 from ow_theme import animate_home_nav_item, plotly_layout
+from components.mission import (
+    build_mission_brief_markdown,
+    get_mission_context,
+    render_domain_readiness,
+    render_mission_context_controls,
+    render_mission_strip,
+    render_watchlist_panel,
+    situation_snapshot,
+)
 
 ensure_theme()
 # Sidebar "Home" item only — subtle glow / icon breath (respects reduced motion)
@@ -34,13 +43,19 @@ animate_home_nav_item()
 page_header(
     "Mission cockpit",
     "A calm snapshot of Kenya EEZ / WIO activity, risk, and system readiness. "
-    "Use the sidebar to dive into any domain — this page stays intentionally short.",
+    "Use the sidebar to dive into any domain — this page stays intentionally short. "
+    "Open Command Center for full fusion, watchlist, and mission-pack export.",
     kicker="OceanWatch AI · Home",
     chips=[
         ("Decision-support", "info"),
         (str(st.session_state.get("persona", "Analyst")), "primary"),
+        ("Mission context", "neutral"),
     ],
 )
+
+with st.expander("Mission context (region · lookback · severity)", expanded=False):
+    render_mission_context_controls(compact=True, key_prefix="home_mc")
+render_mission_strip(get_mission_context())
 
 # ── Status strip ────────────────────────────────────────────────────────────
 now = datetime.now(timezone.utc)
@@ -175,43 +190,72 @@ kpi_row(
     ]
 )
 
+# ── Fusion readiness (best-effort) ───────────────────────────────────────────
+_snap = None
+try:
+    _eng = da.get_engine()
+    if _eng is not None:
+        _snap = situation_snapshot(_eng, get_mission_context())
+except Exception:
+    _snap = None
+
+if _snap:
+    section(
+        "Domain readiness",
+        f"Posture **{_snap.get('posture', '—')}** · fused from live tables "
+        f"(lookback {get_mission_context().get('lookback_h', 24)}h).",
+    )
+    render_domain_readiness(_snap)
+    _c1, _c2 = st.columns([2, 1])
+    with _c2:
+        st.download_button(
+            "Export mission pack",
+            data=build_mission_brief_markdown(_snap, get_mission_context()).encode("utf-8"),
+            file_name="oceanwatch_mission_pack.md",
+            mime="text/markdown",
+            use_container_width=True,
+        )
+        with st.expander("Watchlist", expanded=False):
+            render_watchlist_panel(editable=True, key_prefix="home_wl")
+
 # ── Guided destinations ─────────────────────────────────────────────────────
 section(
     "Where do you want to go?",
-    "Persona-aware shortcuts — full navigation is always in the sidebar.",
+    "Persona-aware shortcuts — full navigation is always in the sidebar. "
+    "Command Center = fused ops console.",
 )
 
 persona = st.session_state.get("persona", "Analyst")
 persona_tiles = {
     "Executive": [
+        {"icon": "🎛️", "title": "Command Center", "detail": "Fused posture, pack export, watchlist."},
         {"icon": "📊", "title": "Executive Summary", "detail": "Board-ready posture and trends."},
         {"icon": "🛡️", "title": "Unified Risk", "detail": "Cross-domain risk in one view."},
         {"icon": "📰", "title": "WIO Intelligence Brief", "detail": "Narrative situation report."},
-        {"icon": "❤️", "title": "System Health", "detail": "Freshness and pipeline confidence."},
     ],
     "Operations": [
+        {"icon": "🎛️", "title": "Command Center", "detail": "Fused ops console and attention queue."},
         {"icon": "🚨", "title": "Operational Alerts", "detail": "Actionable queue for watch floor."},
         {"icon": "📡", "title": "AIS Live", "detail": "Live traffic picture."},
         {"icon": "📥", "title": "Notifications", "detail": "Delivery backlog and channels."},
-        {"icon": "🔗", "title": "Event Bus", "detail": "Upstream signal fabric."},
     ],
     "Researcher": [
+        {"icon": "🎛️", "title": "Command Center", "detail": "Cross-domain readiness and export."},
         {"icon": "🧪", "title": "Research Data", "detail": "Exportable scientific layers."},
         {"icon": "🌊", "title": "Bloom Risk", "detail": "Ocean color / bloom context."},
-        {"icon": "🌿", "title": "Habitat Suitability", "detail": "Environmental suitability."},
         {"icon": "📚", "title": "Data Catalog", "detail": "What exists and when it refreshed."},
     ],
     "Partner": [
+        {"icon": "🎛️", "title": "Command Center", "detail": "Shareable mission packs."},
         {"icon": "🤝", "title": "Partner Access", "detail": "Scoped API and share policies."},
         {"icon": "📄", "title": "Intelligence Reports", "detail": "Publishable brief packages."},
         {"icon": "🧾", "title": "Audit Trail", "detail": "Who accessed what, when."},
-        {"icon": "🔔", "title": "Alert Subscriptions", "detail": "Managed notification preferences."},
     ],
     "Analyst": [
+        {"icon": "🎛️", "title": "Command Center", "detail": "Fusion, watchlist, mission pack."},
         {"icon": "🛰️", "title": "Anomaly Engine", "detail": "Elevated vessel and ops signals."},
         {"icon": "🌑", "title": "Dark Activity", "detail": "AIS gaps and dark rendezvous cues."},
         {"icon": "⚓", "title": "Port Intelligence", "detail": "Port calls and congestion risk."},
-        {"icon": "🔗", "title": "Event Bus", "detail": "Trace signals into notifications."},
     ],
 }
 tile_grid(persona_tiles.get(persona, persona_tiles["Analyst"]))

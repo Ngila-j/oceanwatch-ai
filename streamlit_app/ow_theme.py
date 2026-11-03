@@ -515,6 +515,127 @@ html, body, [data-testid="stAppViewContainer"], .stApp {{
 }}
 .ow-empty p {{ margin: 0; max-width: 42ch; margin-inline: auto; }}
 
+/* Mission context strip */
+.ow-mission-strip {{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  padding: 0.55rem 0.85rem;
+  margin: 0 0 1rem;
+  border-radius: var(--ow-radius-sm);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.10), rgba(14, 165, 233, 0.04));
+}}
+.ow-mission-kicker {{
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ow-text-secondary);
+  margin-right: 0.25rem;
+}}
+
+/* Domain readiness cards */
+.ow-domain-card {{
+  background: var(--ow-card);
+  border: 1px solid var(--ow-border);
+  border-radius: var(--ow-radius);
+  padding: 0.85rem 1rem;
+  text-align: center;
+  box-shadow: var(--ow-shadow-sm);
+  min-height: 96px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}}
+.ow-domain-card:hover {{
+  transform: translateY(-2px);
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: var(--ow-shadow);
+}}
+.ow-domain-card[data-tone="success"] {{ border-left: 3px solid #22c55e; }}
+.ow-domain-card[data-tone="warning"] {{ border-left: 3px solid #f59e0b; }}
+.ow-domain-card[data-tone="danger"]  {{ border-left: 3px solid #ef4444; }}
+.ow-domain-label {{
+  font-size: 0.78rem;
+  color: var(--ow-text-secondary);
+  font-weight: 600;
+}}
+.ow-domain-score {{
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--ow-primary);
+  line-height: 1.2;
+  margin: 0.15rem 0;
+}}
+.ow-domain-hint {{
+  font-size: 0.75rem;
+  color: var(--ow-text-secondary);
+}}
+
+/* Attention queue rows */
+.ow-attn-row {{
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.65rem 0.75rem;
+  margin: 0 0 0.45rem;
+  border-radius: var(--ow-radius-sm);
+  border: 1px solid var(--ow-border);
+  background: var(--ow-card);
+}}
+.ow-attn-sev {{
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--ow-primary);
+}}
+.ow-attn-row[data-sev="high"] .ow-attn-sev,
+.ow-attn-row[data-sev="critical"] .ow-attn-sev,
+.ow-attn-row[data-sev="severe"] .ow-attn-sev {{
+  background: rgba(239, 68, 68, 0.14);
+  color: #b91c1c;
+}}
+.ow-attn-row[data-sev="medium"] .ow-attn-sev,
+.ow-attn-row[data-sev="warning"] .ow-attn-sev {{
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}}
+.ow-attn-meta {{
+  font-size: 0.72rem;
+  color: var(--ow-text-secondary);
+}}
+.ow-attn-detail {{
+  font-size: 0.84rem;
+  color: var(--ow-text-secondary);
+  margin-top: 0.15rem;
+}}
+
+/* Domain finder hits */
+.ow-find-hit {{
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.7rem;
+  margin: 0 0 0.4rem;
+  border-radius: var(--ow-radius-sm);
+  border: 1px solid var(--ow-border);
+  background: var(--ow-card);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}}
+.ow-find-hit:hover {{
+  border-color: rgba(56, 189, 248, 0.45);
+  transform: translateX(2px);
+}}
+.ow-find-hit span {{
+  font-size: 0.8rem;
+  color: var(--ow-text-secondary);
+}}
+
 /* Section label */
 .ow-section {{
   display: flex;

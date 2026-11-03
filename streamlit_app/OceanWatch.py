@@ -273,6 +273,16 @@ health = page(
     "System Health",
     ":material/settings:",
 )
+command_center = page(
+    "pages/41_Command_Center.py",
+    "Command Center",
+    ":material/dashboard:",
+)
+operator_notebook = page(
+    "pages/42_Operator_Notebook.py",
+    "Operator Notebook",
+    ":material/edit_note:",
+)
 platform_ops = page(
     "pages/31_Platform_Operations.py",
     "Platform Operations",
@@ -338,6 +348,8 @@ nav_dict = {
         playback,
     ),
     "Platform & System": keep(
+        command_center,
+        operator_notebook,
         onboard,
         health,
         platform_ops,
@@ -349,6 +361,29 @@ nav_dict = {k: v for k, v in nav_dict.items() if v}
 if not nav_dict:
     st.error("No OceanWatch pages found. Check streamlit_app/pages.")
     st.stop()
+
+# Mission context + domain finder in sidebar (shared session state)
+try:
+    from components.mission import (
+        get_mission_context,
+        render_mission_context_controls,
+        search_catalog,
+    )
+
+    with st.sidebar:
+        st.markdown("#### Mission")
+        render_mission_context_controls(compact=True, key_prefix="shell_mc")
+        ctx = get_mission_context()
+        st.caption(
+            f"{ctx.get('region')} · {ctx.get('lookback_h')}h · sev ≥ {ctx.get('severity_min')}"
+        )
+        with st.expander("Find a domain", expanded=False):
+            q = st.text_input("Search", key="shell_find", placeholder="AIS, bloom, risk…")
+            for hit in search_catalog(q)[:8]:
+                st.caption(f"**{hit['title']}** · {hit['domain']}")
+                st.caption(hit["hint"])
+except Exception:
+    pass
 
 nav = st.navigation(nav_dict, position="sidebar")
 nav.run()
