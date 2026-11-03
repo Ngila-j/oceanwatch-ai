@@ -106,36 +106,35 @@ if not by_status.empty and not has_error(by_status):
         except Exception:
             pending_n = 0
 if pending_n == 0 and events is not None and not events.empty and not has_error(events):
-    if "status" in events.columns:
-        pending_n = int(
-            events["status"].astype(str).str.upper().isin(_PENDING).sum()
-        )
+    sc = next((c for c in events.columns if c.lower() == "status"), None)
+    if sc:
+        pending_n = int(events[sc].astype(str).str.upper().isin(_PENDING).sum())
 
 kpi_row(
     [
         {
             "label": "Topics",
             "value": f"{_count(topics):,}",
-            "delta": "registered",
-            "help": "Active topic definitions.",
+            "hint": "Active topic definitions.",
+            "tone": "primary",
         },
         {
             "label": "Consumers",
             "value": f"{_count(consumers):,}",
-            "delta": "subscribed",
-            "help": "Registered event consumers.",
+            "hint": "Registered event consumers.",
+            "tone": "info",
         },
         {
-            "label": "Events (window)",
+            "label": "Events loaded",
             "value": f"{_count(events):,}",
-            "delta": f"limit {limit}",
-            "help": "Recent events loaded for this page.",
+            "hint": f"Recent events loaded for this page (limit {limit}).",
+            "tone": "primary",
         },
         {
-            "label": "Pending backlog",
+            "label": "Backlog",
             "value": f"{pending_n:,}",
-            "delta": "PENDING/QUEUED/NEW/FAILED…",
-            "help": "Statuses that still need consumer attention.",
+            "hint": "Statuses that still need consumer attention.",
+            "tone": "danger" if pending_n else "success",
         },
     ]
 )
