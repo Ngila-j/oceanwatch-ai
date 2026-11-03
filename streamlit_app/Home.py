@@ -228,39 +228,48 @@ section(
 persona = st.session_state.get("persona", "Analyst")
 persona_tiles = {
     "Executive": [
+        {"icon": "🇰🇪", "title": "Kenya EEZ Today", "detail": "Daily maritime picture for Kenya EEZ."},
         {"icon": "🎛️", "title": "Command Center", "detail": "Fused posture, pack export, watchlist."},
         {"icon": "📊", "title": "Executive Summary", "detail": "Board-ready posture and trends."},
         {"icon": "🛡️", "title": "Unified Risk", "detail": "Cross-domain risk in one view."},
-        {"icon": "📰", "title": "WIO Intelligence Brief", "detail": "Narrative situation report."},
     ],
     "Operations": [
+        {"icon": "🇰🇪", "title": "Kenya EEZ Today", "detail": "Daily maritime picture for Kenya EEZ."},
         {"icon": "🎛️", "title": "Command Center", "detail": "Fused ops console and attention queue."},
         {"icon": "🚨", "title": "Operational Alerts", "detail": "Actionable queue for watch floor."},
         {"icon": "📡", "title": "AIS Live", "detail": "Live traffic picture."},
-        {"icon": "📥", "title": "Notifications", "detail": "Delivery backlog and channels."},
     ],
     "Researcher": [
+        {"icon": "🇰🇪", "title": "Kenya EEZ Today", "detail": "Daily maritime picture for Kenya EEZ."},
         {"icon": "🎛️", "title": "Command Center", "detail": "Cross-domain readiness and export."},
         {"icon": "🧪", "title": "Research Data", "detail": "Exportable scientific layers."},
         {"icon": "🌊", "title": "Bloom Risk", "detail": "Ocean color / bloom context."},
-        {"icon": "📚", "title": "Data Catalog", "detail": "What exists and when it refreshed."},
     ],
     "Partner": [
+        {"icon": "🇰🇪", "title": "Kenya EEZ Today", "detail": "Daily maritime picture for Kenya EEZ."},
         {"icon": "🎛️", "title": "Command Center", "detail": "Shareable mission packs."},
         {"icon": "🤝", "title": "Partner Access", "detail": "Scoped API and share policies."},
         {"icon": "📄", "title": "Intelligence Reports", "detail": "Publishable brief packages."},
-        {"icon": "🧾", "title": "Audit Trail", "detail": "Who accessed what, when."},
     ],
     "Analyst": [
+        {"icon": "🇰🇪", "title": "Kenya EEZ Today", "detail": "Daily maritime picture for Kenya EEZ."},
         {"icon": "🎛️", "title": "Command Center", "detail": "Fusion, watchlist, mission pack."},
         {"icon": "🛰️", "title": "Anomaly Engine", "detail": "Elevated vessel and ops signals."},
         {"icon": "🌑", "title": "Dark Activity", "detail": "AIS gaps and dark rendezvous cues."},
-        {"icon": "⚓", "title": "Port Intelligence", "detail": "Port calls and congestion risk."},
     ],
 }
 tile_grid(persona_tiles.get(persona, persona_tiles["Analyst"]))
+nav_cols = st.columns(4)
+with nav_cols[0]:
+    st.page_link("pages/0_Kenya_EEZ_Today.py", label="Kenya EEZ Today", icon="🇰🇪")
+with nav_cols[1]:
+    st.page_link("pages/41_Command_Center.py", label="Command Center", icon="🎛️")
+with nav_cols[2]:
+    st.page_link("pages/11_AIS_Live.py", label="AIS Live", icon="📡")
+with nav_cols[3]:
+    st.page_link("pages/1_Executive_Summary.py", label="Executive Summary", icon="📊")
 st.caption(
-    "Shortcuts are guidance only — open the matching page from the sidebar "
+    "Use the buttons above for one-click navigation, or open matching pages from the sidebar "
     f"(active persona: **{persona}**)."
 )
 
