@@ -93,45 +93,49 @@ def _count(df: pd.DataFrame) -> int:
     return int(len(df))
 
 
+_PENDING = {"PENDING", "QUEUED", "NEW", "FAILED", "RETRY", "ERROR"}
 pending_n = 0
 if not by_status.empty and not has_error(by_status):
     cols = {c.lower(): c for c in by_status.columns}
     status_col = cols.get("status")
     count_col = cols.get("n") or cols.get("count") or cols.get("events")
     if status_col and count_col:
-        mask = by_status[status_col].astype(str).str.upper().isin(
-            {"PENDING", "QUEUED", "NEW"}
-        )
+        mask = by_status[status_col].astype(str).str.upper().isin(_PENDING)
         try:
             pending_n = int(by_status.loc[mask, count_col].sum())
         except Exception:
             pending_n = 0
+if pending_n == 0 and events is not None and not events.empty and not has_error(events):
+    if "status" in events.columns:
+        pending_n = int(
+            events["status"].astype(str).str.upper().isin(_PENDING).sum()
+        )
 
 kpi_row(
     [
         {
             "label": "Topics",
             "value": f"{_count(topics):,}",
-            "hint": "Registered event topics",
-            "tone": "primary",
+            "delta": "registered",
+            "help": "Active topic definitions.",
         },
         {
             "label": "Consumers",
             "value": f"{_count(consumers):,}",
-            "hint": "Downstream handlers",
-            "tone": "info",
+            "delta": "subscribed",
+            "help": "Registered event consumers.",
         },
         {
-            "label": "Events loaded",
+            "label": "Events (window)",
             "value": f"{_count(events):,}",
-            "hint": f"Most recent (limit {limit})",
-            "tone": "primary",
+            "delta": f"limit {limit}",
+            "help": "Recent events loaded for this page.",
         },
         {
-            "label": "Backlog (pending)",
+            "label": "Pending backlog",
             "value": f"{pending_n:,}",
-            "hint": "Awaiting consumer drain",
-            "tone": "warning" if pending_n else "success",
+            "delta": "PENDING/QUEUED/NEW/FAILED…",
+            "help": "Statuses that still need consumer attention.",
         },
     ]
 )
@@ -150,46 +154,49 @@ tab_events, tab_health, tab_registry = st.tabs(
 )
 
 with tab_events:
-    section("Filterable history", "Narrow by topic, severity, or status — then inspect payload.")
+    section("Filterable history", "Slice by topic, severity, status, and free text.")
     if events is None or events.empty or has_error(events):
         empty_state(
             "No events yet",
-            "Publish Phase 22 after schema init to populate the bus.",
+            "Publish from live facts: `python ingestion/run_phase22_event_bus.py`",
             icon="📭",
         )
-        if has_error(events):
-            st.code(str(events.iloc[0].get("error")))
     else:
         f1, f2, f3, f4 = st.columns([1.2, 1, 1, 1.4])
         with f1:
-            topic_opts = sorted(
-                events["topic"].dropna().astype(str).unique().tolist()
-            ) if "topic" in events.columns else []
-            sel_topics = st.multiselect("Topic", topic_opts, default=[])
+            topic_opts = ["(all)"]
+            if "topic" in events.columns:
+                topic_opts += sorted(
+                    {str(x) for x in events["topic"].dropna().unique().tolist()}
+                )
+            topic_sel = st.selectbox("Topic", topic_opts, index=0)
         with f2:
-            sev_opts = sorted(
-                events["severity"].dropna().astype(str).unique().tolist()
-            ) if "severity" in events.columns else []
-            sel_sev = st.multiselect("Severity", sev_opts, default=[])
+            sev_opts = ["(all)"]
+            if "severity" in events.columns:
+                sev_opts += sorted(
+                    {str(x) for x in events["severity"].dropna().unique().tolist()}
+                )
+            sev_sel = st.selectbox("Severity", sev_opts, index=0)
         with f3:
-            st_opts = sorted(
-                events["status"].dropna().astype(str).unique().tolist()
-            ) if "status" in events.columns else []
-            sel_status = st.multiselect("Status", st_opts, default=[])
+            st_opts = ["(all)"]
+            if "status" in events.columns:
+                st_opts += sorted(
+                    {str(x) for x in events["status"].dropna().unique().tolist()}
+                )
+            st_sel = st.selectbox("Status", st_opts, index=0)
         with f4:
             query = st.text_input(
-                "Search type / source / key",
-                placeholder="e.g. anomaly, port, mmsi…",
-                help="Case-insensitive contains match across common text columns.",
+                "Search",
+                placeholder="event_type, source_key, title…",
             )
 
         view = events.copy()
-        if sel_topics and "topic" in view.columns:
-            view = view[view["topic"].astype(str).isin(sel_topics)]
-        if sel_sev and "severity" in view.columns:
-            view = view[view["severity"].astype(str).isin(sel_sev)]
-        if sel_status and "status" in view.columns:
-            view = view[view["status"].astype(str).isin(sel_status)]
+        if topic_sel != "(all)" and "topic" in view.columns:
+            view = view[view["topic"].astype(str) == topic_sel]
+        if sev_sel != "(all)" and "severity" in view.columns:
+            view = view[view["severity"].astype(str) == sev_sel]
+        if st_sel != "(all)" and "status" in view.columns:
+            view = view[view["status"].astype(str) == st_sel]
         if query:
             q = query.strip().lower()
             text_cols = [
@@ -202,6 +209,8 @@ with tab_events:
                     "payload",
                     "region_id",
                     "country_id",
+                    "title",
+                    "message",
                 )
                 if c in view.columns
             ]
@@ -212,19 +221,27 @@ with tab_events:
                 view = view[mask]
 
         st.caption(f"Showing **{len(view):,}** of **{len(events):,}** loaded events.")
+        if "source_table" in events.columns and (
+            events["source_table"].astype(str).str.lower() == "demo"
+        ).any():
+            st.caption(
+                "Includes diagnostic demo events from Phase 22 seed — "
+                "re-run run_phase22_event_bus.py to publish from live facts."
+            )
         prefer_cols = [
             c
             for c in (
                 "created_at",
-                "event_id",
                 "topic",
                 "event_type",
                 "severity",
                 "status",
+                "title",
+                "message",
                 "source_table",
                 "source_key",
                 "region_id",
-                "country_id",
+                "event_id",
             )
             if c in view.columns
         ]
@@ -232,27 +249,29 @@ with tab_events:
         display = view[prefer_cols + other] if prefer_cols else view
         st.dataframe(display, use_container_width=True, hide_index=True)
 
-        if not view.empty and "event_id" in view.columns:
-            section("Payload inspector", "Select one event to read the JSON body.")
-            ids = view["event_id"].astype(str).tolist()
-            pick = st.selectbox("Event ID", ids, index=0)
-            row = view[view["event_id"].astype(str) == pick].iloc[0]
-            meta_cols = st.columns(4)
-            for i, key in enumerate(("topic", "event_type", "severity", "status")):
-                if key in row.index:
-                    meta_cols[i].markdown(f"**{key}**  \n{row[key]}")
-            payload = row.get("payload")
-            if payload is None or (isinstance(payload, float) and pd.isna(payload)):
-                st.caption("No payload column for this row.")
+        with st.expander("Inspect payload", expanded=False):
+            if view.empty or "event_id" not in view.columns:
+                st.caption("Select a filtered row with an event_id to inspect payload.")
             else:
-                try:
-                    if isinstance(payload, str):
-                        parsed: Any = json.loads(payload)
-                    else:
-                        parsed = payload
-                    st.json(parsed)
-                except Exception:
-                    st.code(str(payload))
+                ids = view["event_id"].astype(str).tolist()
+                pick = st.selectbox("Event ID", ids, index=0)
+                row = view[view["event_id"].astype(str) == pick].iloc[0]
+                meta_cols = st.columns(4)
+                for i, key in enumerate(("topic", "event_type", "severity", "status")):
+                    if key in row.index:
+                        meta_cols[i].markdown(f"**{key}**  \n{row[key]}")
+                payload = row.get("payload")
+                if payload is None or (isinstance(payload, float) and pd.isna(payload)):
+                    st.caption("No payload column for this row.")
+                else:
+                    try:
+                        if isinstance(payload, str):
+                            parsed: Any = json.loads(payload)
+                        else:
+                            parsed = payload
+                        st.json(parsed)
+                    except Exception:
+                        st.code(str(payload))
 
 with tab_health:
     section("Backlog health", "Status, topic, and severity mix for the loaded window.")
