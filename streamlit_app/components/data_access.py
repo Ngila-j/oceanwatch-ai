@@ -113,41 +113,22 @@ def load_event_bus_bundle(limit: int = 500) -> dict[str, pd.DataFrame]:
     """Topics, consumers, recent events, and status aggregates for the UI."""
     lim = max(1, min(int(limit), 5000))
 
-    # Prefer full projection; fall back if source_key not migrated yet
+    # Full projection so UI stays compatible across schema migrations
     events = qdf_or_error(
         f"""
-        SELECT
-            event_id, topic, event_type, severity, status,
-            region_id, country_id, source_table, source_key,
-            created_at, processed_at, model_version, payload
+        SELECT *
         FROM event_bus
-        ORDER BY created_at DESC
+        ORDER BY COALESCE(created_at, processed_at) DESC NULLS LAST
         LIMIT {lim}
         """
     )
-    if has_error(events):
-        events = qdf_or_error(
-            f"""
-            SELECT
-                event_id, topic, event_type, severity, status,
-                region_id, country_id, source_table,
-                created_at, processed_at, model_version, payload
-            FROM event_bus
-            ORDER BY created_at DESC
-            LIMIT {lim}
-            """
-        )
 
     return {
         "topics": qdf_or_error(
-            "SELECT topic, description, status FROM event_bus_topics ORDER BY topic"
+            "SELECT * FROM event_bus_topics ORDER BY topic"
         ),
         "consumers": qdf_or_error(
-            """
-            SELECT consumer_id, consumer_name, topics, status, last_seen_at
-            FROM event_bus_consumers
-            ORDER BY consumer_id
-            """
+            "SELECT * FROM event_bus_consumers ORDER BY consumer_id"
         ),
         "events": events,
         "stats": qdf_or_error(

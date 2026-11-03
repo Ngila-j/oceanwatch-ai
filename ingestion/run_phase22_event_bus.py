@@ -118,7 +118,7 @@ def _emit(
     sk = _source_key(source_table, topic, event_type, *natural_parts)
     bucket.append(
         dict(
-            event_id=_stable_id(sk),
+            event_id=str(_stable_id(sk)),
             topic=topic,
             event_type=str(event_type or "EVENT")[:120],
             severity=str(severity or "INFO").upper()[:32],
@@ -148,7 +148,7 @@ def _existing_source_keys(con, keys: list[str]) -> set[str]:
             con,
             f"""
             SELECT source_key
-            FROM pg.public.event_bus
+            FROM public.event_bus
             WHERE source_key IN ({placeholders})
             """,
             chunk,
@@ -178,7 +178,7 @@ def _collect_maritime(con, events: list[dict], now: datetime) -> None:
         SELECT
             event_id, mmsi, event_type, severity, event_time,
             lat, lon, state_label, geofence_id, notes
-        FROM pg.public.fact_vessel_events
+        FROM public.fact_vessel_events
         ORDER BY event_time DESC
         LIMIT 150
         """,
@@ -221,7 +221,7 @@ def _collect_unified_risk(con, events: list[dict], now: datetime) -> None:
         SELECT
             region_id, country_id, as_of_date, composite_score,
             composite_level, confidence, freshness_hours, top_drivers
-        FROM pg.public.fact_unified_risk_composite
+        FROM public.fact_unified_risk_composite
         ORDER BY as_of_date DESC
         LIMIT 10
         """,
@@ -257,7 +257,7 @@ def _collect_ocean_state(con, events: list[dict], now: datetime) -> None:
         SELECT
             region_id, as_of_date, ocean_state_label, sst_anomaly,
             chlorophyll_risk, wave_risk, confidence
-        FROM pg.public.fact_ocean_state
+        FROM public.fact_ocean_state
         ORDER BY as_of_date DESC
         LIMIT 10
         """,
@@ -292,7 +292,7 @@ def _collect_fisheries(con, events: list[dict], now: datetime) -> None:
         SELECT
             alert_id, alert_type, severity, status, region_id,
             created_at, title, summary
-        FROM pg.public.fact_fisheries_alerts
+        FROM public.fact_fisheries_alerts
         ORDER BY created_at DESC
         LIMIT 80
         """,
@@ -328,7 +328,7 @@ def _collect_ops_alerts(con, events: list[dict], now: datetime) -> None:
         SELECT
             alert_id, alert_type, category, severity, status,
             region_id, created_at, title, message
-        FROM pg.public.fact_alerts
+        FROM public.fact_alerts
         WHERE UPPER(COALESCE(status, 'OPEN')) IN ('OPEN', 'ACTIVE', 'PENDING')
         ORDER BY created_at DESC
         LIMIT 80
@@ -365,7 +365,7 @@ def _collect_system_health(con, events: list[dict], now: datetime) -> None:
         """
         SELECT
             component, status, checked_at, latency_ms, message, details
-        FROM pg.public.fact_system_health
+        FROM public.fact_system_health
         ORDER BY checked_at DESC
         LIMIT 20
         """,

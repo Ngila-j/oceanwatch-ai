@@ -68,7 +68,7 @@ for frame in (topics, consumers, events):
 
 if schema_error and any(
     token in schema_error.lower()
-    for token in ("does not exist", "undefinedtable", "relation", "event_bus", "connect")
+    for token in ("does not exist", "undefinedtable", "relation ", "undefined table", "connect")
 ):
     banner(
         "Event Bus tables not ready",
