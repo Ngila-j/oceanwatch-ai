@@ -115,10 +115,10 @@ def table_columns(con, table: str, schema: str = "public", catalog: str = "pg") 
         return []
 
 
-def qdf(con, sql: str) -> pd.DataFrame:
+def qdf(con, sql: str, params=None) -> pd.DataFrame:
     """Run SQL and return a DataFrame (DuckDB or psycopg/SQLAlchemy-style con)."""
     try:
-        result = con.execute(sql)
+        result = con.execute(sql, params) if params is not None else con.execute(sql)
         if hasattr(result, "fetchdf"):
             return result.fetchdf()
         cols = [d[0] for d in (result.description or [])]
@@ -126,6 +126,12 @@ def qdf(con, sql: str) -> pd.DataFrame:
         return pd.DataFrame(rows, columns=cols)
     except Exception as e:  # noqa: BLE001
         logger.warning("Query failed: %s", e)
+        # psycopg aborts the txn on error — clear so later statements still work
+        try:
+            if hasattr(con, "rollback"):
+                con.rollback()
+        except Exception:  # noqa: BLE001
+            pass
         return pd.DataFrame()
 
 
@@ -195,20 +201,27 @@ class _PsycopgProxy:
 
 @contextmanager
 def pg_connection():
-    """Yield a Postgres connection proxy (psycopg2). Commits on success."""
+    """Yield a Postgres connection proxy (psycopg2).
+
+    Uses autocommit so one failed SELECT cannot abort topic/event upserts
+    later in the same job (psycopg aborts the whole transaction on error).
+    """
     try:
         import psycopg2
     except ImportError as exc:  # pragma: no cover
         raise ImportError("psycopg2 is required for pg_connection()") from exc
 
     uri = get_db_uri()
-    raw = psycopg2.connect(uri)
+    raw = psycopg2.connect(uri, connect_timeout=30)
+    raw.autocommit = True
     proxy = _PsycopgProxy(raw)
     try:
         yield proxy
-        raw.commit()
     except Exception:
-        raw.rollback()
+        try:
+            raw.rollback()
+        except Exception:  # noqa: BLE001
+            pass
         raise
     finally:
         raw.close()
@@ -227,6 +240,11 @@ def _pg_table_columns(con, table: str, schema: str = "public") -> list[str]:
         )
         return [r[0] for r in cur.fetchall()]
     except Exception:  # noqa: BLE001
+        try:
+            if hasattr(con, "rollback"):
+                con.rollback()
+        except Exception:  # noqa: BLE001
+            pass
         return []
 
 

@@ -12,7 +12,7 @@ from typing import Optional, Sequence
 import streamlit as st
 
 from components.branding import show_attribution, show_methodology
-from components.ui import ensure_theme, footer_note, page_header
+from components.ui import banner, ensure_theme, footer_note, kpi_row, page_header
 from ow_theme import init_a11y_defaults
 
 
@@ -47,3 +47,7 @@ def close_page(*, methodology: bool = True, attribution: bool = True) -> None:
     if attribution:
         show_attribution()
     footer_note()
+
+
+# Re-exports used by multipage scripts
+__all__ = ["boot", "close_page", "banner", "kpi_row", "page_header"]

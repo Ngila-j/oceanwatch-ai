@@ -10,8 +10,7 @@ import pandas as pd
 import streamlit as st
 
 from components.data_access import has_error, qdf_or_error
-from components.pagekit import boot, close_page
-from components.ui import banner, empty_state, kpi_row, section
+from components.pagekit import banner, boot, close_page, kpi_row
 
 boot(
     "Notifications",
@@ -46,7 +45,7 @@ def load() -> dict[str, pd.DataFrame]:
             """
             SELECT *
             FROM fact_notification_queue
-            ORDER BY created_at DESC
+            ORDER BY created_at DESC NULLS LAST
             LIMIT 300
             """
         ),
@@ -54,7 +53,7 @@ def load() -> dict[str, pd.DataFrame]:
             """
             SELECT *
             FROM fact_notification_deliveries
-            ORDER BY delivered_at DESC
+            ORDER BY delivered_at DESC NULLS LAST
             LIMIT 300
             """
         ),
@@ -83,7 +82,7 @@ for frame in (channels, templates, queue, deliveries):
 
 if schema_error and any(
     token in schema_error.lower()
-    for token in ("does not exist", "undefinedtable", "relation", "notification", "connect")
+    for token in ("does not exist", "undefinedtable", "relation", "notification")
 ):
     banner(
         "Notification tables not ready",
@@ -125,21 +124,27 @@ kpi_row(
             "tone": "primary",
         },
         {
-            "label": "Queue rows",
+            "label": "Templates",
+            "value": f"{_len(templates):,}",
+            "hint": "Topic → message templates",
+            "tone": "neutral",
+        },
+        {
+            "label": "Queue",
             "value": f"{_len(queue):,}",
-            "hint": "Recent notification queue",
+            "hint": "Recent queue rows (cap 300)",
             "tone": "info",
         },
         {
             "label": "Deliveries",
             "value": f"{_len(deliveries):,}",
-            "hint": "Logged send attempts",
+            "hint": "Dry-run delivery log",
             "tone": "success",
         },
         {
-            "label": "Bus still PENDING",
-            "value": f"{pending:,}" if pending is not None else "—",
-            "hint": "Events not yet drained",
+            "label": "Bus pending",
+            "value": "—" if pending is None else f"{pending:,}",
+            "hint": "PENDING on event_bus",
             "tone": "warning" if (pending or 0) else "success",
         },
     ]
@@ -148,87 +153,102 @@ kpi_row(
 if pending is not None and pending > 200:
     banner(
         f"{pending} PENDING events remain on the bus",
-        "Re-run `python ingestion/run_phase23_notifications.py` to drain.",
+        "Re-run `python ingestion/run_phase23_notifications.py` to drain more.",
         tone="warning",
         icon="⏳",
     )
 
-tab_q, tab_d, tab_cfg = st.tabs(["Queue", "Deliveries", "Channels & templates"])
+tab_ch, tab_tpl, tab_q, tab_d = st.tabs(
+    ["Channels", "Templates", "Queue", "Deliveries"]
+)
 
-with tab_q:
-    section("Notification queue", "Filter by channel or status when columns exist.")
-    if queue is None or queue.empty or has_error(queue):
-        empty_state(
-            "Queue is empty",
-            "Events may be below severity threshold or already drained.",
-            icon="📥",
-        )
-        if has_error(queue):
-            st.code(str(queue.iloc[0].get("error")))
-    else:
-        filters = st.columns(2)
-        view = queue.copy()
-        with filters[0]:
-            if "channel_id" in view.columns:
-                opts = sorted(view["channel_id"].dropna().astype(str).unique().tolist())
-                sel = st.multiselect("Channel", opts)
-                if sel:
-                    view = view[view["channel_id"].astype(str).isin(sel)]
-        with filters[1]:
-            status_col = next(
-                (c for c in ("status", "queue_status", "state") if c in view.columns),
-                None,
-            )
-            if status_col:
-                opts = sorted(view[status_col].dropna().astype(str).unique().tolist())
-                sel = st.multiselect("Status", opts)
-                if sel:
-                    view = view[view[status_col].astype(str).isin(sel)]
-
-        st.caption(f"**{len(view):,}** queue rows")
-        st.dataframe(view, use_container_width=True, hide_index=True)
-        if "channel_id" in view.columns and not view.empty and not st.session_state.get(
-            "low_bandwidth"
-        ):
-            st.bar_chart(view["channel_id"].astype(str).value_counts())
-
-with tab_d:
-    section("Delivery log", "DRY_RUN_OK / LOGGED means the pipeline completed without external APIs.")
-    if deliveries is None or deliveries.empty or has_error(deliveries):
-        empty_state("No deliveries yet", "Run the Phase 23 job after events exist.", icon="📨")
-        if has_error(deliveries):
-            st.code(str(deliveries.iloc[0].get("error")))
-    else:
-        st.dataframe(deliveries, use_container_width=True, hide_index=True)
-        status_col = next(
-            (
-                c
-                for c in ("delivery_status", "status", "result")
-                if c in deliveries.columns
-            ),
-            None,
-        )
-        if status_col and not st.session_state.get("low_bandwidth"):
-            st.bar_chart(deliveries[status_col].astype(str).value_counts())
-
-with tab_cfg:
-    section("Channels", "DRY_RUN channels are safe defaults until SMTP / WhatsApp credentials exist.")
-    if channels is None or channels.empty or has_error(channels):
-        empty_state("No channels configured", icon="📡")
+with tab_ch:
+    if has_error(channels) or channels is None or channels.empty:
+        st.info("No channels yet. Run Phase 23 init.")
     else:
         st.dataframe(channels, use_container_width=True, hide_index=True)
 
-    section("Templates", "Message shapes bound to channels.")
-    if templates is None or templates.empty or has_error(templates):
-        empty_state("No templates", icon="📝")
+with tab_tpl:
+    if has_error(templates) or templates is None or templates.empty:
+        st.info("No templates yet. Run Phase 23 runner.")
     else:
         st.dataframe(templates, use_container_width=True, hide_index=True)
 
+with tab_q:
+    if has_error(queue) or queue is None or queue.empty:
+        st.info("Queue empty. Drain the event bus with the Phase 23 runner.")
+    else:
+        show = queue.copy()
+        prefer = [
+            c
+            for c in (
+                "created_at",
+                "status",
+                "topic",
+                "event_type",
+                "severity",
+                "channel_id",
+                "recipient",
+                "subject",
+                "event_id",
+                "queue_id",
+            )
+            if c in show.columns
+        ]
+        st.dataframe(
+            show[prefer] if prefer else show,
+            use_container_width=True,
+            hide_index=True,
+        )
+
+with tab_d:
+    if has_error(deliveries) or deliveries is None or deliveries.empty:
+        st.info("No delivery rows yet.")
+    else:
+        show = deliveries.copy()
+        prefer = [
+            c
+            for c in (
+                "delivered_at",
+                "delivery_status",
+                "channel_id",
+                "recipient",
+                "response_code",
+                "response_message",
+                "event_id",
+                "queue_id",
+                "delivery_id",
+            )
+            if c in show.columns
+        ]
+        st.dataframe(
+            show[prefer] if prefer else show,
+            use_container_width=True,
+            hide_index=True,
+        )
+
+with st.expander("How delivery works", expanded=False):
+    st.markdown(
+        """
+1. Domain events land on `event_bus` (Phase 22).
+2. Phase 23 consumes **PENDING** rows, matches templates by topic, and enqueues
+   fan-out to **log** (always) plus **email** / **whatsapp** at WATCH+.
+3. Deliveries are **dry-run** — status `DRY_RUN_OK` / `LOGGED`. No live SMS/email
+   until channel credentials are configured outside this prototype.
+4. Source events are marked **PROCESSED**.
+        """
+    )
+
 banner(
-    "Dry-run is intentional",
-    "DRY_RUN_OK / LOGGED means the pipeline worked end-to-end without calling "
-    "external APIs. Wire SMTP or WhatsApp credentials later to flip channels "
-    "from DRY_RUN to ACTIVE.",
+    "Methodology & caveats",
+    "OceanWatch AI is a decision-support prototype for Kenya EEZ / Western Indian "
+    "Ocean monitoring. Outputs are indicative, not authoritative.\n\n"
+    "AIS and satellite products can lag or contain gaps.\n"
+    "Risk scores are model-assisted heuristics — always corroborate with primary sources.\n"
+    "Environmental layers depend on open data availability and refresh cadence.\n"
+    "See System Health for data freshness and quality.\n\n"
+    "Data sources may include AIS aggregators, Global Fishing Watch, open ocean color / "
+    "SST products, and internal OceanWatch pipelines. Attribution on each page.",
     tone="info",
     icon="ℹ️",
 )
