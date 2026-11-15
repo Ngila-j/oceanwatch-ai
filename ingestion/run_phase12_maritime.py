@@ -55,9 +55,13 @@ def write(eng, table: str, df: pd.DataFrame) -> None:
     if df is None or df.empty:
         logger.info("%s: 0 rows", table)
         return
-    with eng.begin() as conn:
-        conn.execute(text(f"DELETE FROM {table}"))
-        df.to_sql(table, conn, if_exists="append", index=False, method="multi")
+    try:
+        with eng.begin() as conn:
+            conn.execute(text(f"DELETE FROM {table}"))
+            df.to_sql(table, conn, if_exists="append", index=False, method="multi")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("%s delete/append failed (%s) — replace", table, exc)
+        df.to_sql(table, eng, if_exists="replace", index=False, method="multi")
     logger.info("%s: %s rows", table, len(df))
 
 
@@ -477,13 +481,44 @@ def run():
     write(eng, "fact_vessel_track_points", tracks)
     write(eng, "fact_geofence_events", events)
 
+    # Behaviour score cards for Vessel Intelligence UI
+    if not profiles.empty:
+        try:
+            beh_rows = []
+            for _, r in profiles.iterrows():
+                beh_rows.append(
+                    {
+                        "mmsi": str(r.get("mmsi")),
+                        "vessel_name": r.get("vessel_name"),
+                        "vessel_type": r.get("vessel_type"),
+                        "window_start": r.get("first_seen") or r.get("last_seen") or now,
+                        "window_end": r.get("last_seen") or now,
+                        "risk_score": float(r.get("risk_score") or r.get("behaviour_score") or 0),
+                        "loitering_score": float(r.get("low_speed_ratio") or 0) * 100.0,
+                        "dark_score": 0.0,
+                        "mpa_score": 80.0 if bool(r.get("mpa_interaction_flag")) else 0.0,
+                        "speed_anomaly_score": float(r.get("turn_rate_proxy") or 0),
+                        "evidence": r.get("evidence") or r.get("behaviour_level") or "",
+                        "computed_at": now,
+                    }
+                )
+            beh_df = pd.DataFrame(beh_rows)
+            write(eng, "fact_vessel_behaviour_scores", beh_df)
+            logger.info("Behaviour scores=%s", len(beh_df))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("behaviour scores write skipped: %s", exc)
+
     if not profiles.empty:
         logger.info(
             "Profiles=%s elevated+=%s mpa=%s near_msa=%s",
             len(profiles),
-            int((profiles["risk_score"] >= 50).sum()),
-            int(profiles["mpa_interaction_flag"].fillna(False).sum()),
-            int(profiles["near_mombasa"].fillna(False).sum()),
+            int((profiles["risk_score"] >= 50).sum()) if "risk_score" in profiles.columns else 0,
+            int(profiles["mpa_interaction_flag"].fillna(False).sum())
+            if "mpa_interaction_flag" in profiles.columns
+            else 0,
+            int(profiles["near_mombasa"].fillna(False).sum())
+            if "near_mombasa" in profiles.columns
+            else 0,
         )
     logger.info("Tracks=%s geofence_events=%s", len(tracks), len(events))
     logger.info("=== Phase 12 complete ===")

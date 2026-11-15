@@ -15,9 +15,33 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
+from pathlib import Path
 from urllib.parse import quote_plus
 
 _LOCAL_DEFAULT = "postgresql+psycopg2://postgres:password@localhost:5433/oceanwatch_db"
+
+
+def _load_repo_dotenv() -> None:
+    """Load ingestion/.env so local Streamlit hits the same Supabase/warehouse as jobs."""
+    candidates = [
+        Path(__file__).resolve().parents[1] / "ingestion" / ".env",
+        Path(__file__).resolve().parent / ".env",
+        Path.cwd() / "ingestion" / ".env",
+        Path.cwd() / ".env",
+    ]
+    for env_path in candidates:
+        try:
+            if not env_path.is_file():
+                continue
+            for raw in env_path.read_text(encoding="utf-8").splitlines():
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, _, v = line.partition("=")
+                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+            return
+        except OSError:
+            continue
 
 
 def _as_psycopg2(uri: str) -> str:
@@ -72,6 +96,8 @@ def _from_streamlit_secrets() -> str | None:
 @lru_cache(maxsize=1)
 def get_db_uri() -> str:
     """Return the active Postgres URI (cached per process), dialect-pinned to psycopg2."""
+    _load_repo_dotenv()
+
     secret_uri = _from_streamlit_secrets()
     if secret_uri:
         return _as_psycopg2(secret_uri)

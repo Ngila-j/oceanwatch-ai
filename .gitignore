@@ -37,3 +37,11 @@ reports/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local agent / dump artifacts
+_*.txt
+x_*.txt
+_dump*/
+streamlit_*.log
+.agent_dump/
+.streamlit_run.log

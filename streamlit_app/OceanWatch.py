@@ -147,7 +147,7 @@ ai_forecasts = (
 
 vessel = page(
     "pages/4_Vessel_Tracking.py",
-    "Vessel Tracking",
+    "Vessel Tracking & AIS Analytics",
     ":material/directions_boat:",
 )
 ais = (
@@ -184,7 +184,7 @@ fish_intel = page(
 
 port = page(
     "pages/8_Port_Intelligence.py",
-    "Port Intelligence",
+    "Port Intelligence — Mombasa",
     ":material/anchor:",
 )
 port_risk = (
@@ -193,8 +193,18 @@ port_risk = (
 )
 port_adv = page(
     "pages/29_Port_Intelligence_Advanced.py",
-    "Port Intelligence Advanced",
+    "Port Intelligence — Mombasa",
     ":material/anchor:",
+)
+live_kpa = page(
+    "pages/39_Live_Feeds_and_KPA.py",
+    "Live Feeds & KPA List",
+    ":material/cloud_download:",
+)
+port_ops = page(
+    "pages/40_Port_Ops_Board.py",
+    "Port Ops Board — Mombasa",
+    ":material/directions_boat:",
 )
 
 alerts = page(
@@ -330,6 +340,8 @@ nav_dict = {
         port,
         port_risk,
         port_adv,
+        live_kpa,
+        port_ops,
     ),
     "Risks & Alerts": keep(
         alerts,

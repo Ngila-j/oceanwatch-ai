@@ -1,78 +1,32 @@
 """
-Phase 14 complete — Port Intelligence (Mombasa).
+Phase 14 — Port Intelligence (Mombasa).
+
 Performance, congestion forecast, arrival forecast, berth pressure, ops risk.
+Uses ingestion/.env OCEANWATCH_DB_URI via db_utils (not localhost hardcode).
 """
 
-import logging
-from datetime import datetime, timedelta
+from __future__ import annotations
 
-import duckdb
+import logging
+import sys
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from db_utils import attach_postgres, qdf, write_df  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 MODEL = "phase14_port_v1.0"
 PORT = "Mombasa"
-# Assumed operational capacity proxy for berth pressure (demo)
 CAPACITY_PROXY = 45
 
 
-def get_db_uri():
-    import os
-    if os.path.exists("/.dockerenv") or os.getenv("AIRFLOW_HOME"):
-        return "postgresql://postgres:password@postgres:5432/oceanwatch_db"
-    return "postgresql://postgres:password@localhost:5433/oceanwatch_db"
-
-
-def connect():
-    con = duckdb.connect()
-    con.execute(f"ATTACH '{get_db_uri()}' AS pg (TYPE POSTGRES)")
-    return con
-
-
-def cols(con, table):
-    try:
-        return [
-            r[0]
-            for r in con.execute(
-                """
-                SELECT column_name FROM pg.information_schema.columns
-                WHERE table_schema='public' AND table_name=?
-                """,
-                [table],
-            ).fetchall()
-        ]
-    except Exception:
-        return []
-
-
-def write(con, table, df):
-    if df is None or df.empty:
-        logger.info("%s: 0 rows", table)
-        return
-    use = [c for c in df.columns if c in cols(con, table)]
-    if not use:
-        logger.warning("No columns for %s", table)
-        return
-    con.execute(f"DELETE FROM pg.public.{table}")
-    con.register("_t", df[use])
-    con.execute(
-        f"INSERT INTO pg.public.{table} ({', '.join(use)}) SELECT {', '.join(use)} FROM _t"
-    )
-    logger.info("%s: %s rows", table, len(df))
-
-
-def qdf(con, sql):
-    try:
-        return con.execute(sql).fetchdf()
-    except Exception as e:
-        logger.warning("Query failed: %s", e)
-        return pd.DataFrame()
-
-
-def level_from_index(idx):
+def level_from_index(idx: float) -> str:
     if idx >= 80:
         return "HIGH"
     if idx >= 55:
@@ -82,21 +36,20 @@ def level_from_index(idx):
     return "CLEAR"
 
 
-def build_performance(metrics: pd.DataFrame, now):
+def build_performance(metrics: pd.DataFrame, now: datetime) -> pd.DataFrame:
     if metrics.empty:
         return pd.DataFrame()
     rows = []
     for _, m in metrics.iterrows():
-        arr = int(m.get("arrivals") or 0)
-        dep = int(m.get("departures") or 0)
-        active = int(m.get("active_vessels") or 0)
+        arr = int(m.get("arrivals") or m.get("arrival_count") or 0)
+        dep = int(m.get("departures") or m.get("departure_count") or 0)
+        active = int(m.get("active_vessels") or m.get("vessel_count") or 0)
         idx = float(m.get("congestion_index") or 0)
         level = str(m.get("congestion_level") or level_from_index(idx))
         wait = float(m.get("avg_waiting_hours") or 0)
         baseline = float(m.get("vs_30d_baseline_pct") or 0)
         throughput = float(arr + dep)
         balance = float(arr / dep) if dep else float(arr)
-        # Performance: high throughput, moderate congestion, lower wait is better
         perf = 100.0
         perf -= min(40.0, idx * 0.35)
         perf -= min(25.0, wait * 2.0)
@@ -126,33 +79,31 @@ def build_performance(metrics: pd.DataFrame, now):
     return pd.DataFrame(rows)
 
 
-def build_congestion_forecast(metrics: pd.DataFrame, now, horizon=7):
+def build_congestion_forecast(metrics: pd.DataFrame, now: datetime) -> pd.DataFrame:
     if metrics.empty:
         return pd.DataFrame()
-    m = metrics.sort_values("metric_date")
-    series = m["congestion_index"].astype(float).tolist()
-    if not series:
-        return pd.DataFrame()
-    # Persistence + small mean-reversion toward rolling mean
-    last = series[-1]
-    mean = float(np.mean(series[-min(14, len(series)) :]))
-    mae = float(np.mean(np.abs(np.diff(series)))) if len(series) > 1 else 5.0
+    s = metrics.sort_values("metric_date")
+    y = pd.to_numeric(s["congestion_index"], errors="coerce").fillna(40.0).values
+    if len(y) < 3:
+        base = float(y[-1]) if len(y) else 40.0
+        trend = 0.0
+    else:
+        base = float(np.mean(y[-7:]))
+        trend = float(y[-1] - y[-8]) / 7.0 if len(y) >= 8 else float(y[-1] - y[0]) / max(1, len(y) - 1)
+    last_date = pd.to_datetime(s["metric_date"].iloc[-1]).date()
     rows = []
-    pred = last
-    for h in range(1, horizon + 1):
-        pred = 0.7 * pred + 0.3 * mean
-        pred = max(0.0, min(100.0, pred))
+    for h in range(1, 8):
+        pred = max(0.0, min(100.0, base + trend * h + float(np.sin(h / 2.0) * 3)))
+        band = 8.0 + h * 1.5
         rows.append(
             dict(
-                forecast_date=(now.date() + timedelta(days=h)),
+                forecast_date=last_date + timedelta(days=h),
                 horizon_day=h,
                 port_name=PORT,
-                predicted_congestion_index=round(pred, 1),
-                predicted_level=level_from_index(pred),
-                lower_bound=round(max(0.0, pred - mae), 1),
-                upper_bound=round(min(100.0, pred + mae), 1),
-                model_name="persistence_mean_revert",
-                mae=round(mae, 2),
+                congestion_index_pred=round(pred, 2),
+                congestion_level=level_from_index(pred),
+                lo=round(max(0.0, pred - band), 2),
+                hi=round(min(100.0, pred + band), 2),
                 model_version=MODEL,
                 created_at=now,
             )
@@ -160,29 +111,25 @@ def build_congestion_forecast(metrics: pd.DataFrame, now, horizon=7):
     return pd.DataFrame(rows)
 
 
-def build_arrival_forecast(metrics: pd.DataFrame, now, horizon=7):
+def build_arrival_forecast(metrics: pd.DataFrame, now: datetime) -> pd.DataFrame:
     if metrics.empty:
         return pd.DataFrame()
-    m = metrics.sort_values("metric_date")
-    arr = m["arrivals"].astype(float).tolist()
-    dep = m["departures"].astype(float).tolist()
-    arr_mean = float(np.mean(arr[-min(14, len(arr)) :])) if arr else 0.0
-    dep_mean = float(np.mean(dep[-min(14, len(dep)) :])) if dep else 0.0
-    last_arr = arr[-1] if arr else arr_mean
-    last_dep = dep[-1] if dep else dep_mean
+    s = metrics.sort_values("metric_date")
+    arr_col = "arrivals" if "arrivals" in s.columns else "arrival_count"
+    y = pd.to_numeric(s[arr_col], errors="coerce").fillna(5.0).values
+    base = float(np.mean(y[-7:])) if len(y) else 5.0
+    last_date = pd.to_datetime(s["metric_date"].iloc[-1]).date()
     rows = []
-    for h in range(1, horizon + 1):
-        pa = 0.6 * last_arr + 0.4 * arr_mean
-        pd_ = 0.6 * last_dep + 0.4 * dep_mean
-        last_arr, last_dep = pa, pd_
+    for h in range(1, 8):
+        pred = max(0.0, base + float(np.sin(h / 1.7) * 1.5))
         rows.append(
             dict(
-                forecast_date=(now.date() + timedelta(days=h)),
+                forecast_date=last_date + timedelta(days=h),
                 horizon_day=h,
                 port_name=PORT,
-                predicted_arrivals=round(pa, 1),
-                predicted_departures=round(pd_, 1),
-                model_name="ewma_baseline",
+                arrivals_pred=round(pred, 2),
+                lo=round(max(0.0, pred - 2.5 - h * 0.2), 2),
+                hi=round(pred + 2.5 + h * 0.2, 2),
                 model_version=MODEL,
                 created_at=now,
             )
@@ -190,30 +137,34 @@ def build_arrival_forecast(metrics: pd.DataFrame, now, horizon=7):
     return pd.DataFrame(rows)
 
 
-def build_berth_pressure(latest: dict, now):
-    active = int(latest.get("active_vessels") or 0)
-    util = (active / CAPACITY_PROXY) * 100.0 if CAPACITY_PROXY else 0.0
-    score = min(100.0, util)
-    if util >= 100:
+def build_berth_pressure(latest: dict, now: datetime) -> pd.DataFrame:
+    active = int(latest.get("active_vessels") or latest.get("vessel_count") or 0)
+    arr = int(latest.get("arrivals") or latest.get("arrival_count") or 0)
+    dep = int(latest.get("departures") or latest.get("departure_count") or 0)
+    wait = float(latest.get("avg_waiting_hours") or 0)
+    occ = min(150.0, 100.0 * active / max(1, CAPACITY_PROXY))
+    pressure = min(100.0, occ * 0.7 + min(30.0, wait * 3) + min(20.0, max(0, arr - dep) * 4))
+    if pressure >= 75:
         level = "CRITICAL"
-    elif util >= 80:
+    elif pressure >= 55:
         level = "HIGH"
-    elif util >= 60:
+    elif pressure >= 35:
         level = "MODERATE"
     else:
         level = "LOW"
-    drivers = f"active={active} capacity_proxy={CAPACITY_PROXY} util={util:.1f}%"
     return pd.DataFrame(
         [
             dict(
-                as_of_date=latest.get("metric_date") or now.date(),
+                as_of=now,
                 port_name=PORT,
                 active_vessels=active,
                 capacity_proxy=CAPACITY_PROXY,
-                berth_utilization_pct=round(util, 1),
-                pressure_score=round(score, 1),
+                occupancy_pct=round(occ, 1),
+                pressure_index=round(pressure, 1),
                 pressure_level=level,
-                drivers=drivers,
+                arrivals_today=arr,
+                departures_today=dep,
+                waiting_hours=wait,
                 model_version=MODEL,
                 created_at=now,
             )
@@ -221,60 +172,88 @@ def build_berth_pressure(latest: dict, now):
     )
 
 
-def build_ops_risk(con, latest: dict, berth: pd.DataFrame, now):
-    idx = float(latest.get("congestion_index") or 0)
+def build_ops_risk(con, latest: dict, berth: pd.DataFrame, now: datetime) -> pd.DataFrame:
+    cong = float(latest.get("congestion_index") or 0)
     wait = float(latest.get("avg_waiting_hours") or 0)
-    baseline = float(latest.get("vs_30d_baseline_pct") or 0)
-    traffic = min(100.0, 20 + float(latest.get("active_vessels") or 0) * 1.5)
-    congestion = idx
-    berth_score = float(berth.iloc[0]["pressure_score"]) if not berth.empty else 40.0
+    arr = float(latest.get("arrivals") or latest.get("arrival_count") or 0)
+    dep = float(latest.get("departures") or latest.get("departure_count") or 0)
+    berth_p = float(berth.iloc[0]["pressure_index"]) if not berth.empty else 40.0
 
-    # Tide score from fact_port_risk if present
-    tide_score = 30.0
-    pr = qdf(
-        con,
-        """
-        SELECT * FROM pg.public.fact_port_risk
-        ORDER BY risk_date DESC LIMIT 1
-        """,
-    )
-    drivers = [f"congestion_index={idx}", f"wait={wait}h", f"baseline={baseline}%"]
-    if not pr.empty:
-        p = pr.iloc[0]
-        if pd.notna(p.get("tide_score")):
-            tide_score = float(p["tide_score"])
-            drivers.append(f"tide_score={tide_score}")
-        if pd.notna(p.get("composite_risk")):
-            drivers.append(f"prior_composite={p.get('composite_risk')}")
+    # Optional vessel anomaly pressure near Mombasa
+    anomaly_c = 0.0
+    try:
+        adf = qdf(
+            con,
+            """
+            SELECT COUNT(*) AS n
+            FROM pg.public.fact_vessel_anomalies
+            WHERE detected_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+            """,
+        )
+        if not adf.empty:
+            anomaly_c = min(40.0, float(adf.iloc[0]["n"]) * 4.0)
+    except Exception:  # noqa: BLE001
+        pass
+    # behaviour / profiles near port
+    try:
+        pdf = qdf(
+            con,
+            """
+            SELECT AVG(COALESCE(risk_score, behaviour_score, 0)) AS avg_r
+            FROM pg.public.fact_vessel_profiles
+            WHERE COALESCE(near_mombasa, near_port, FALSE) = TRUE
+            """,
+        )
+        if not pdf.empty and pd.notna(pdf.iloc[0]["avg_r"]):
+            anomaly_c = max(anomaly_c, min(40.0, float(pdf.iloc[0]["avg_r"]) * 0.4))
+    except Exception:  # noqa: BLE001
+        pass
 
-    composite = (
-        0.35 * congestion
-        + 0.25 * traffic
-        + 0.25 * berth_score
-        + 0.15 * min(100.0, tide_score)
+    balance_imbalance = abs(arr - dep)
+    balance_c = min(25.0, balance_imbalance * 3.0)
+    wait_c = min(30.0, wait * 4.0)
+    cong_c = min(40.0, cong * 0.4)
+    berth_c = min(40.0, berth_p * 0.4)
+
+    composite = min(
+        100.0,
+        cong_c * 0.3 + berth_c * 0.25 + wait_c * 0.2 + balance_c * 0.1 + anomaly_c * 0.15,
     )
-    composite = float(min(100.0, max(0.0, composite)))
-    if composite >= 75:
+    if composite >= 70:
         level = "HIGH"
-    elif composite >= 55:
-        level = "ELEVATED"
-    elif composite >= 35:
-        level = "WATCH"
-    else:
+    elif composite >= 45:
+        level = "MODERATE"
+    elif composite >= 25:
         level = "LOW"
+    else:
+        level = "CLEAR"
+
+    drivers = []
+    if cong_c >= 15:
+        drivers.append(f"congestion={cong:.0f}")
+    if berth_c >= 15:
+        drivers.append(f"berth_pressure={berth_p:.0f}")
+    if wait_c >= 10:
+        drivers.append(f"wait_h={wait:.1f}")
+    if balance_c >= 8:
+        drivers.append(f"arr-dep_gap={balance_imbalance:.0f}")
+    if anomaly_c >= 10:
+        drivers.append(f"vessel_risk={anomaly_c:.0f}")
+    if not drivers:
+        drivers.append("nominal_ops")
 
     return pd.DataFrame(
         [
             dict(
-                as_of_date=latest.get("metric_date") or now.date(),
+                as_of=now,
                 port_name=PORT,
-                traffic_score=round(traffic, 1),
-                congestion_score=round(congestion, 1),
-                tide_score=round(tide_score, 1),
-                berth_score=round(berth_score, 1),
+                congestion_component=round(cong_c, 1),
+                berth_component=round(berth_c, 1),
+                wait_component=round(wait_c, 1),
+                balance_component=round(balance_c, 1),
+                anomaly_component=round(anomaly_c, 1),
                 composite_ops_risk=round(composite, 1),
                 risk_level=level,
-                confidence_score=78.0,
                 drivers=" | ".join(drivers),
                 model_version=MODEL,
                 created_at=now,
@@ -283,11 +262,7 @@ def build_ops_risk(con, latest: dict, berth: pd.DataFrame, now):
     )
 
 
-def run():
-    logger.info("=== Phase 14 port intelligence ===")
-    now = datetime.utcnow()
-    con = connect()
-
+def _ensure_metrics(con) -> pd.DataFrame:
     metrics = qdf(
         con,
         """
@@ -295,38 +270,82 @@ def run():
         ORDER BY metric_date
         """,
     )
-    logger.info("Port metric rows: %s", len(metrics))
-    if metrics.empty:
-        logger.warning("No fact_port_metrics — seed_port_activity first")
-        return
+    if not metrics.empty:
+        return metrics
+    logger.warning("No fact_port_metrics — running seed_port_activity")
+    try:
+        import seed_port_activity as spa
 
-    # Normalize date
+        spa.seed_port_activity()
+    except Exception as exc:  # noqa: BLE001
+        logger.error("seed_port_activity failed: %s", exc)
+        return pd.DataFrame()
+    return qdf(
+        con,
+        """
+        SELECT * FROM pg.public.fact_port_metrics
+        ORDER BY metric_date
+        """,
+    )
+
+
+def run() -> dict:
+    logger.info("=== Phase 14 port intelligence ===")
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    # Schema first
+    try:
+        from init_phase14_port import main as ensure_schema
+
+        ensure_schema()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("schema ensure: %s", exc)
+
+    con = attach_postgres()
+    summary: dict = {}
+
+    metrics = _ensure_metrics(con)
+    logger.info("Port metric rows: %s", len(metrics))
+    summary["metrics"] = len(metrics)
+    if metrics.empty:
+        logger.error("No fact_port_metrics after seed — abort")
+        summary["status"] = "empty_metrics"
+        return summary
+
+    # Normalize column names from seed variants
+    rename = {}
+    if "arrival_count" in metrics.columns and "arrivals" not in metrics.columns:
+        rename["arrival_count"] = "arrivals"
+    if "departure_count" in metrics.columns and "departures" not in metrics.columns:
+        rename["departure_count"] = "departures"
+    if "vessel_count" in metrics.columns and "active_vessels" not in metrics.columns:
+        rename["vessel_count"] = "active_vessels"
+    if rename:
+        metrics = metrics.rename(columns=rename)
+
     metrics["metric_date"] = pd.to_datetime(metrics["metric_date"]).dt.date
 
     perf = build_performance(metrics, now)
-    write(con, "fact_port_performance", perf)
+    write_df(con, "fact_port_performance", perf, replace=True)
+    summary["performance"] = len(perf)
 
     cong_fc = build_congestion_forecast(metrics, now)
-    write(con, "fact_port_congestion_forecast", cong_fc)
+    write_df(con, "fact_port_congestion_forecast", cong_fc, replace=True)
+    summary["congestion_fc"] = len(cong_fc)
 
     arr_fc = build_arrival_forecast(metrics, now)
-    write(con, "fact_port_arrival_forecast", arr_fc)
+    write_df(con, "fact_port_arrival_forecast", arr_fc, replace=True)
+    summary["arrival_fc"] = len(arr_fc)
 
     latest = metrics.sort_values("metric_date").iloc[-1].to_dict()
     berth = build_berth_pressure(latest, now)
-    write(con, "fact_berth_pressure", berth)
+    write_df(con, "fact_berth_pressure", berth, replace=True)
+    summary["berth"] = len(berth)
 
     ops = build_ops_risk(con, latest, berth, now)
-    write(con, "fact_port_ops_risk", ops)
+    write_df(con, "fact_port_ops_risk", ops, replace=True)
+    summary["ops_risk"] = len(ops)
 
-    logger.info(
-        "Perf rows=%s cong_fc=%s arr_fc=%s berth=%s ops=%s",
-        len(perf),
-        len(cong_fc),
-        len(arr_fc),
-        len(berth),
-        len(ops),
-    )
     if not ops.empty:
         o = ops.iloc[0]
         logger.info(
@@ -335,7 +354,9 @@ def run():
             o.get("risk_level"),
             o.get("drivers"),
         )
-    logger.info("=== Phase 14 complete ===")
+    summary["status"] = "ok"
+    logger.info("=== Phase 14 complete === %s", summary)
+    return summary
 
 
 if __name__ == "__main__":

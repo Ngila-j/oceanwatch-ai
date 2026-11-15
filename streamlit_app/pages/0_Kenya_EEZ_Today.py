@@ -250,6 +250,23 @@ if _ok(tide_now):
             tide_now[rc].astype(str).str.upper().eq("FAVOURABLE").sum()
         )
 
+# Next favourable windows today when current hour is 0 (night / low tide is normal)
+fav_today_stations = 0
+next_fav_hint = "coastal stations this hour"
+if _ok(swim):
+    rc_s = next((c for c in swim.columns if c.lower() == "swim_rating"), None)
+    sc_s = next((c for c in swim.columns if c.lower() == "station_id"), None)
+    if rc_s is not None and sc_s is not None:
+        fav_rows = swim[swim[rc_s].astype(str).str.upper().eq("FAVOURABLE")]
+        if not fav_rows.empty:
+            fav_today_stations = int(fav_rows[sc_s].nunique())
+            if fav_now == 0 and fav_today_stations:
+                next_fav_hint = f"{fav_today_stations} stn have fav hours today"
+            elif fav_now == 0:
+                next_fav_hint = "no FAVOURABLE hours left today"
+        elif fav_now == 0:
+            next_fav_hint = "night / low tide / no windows"
+
 kpi_row(
     [
         {
@@ -267,8 +284,10 @@ kpi_row(
         {
             "label": "Swim-favourable now",
             "value": f"{fav_now}/{tide_stations_n}" if tide_stations_n else "—",
-            "hint": "coastal stations this hour",
-            "tone": "success" if fav_now else ("warning" if tide_stations_n else "info"),
+            "hint": next_fav_hint,
+            "tone": "success"
+            if fav_now
+            else ("info" if fav_today_stations else ("warning" if tide_stations_n else "info")),
         },
         {
             "label": "Fresh sources",

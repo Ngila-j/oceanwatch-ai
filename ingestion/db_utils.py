@@ -84,6 +84,18 @@ def get_db_uri() -> str:
     return _DEFAULT_HOST_URI
 
 
+def sa_uri(uri: Optional[str] = None) -> str:
+    """SQLAlchemy engine URI (psycopg2 driver). Optional uri defaults to get_db_uri()."""
+    uri = uri or get_db_uri()
+    if uri.startswith("postgresql+psycopg2://"):
+        return uri
+    if uri.startswith("postgresql://"):
+        return "postgresql+psycopg2://" + uri[len("postgresql://") :]
+    if uri.startswith("postgres://"):
+        return "postgresql+psycopg2://" + uri[len("postgres://") :]
+    return uri
+
+
 def attach_postgres(con: Optional[duckdb.DuckDBPyConnection] = None, alias: str = "pg"):
     """Return a DuckDB connection with Postgres attached as `alias`."""
     uri = get_db_uri()

@@ -44,7 +44,7 @@ def _tier(score: float) -> str:
 
 def _status_from_age(mins: float, daily: bool = False) -> str:
     if mins >= 99999:
-        return "UNKNOWN"
+        return "MISSING"
     if daily:
         if mins <= 36 * 60:
             return "OK"
@@ -121,12 +121,16 @@ def seed_freshness(con, now: datetime) -> int:
         ("alerts", "Ops alerts", "15m", "fact_alerts", "created_at"),
         ("event_bus", "Domain event bus", "1h", "event_bus", "created_at"),
         ("sst_forecast", "SST forecast", "daily", "fact_sst_forecast", "forecast_date"),
+        ("spatial_intelligence", "Spatial intelligence", "daily", "spatial_intelligence", "as_of"),
+        ("oceanwatch_events", "OceanWatch events", "1h", "oceanwatch_events", "detected_at"),
+        ("coastal_tides", "Kenya coastal tides", "6h", "fact_tide_heights", "forecast_run_at"),
+        ("swim_windows", "Swim windows", "6h", "fact_swim_windows", "computed_at"),
     ]
     rows = []
     for key, name, cadence, table, col in sources:
         # try common timestamp columns
         ts = None
-        for c in (col, "created_at", "updated_at", "ts", "as_of", "obs_date", "metric_date"):
+        for c in (col, "created_at", "updated_at", "ts", "ts_utc", "as_of", "obs_date", "metric_date", "window_date", "detected_at"):
             ts = _max_ts(con, table, c)
             if ts is not None:
                 break
@@ -146,20 +150,24 @@ def seed_freshness(con, now: datetime) -> int:
                     pass
         age = _age_minutes(ts, now)
         daily = cadence == "daily"
-        # if table empty, still mark STALE with synthetic recent success so UI isn't UNKNOWN-only
+        # Honest ops signal: empty/unwired pipelines are MISSING, not fake-OK
         if age >= 99999:
-            ts = now - timedelta(hours=random.randint(2, 30))
-            age = _age_minutes(ts, now)
-            notes = "Synthetic freshness — underlying fact table empty or missing timestamp"
+            notes = f"No rows or timestamp in {table} — run the source job"
+            status = "MISSING"
+            ts_out = None
+            age_out = 99999.0
         else:
             notes = f"Derived from {table}"
+            status = _status_from_age(age, daily=daily)
+            ts_out = ts
+            age_out = round(age, 1)
         rows.append(
             {
                 "source_key": key,
                 "source_name": name,
-                "last_success_at": ts,
-                "age_minutes": round(age, 1),
-                "status": _status_from_age(age, daily=daily),
+                "last_success_at": ts_out,
+                "age_minutes": age_out,
+                "status": status,
                 "expected_cadence": cadence,
                 "notes": notes,
                 "updated_at": now,
@@ -213,21 +221,8 @@ def seed_spatial(con, now: datetime) -> int:
                 "computed_at": now,
             }
         )
-    try:
-        con.execute("DELETE FROM public.spatial_intelligence WHERE as_of = %s", (as_of,))
-    except Exception:  # noqa: BLE001
-        try:
-            con.rollback()
-        except Exception:  # noqa: BLE001
-            pass
-        try:
-            con.execute("DELETE FROM public.spatial_intelligence")
-        except Exception:  # noqa: BLE001
-            try:
-                con.rollback()
-            except Exception:  # noqa: BLE001
-                pass
-    n = write_frame(con, "spatial_intelligence", pd.DataFrame(rows), replace=False)
+    # Full table replace (write_frame DELETE + INSERT) so re-runs stay idempotent
+    n = write_frame(con, "spatial_intelligence", pd.DataFrame(rows), replace=True)
     logger.info("spatial_intelligence: %s", n)
     return n
 
@@ -269,11 +264,11 @@ def seed_events(con, now: datetime) -> int:
                 "created_at": now,
             }
         )
-    # upsert via delete same-day synthetic then insert
+    # Replace all phase11 Kenya EEZ synthetic events (clock/date drift safe)
     try:
         con.execute(
             "DELETE FROM public.oceanwatch_events WHERE source = %s AND event_id LIKE %s",
-            ("phase11", f"ke-eez-{now.strftime('%Y%m%d')}-%"),
+            ("phase11", "ke-eez-%"),
         )
     except Exception:  # noqa: BLE001
         try:
@@ -571,7 +566,6 @@ def run() -> None:
         except Exception:  # noqa: BLE001
             pass
 
-        seed_freshness(con, now)
         seed_spatial(con, now)
         seed_events(con, now)
         seed_risks(con, now)
@@ -580,7 +574,6 @@ def run() -> None:
         seed_ocean_port_if_empty(con, now)
 
         for t in (
-            "data_freshness",
             "spatial_intelligence",
             "oceanwatch_events",
             "risk_scores",
@@ -588,13 +581,20 @@ def run() -> None:
             "fact_wio_intelligence_index",
         ):
             logger.info("COUNT %s=%s", t, _count(con, t))
-    # Coastal tides + swim windows (separate transaction)
+    # Coastal tides + swim windows before freshness so tide sources can be OK
     try:
         import run_kenya_coastal_tides as tides_mod
 
         tides_mod.run()
     except Exception as exc:  # noqa: BLE001
         logger.warning("coastal tides skipped: %s", exc)
+    # Freshness last — reflects real max timestamps after all seeds
+    try:
+        with pg_connection() as con:
+            seed_freshness(con, _utcnow())
+            logger.info("COUNT data_freshness=%s", _count(con, "data_freshness"))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("freshness refresh skipped: %s", exc)
     logger.info("=== Phase 11 done ===")
 
 

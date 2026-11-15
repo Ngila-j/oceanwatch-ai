@@ -1,205 +1,246 @@
-"""Phase 12 — Vessel Intelligence profiles (Kenya)."""
+"""Vessel Intelligence — behaviour scores, risk tiers, anomalies."""
 
-import streamlit as st
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
 import pandas as pd
-import plotly.express as px
-from sqlalchemy import create_engine, text
+import streamlit as st
+
+_APP = Path(__file__).resolve().parents[1]
+if str(_APP) not in sys.path:
+    sys.path.insert(0, str(_APP))
+
+from components.pagekit import boot, close_page  # noqa: E402
+from components.ui import banner, kpi_row  # noqa: E402
 
 try:
-    from db_config import get_db_uri
-except ImportError:
-
-    def get_db_uri():
-        import os
-
-        return os.getenv("OCEANWATCH_DB_URI") or os.getenv("DATABASE_URL")
+    from services.vessel_tracking import VesselTrackingService
+except ImportError:  # pragma: no cover
+    from streamlit_app.services.vessel_tracking import VesselTrackingService  # type: ignore
 
 
-st.set_page_config(
-    page_title="Vessel Intelligence", page_icon=":material/sailing:", layout="wide"
+def _resolve_db_uri() -> str:
+    try:
+        import sys as _sys
+        from pathlib import Path as _P
+
+        ing = _P(__file__).resolve().parents[2] / "ingestion"
+        if str(ing) not in _sys.path:
+            _sys.path.insert(0, str(ing))
+        from db_utils import get_db_uri as _ing  # type: ignore
+
+        return _ing()
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from db_config import get_db_uri
+
+        return get_db_uri()
+    except Exception:  # noqa: BLE001
+        from streamlit_app.db_config import get_db_uri  # type: ignore
+
+        return get_db_uri()
+
+
+boot(
+    "Vessel Intelligence",
+    "Behaviour scores, risk tiers, loitering / dark cues, and anomaly flags for Kenya EEZ traffic.",
+    chips=[("Phase 12", "info"), ("Maritime", "primary")],
 )
 
-try:
-    from ow_theme import apply_theme, init_a11y_defaults
 
-    init_a11y_defaults()
-    apply_theme()
-except Exception:
-    pass
+@st.cache_resource(show_spinner=False)
+def _svc() -> VesselTrackingService:
+    return VesselTrackingService(db_uri=_resolve_db_uri())
 
-st.title("Vessel Intelligence")
-st.caption(
-    "Profiles, behaviour, geofences · Kenya EEZ · Human review only — not legal findings"
+
+with st.sidebar:
+    st.markdown("### Scope")
+    hours = st.slider("Lookback (hours)", 24, 336, 168, 24)
+    only_kenya = st.checkbox("Kenya / WIO profiles only", value=True)
+    min_risk = st.slider("Min risk score", 0, 100, 40, 5)
+    search = st.text_input("Filter MMSI / name", "")
+
+svc = _svc()
+snap = svc.snapshot(hours=hours, only_kenya=only_kenya, search=search or None)
+k = svc.kpis(snap)
+
+kpi_row(
+    [
+        {
+            "label": "Profiles",
+            "value": f"{k['vessels']:,}",
+            "hint": "fact_vessel_profiles",
+            "tone": "primary",
+        },
+        {
+            "label": "High-risk behaviour",
+            "value": f"{k['high_risk_behaviour']:,}",
+            "hint": "score ≥ 70",
+            "tone": "danger" if k["high_risk_behaviour"] else "success",
+        },
+        {
+            "label": "Anomalies",
+            "value": f"{k['anomalies']:,}",
+            "hint": f"last {hours}h",
+            "tone": "warning" if k["anomalies"] else "info",
+        },
+        {
+            "label": "Geofence hits",
+            "value": f"{k['geofence_events']:,}",
+            "hint": "crossings / dwell",
+            "tone": "warning" if k["geofence_events"] else "info",
+        },
+    ]
 )
 
+if snap.errors:
+    for e in snap.errors:
+        banner("Vessel data missing", str(e), tone="warning")
 
-def _sa_uri(uri: str) -> str:
-    if not uri:
-        return uri
-    if uri.startswith("postgresql://"):
-        return "postgresql+psycopg2://" + uri[len("postgresql://") :]
-    if uri.startswith("postgres://"):
-        return "postgresql+psycopg2://" + uri[len("postgres://") :]
-    return uri
-
-
-DB = get_db_uri()
-
-
-@st.cache_data(ttl=45)
-def load():
-    if not DB:
-        empty = pd.DataFrame({"error": ["No database URI configured."]})
-        return empty, empty, empty
-
-    eng = create_engine(_sa_uri(DB), pool_pre_ping=True)
-
-    def q(sql, params=None):
-        try:
-            return pd.read_sql(text(sql), eng, params=params or {})
-        except Exception as e:  # noqa: BLE001
-            return pd.DataFrame({"error": [str(e)]})
-
-    profiles = q(
-        """
-        SELECT * FROM fact_vessel_profiles
-        ORDER BY risk_score DESC NULLS LAST
-        """
-    )
-    fences = q("SELECT * FROM dim_geofences")
-    ge = q(
-        """
-        SELECT * FROM fact_geofence_events
-        ORDER BY event_time DESC NULLS LAST
-        LIMIT 200
-        """
-    )
-    return profiles, fences, ge
-
-
-profiles, fences, ge = load()
-
-if profiles is None or profiles.empty or "error" in getattr(profiles, "columns", []):
-    err = None
-    if profiles is not None and not profiles.empty and "error" in profiles.columns:
-        err = profiles.iloc[0].get("error")
-    st.warning(
-        "No vessel profiles. Run `python ingestion/init_phase12_maritime.py` and "
-        "`python ingestion/run_phase12_maritime.py`"
-        + (f"\n\n({err})" if err else "")
-    )
-    st.stop()
-
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Vessels profiled", len(profiles))
-c2.metric(
-    "Elevated+",
-    int((pd.to_numeric(profiles.get("risk_score"), errors="coerce").fillna(0) >= 50).sum()),
-)
-c3.metric(
-    "Near Mombasa",
-    int(profiles["near_mombasa"].fillna(False).astype(bool).sum())
-    if "near_mombasa" in profiles.columns
-    else 0,
-)
-c4.metric(
-    "MPA proxy hits",
-    int(profiles["mpa_interaction_flag"].fillna(False).astype(bool).sum())
-    if "mpa_interaction_flag" in profiles.columns
-    else 0,
+tab_risk, tab_beh, tab_anom, tab_geo = st.tabs(
+    ["Risk roster", "Behaviour scores", "Anomalies", "Geofence intel"]
 )
 
-st.subheader("Fleet risk table")
-st.dataframe(
-    profiles[
-        [
+vessels = snap.vessels if snap.vessels is not None else pd.DataFrame()
+beh = snap.behaviour if snap.behaviour is not None else pd.DataFrame()
+anom = snap.anomalies if snap.anomalies is not None else pd.DataFrame()
+gf = snap.geofence_events if snap.geofence_events is not None else pd.DataFrame()
+
+with tab_risk:
+    st.markdown("#### Vessel risk roster")
+    if vessels.empty:
+        st.info(
+            "No profiles yet. Run `python ingestion/run_vessel_tracking.py` after AIS is loaded."
+        )
+    else:
+        view = vessels.copy()
+        if "risk_score" not in view.columns and "anomaly_score" in view.columns:
+            view["risk_score"] = pd.to_numeric(view["anomaly_score"], errors="coerce")
+        if "risk_score" in view.columns:
+            view["risk_score"] = pd.to_numeric(view["risk_score"], errors="coerce").fillna(0)
+            view = view[view["risk_score"] >= min_risk].sort_values("risk_score", ascending=False)
+        elif "risk_tier" in view.columns:
+            order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
+            view["_ord"] = view["risk_tier"].astype(str).str.upper().map(order).fillna(9)
+            view = view.sort_values("_ord").drop(columns=["_ord"])
+        show = [
             c
-            for c in [
-                "vessel_name",
+            for c in (
                 "mmsi",
+                "vessel_name",
                 "vessel_type",
+                "risk_tier",
                 "risk_score",
-                "behaviour_level",
-                "confidence_score",
-                "speed_mean",
-                "low_speed_ratio",
-                "track_efficiency",
+                "anomaly_score",
+                "in_kenya_eez",
+                "in_kenya_box",
+                "near_port",
                 "near_mombasa",
                 "mpa_interaction_flag",
-                "geofence_hits",
-                "evidence",
-            ]
-            if c in profiles.columns
+                "low_speed_ratio",
+                "behaviour_score",
+                "behaviour_level",
+                "track_efficiency",
+                "distance_nm",
+                "last_seen",
+                "lat",
+                "lon",
+                "sog",
+            )
+            if c in view.columns
         ]
-    ],
-    use_container_width=True,
-    hide_index=True,
-)
+        st.dataframe(view[show] if show else view, width="stretch", hide_index=True)
 
-label_col = "vessel_name" if "vessel_name" in profiles.columns else "mmsi"
-names = profiles[label_col].fillna(profiles["mmsi"]).astype(str).tolist()
-choice = st.selectbox("Vessel dossier", options=names)
-row = profiles[profiles[label_col].fillna(profiles["mmsi"]).astype(str) == choice].iloc[0]
+        # distribution
+        if "risk_tier" in vessels.columns:
+            st.markdown("##### Risk tier mix")
+            tier_counts = (
+                vessels["risk_tier"].astype(str).str.upper().value_counts().rename_axis("tier").reset_index(name="n")
+            )
+            st.bar_chart(tier_counts.set_index("tier"))
 
-st.subheader(f"Dossier — {choice}")
-a, b, c = st.columns(3)
-a.metric("Risk", f"{row.get('risk_score', '—')}")
-b.metric("Behaviour", str(row.get("behaviour_level")))
-c.metric("Confidence", f"{row.get('confidence_score', '—')}")
-st.write(
-    f"**MMSI:** {row.get('mmsi')} · **Type:** {row.get('vessel_type')} · "
-    f"**Last position:** {row.get('last_lat')}, {row.get('last_lon')} · "
-    f"**Last seen:** {row.get('last_seen')}"
-)
-st.write(f"**Evidence:** {row.get('evidence')}")
+with tab_beh:
+    st.markdown("#### Behaviour score cards")
+    if beh.empty:
+        st.info("No `fact_vessel_behaviour_scores` rows in window.")
+    else:
+        b = beh.copy()
+        if "risk_score" in b.columns:
+            b["risk_score"] = pd.to_numeric(b["risk_score"], errors="coerce").fillna(0)
+            b = b[b["risk_score"] >= min_risk].sort_values("risk_score", ascending=False)
+        show = [
+            c
+            for c in (
+                "mmsi",
+                "vessel_name",
+                "vessel_type",
+                "risk_score",
+                "loitering_score",
+                "dark_score",
+                "mpa_score",
+                "speed_anomaly_score",
+                "window_start",
+                "window_end",
+                "evidence",
+                "computed_at",
+            )
+            if c in b.columns
+        ]
+        st.dataframe(b[show] if show else b, width="stretch", hide_index=True)
+        score_cols = [
+            c
+            for c in (
+                "risk_score",
+                "loitering_score",
+                "dark_score",
+                "mpa_score",
+                "speed_anomaly_score",
+            )
+            if c in b.columns
+        ]
+        if score_cols and "mmsi" in b.columns:
+            top = b.head(15)
+            label = top["mmsi"].astype(str)
+            if "vessel_name" in top.columns:
+                label = top["vessel_name"].fillna(top["mmsi"]).astype(str).str.slice(0, 18)
+            chart = top[score_cols].copy()
+            chart.index = label.values
+            st.bar_chart(chart)
 
-# Track
-track = pd.DataFrame()
-if DB:
-    try:
-        eng = create_engine(_sa_uri(DB), pool_pre_ping=True)
-        track = pd.read_sql(
-            text(
-                """
-                SELECT event_time, latitude, longitude, sog
-                FROM fact_vessel_track_points
-                WHERE mmsi = :m
-                ORDER BY event_time
-                """
-            ),
-            eng,
-            params={"m": str(row["mmsi"])},
+with tab_anom:
+    st.markdown("#### Detected anomalies")
+    if anom.empty:
+        st.info(
+            "No anomalies. Optional: `python ingestion/ml_vessel_anomaly.py` "
+            "(writes `fact_vessel_anomalies`)."
         )
-    except Exception:
-        track = pd.DataFrame()
+    else:
+        st.dataframe(anom.head(200), width="stretch", hide_index=True)
 
-if not track.empty:
-    st.subheader("Track history")
-    fig = px.line(
-        track,
-        x="longitude",
-        y="latitude",
-        markers=True,
-        hover_data=["event_time", "sog"] if "sog" in track.columns else ["event_time"],
-    )
-    fig.update_yaxes(scaleanchor="x", scaleratio=1)
-    fig.update_layout(height=360, margin=dict(l=10, r=10, t=20, b=10))
-    st.plotly_chart(fig, use_container_width=True)
-    st.dataframe(track.tail(50), use_container_width=True, hide_index=True)
-else:
-    st.caption("No track points for this MMSI.")
+with tab_geo:
+    st.markdown("#### Geofence intelligence")
+    c1, c2 = st.columns(2)
+    with c1:
+        fences = snap.geofences
+        if fences is None or fences.empty:
+            st.caption("No dim_geofences")
+        else:
+            st.dataframe(fences, width="stretch", hide_index=True)
+    with c2:
+        if gf.empty:
+            st.caption("No geofence events in window")
+        else:
+            st.dataframe(gf.head(150), width="stretch", hide_index=True)
+            if "fence_name" in gf.columns:
+                st.markdown("##### Events by fence")
+                st.bar_chart(gf["fence_name"].value_counts())
 
-st.subheader("Geofence events (fleet)")
-if ge is not None and not ge.empty and "error" not in ge.columns:
-    st.dataframe(ge.head(100), use_container_width=True, hide_index=True)
-else:
-    st.caption("No geofence events.")
-
-if fences is not None and not fences.empty and "error" not in fences.columns:
-    with st.expander("Configured geofences"):
-        st.dataframe(fences, use_container_width=True, hide_index=True)
-
-st.info(
-    "MPA fence is a demo proxy for engineering tests — not an official protected-area boundary. "
-    "Behaviour scores support human review only."
+st.markdown("---")
+st.caption(
+    "Intelligence layer sits on Phase 12 maritime jobs. "
+    "Open **Vessel Tracking** for maps and MMSI track replay."
 )
+close_page()

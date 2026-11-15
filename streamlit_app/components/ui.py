@@ -149,6 +149,18 @@ def status_bar(parts: Iterable[str]) -> None:
     )
 
 
+def status_strip(items: Sequence[tuple[str, str]] | Iterable[tuple[str, str]]) -> None:
+    """Label/value pairs rendered as a compact status bar."""
+    parts: list[str] = []
+    for it in items:
+        try:
+            label, value = it[0], it[1]
+        except Exception:  # noqa: BLE001
+            continue
+        parts.append(f"{label}: {value}")
+    status_bar(parts)
+
+
 def chip(label: str, tone: str = "neutral") -> str:
     return (
         f'<span class="ow-chip ow-chip-{escape(tone)}" role="status">'
