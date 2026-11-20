@@ -1331,6 +1331,12 @@ def plotly_layout(**overrides):
 # due to partial loads / stale renames). `apply` is a legacy alias.
 apply = apply_theme
 
+
+def inject_theme() -> None:
+    """Back-compat alias for apply_theme (older Home.py imports)."""
+    apply_theme()
+
+
 __all__ = [
     "COLORS",
     "NAVY",
@@ -1350,6 +1356,7 @@ __all__ = [
     "PLOTLY_DEFAULTS",
     "init_a11y_defaults",
     "apply_theme",
+    "inject_theme",
     "apply",
     "plotly_layout",
 ]

@@ -5,7 +5,14 @@ from __future__ import annotations
 import streamlit as st
 
 from components.ui import a11y_sidebar_controls, ensure_theme, footer_note, sidebar_brand
-from ow_theme import apply_theme, init_a11y_defaults
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+except Exception:  # pragma: no cover
+    def apply_theme():
+        pass
+
+    def init_a11y_defaults():
+        pass
 
 # Re-exports for older pages
 __all__ = [

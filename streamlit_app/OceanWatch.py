@@ -206,6 +206,11 @@ port_ops = page(
     "Port Ops Board — Mombasa",
     ":material/directions_boat:",
 )
+mombasa_today = page(
+    "pages/41_Mombasa_Port_Today.py",
+    "Mombasa Port Today",
+    ":material/today:",
+)
 
 alerts = page(
     "pages/7_Operational_Alerts.py",
@@ -342,6 +347,7 @@ nav_dict = {
         port_adv,
         live_kpa,
         port_ops,
+        mombasa_today,
     ),
     "Risks & Alerts": keep(
         alerts,

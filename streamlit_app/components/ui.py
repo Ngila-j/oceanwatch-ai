@@ -11,7 +11,14 @@ from typing import Iterable, Mapping, Optional, Sequence
 
 import streamlit as st
 
-from ow_theme import apply_theme, init_a11y_defaults
+try:
+    from ow_theme import apply_theme, init_a11y_defaults
+except Exception:  # pragma: no cover - theme optional at import time
+    def apply_theme():
+        pass
+
+    def init_a11y_defaults():
+        pass
 
 
 def ensure_theme() -> None:

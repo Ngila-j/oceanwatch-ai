@@ -13,7 +13,11 @@ import streamlit as st
 
 from components.branding import show_attribution, show_methodology
 from components.ui import banner, ensure_theme, footer_note, kpi_row, page_header
-from ow_theme import init_a11y_defaults
+try:
+    from ow_theme import init_a11y_defaults
+except Exception:  # pragma: no cover
+    def init_a11y_defaults():
+        pass
 
 
 def boot(

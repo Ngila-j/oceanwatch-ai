@@ -22,7 +22,8 @@ from components.mission import (
     render_watchlist_panel,
     situation_snapshot,
 )
-from components.ui import (
+try:
+    from components.ui import (
     banner,
     empty_state,
     footer_note,
@@ -32,10 +33,34 @@ from components.ui import (
     status_bar,
     status_strip,
     tile_grid,
-)
-from ow_theme import inject_theme
+    )
+except Exception:
+    def banner(*_a, **_k):
+        pass
+    def empty_state(*_a, **_k):
+        pass
+    def footer_note(*_a, **_k):
+        pass
+    def kpi_row(*_a, **_k):
+        pass
+    def page_header(*_a, **_k):
+        pass
+    def persona_selector(*_a, **_k):
+        return "Operator"
+    def status_bar(*_a, **_k):
+        pass
+    def status_strip(*_a, **_k):
+        pass
+    def tile_grid(*_a, **_k):
+        pass
 
-inject_theme()
+try:
+    from ow_theme import apply_theme
+
+    apply_theme()
+except Exception:
+    # Theme must never block the home cockpit on Streamlit Cloud.
+    pass
 
 # ---------------------------------------------------------------------------
 # Header + mission
@@ -216,6 +241,7 @@ with st.container():
     lf1, lf2, lf3, lf4 = st.columns(4)
     with lf1:
         st.page_link("pages/40_Port_Ops_Board.py", label="Port Ops Board — Mombasa →")
+        st.page_link("pages/41_Mombasa_Port_Today.py", label="Mombasa Port Today →")
     with lf2:
         st.page_link("pages/39_Live_Feeds_and_KPA.py", label="Live feeds & KPA 14-day list →")
     with lf3:
